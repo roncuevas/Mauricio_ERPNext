@@ -45,6 +45,12 @@ export type ItemCatalogCache = {
   items: CachedItem[]
 }
 
+export type UomCatalogCache = {
+  profileId: string
+  updatedAt: string
+  uoms: string[]
+}
+
 export type DocTypeCatalogCache = {
   profileId: string
   updatedAt: string

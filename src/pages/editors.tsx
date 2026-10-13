@@ -7,6 +7,8 @@ import { UomEditor, type UomEditorValues } from '../components/uom-editor'
 import { createErpNextClient } from '../lib/erpnext'
 import { patchItemCatalog } from '../lib/item-cache'
 import { patchVariantCatalog, readVariantCatalog } from '../lib/variant-cache'
+import { readUomCatalog, writeUomCatalog } from '../lib/uom-cache'
+import { syncUomCatalog, UOM_CACHE_TTL_MS } from '../lib/catalog-sync'
 import type { CachedItem, VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -61,8 +63,8 @@ export function UomEditorPage({ client, profileId }: { client: Client; profileId
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const item = useQuery({ queryKey: ['item-uoms', name], queryFn: () => client.getDocument<Record<string, unknown>>('Item', name!), enabled: Boolean(name) })
-  const uoms = useQuery({ queryKey: ['uom-options'], queryFn: async () => (await client.listDocuments<{ name: string }>('UOM', { fields: ['name'], pageLength: 500, orderBy: 'name asc' })).data.map((row) => row.name) })
+  const item = useQuery({ queryKey: ['item-uoms', profileId, name], queryFn: () => client.getDocument<Record<string, unknown>>('Item', name!), enabled: Boolean(name), staleTime: 5 * 60 * 1000 })
+  const uoms = useQuery({ queryKey: ['uom-options', profileId], queryFn: async () => { const cached = await readUomCatalog(profileId); const next = await syncUomCatalog(client, profileId, cached); if (next !== cached) await writeUomCatalog(next); return next.uoms }, staleTime: UOM_CACHE_TTL_MS, gcTime: UOM_CACHE_TTL_MS * 2 })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const values = useMemo(() => item.data ? readUomValues(item.data) : null, [item.data])
@@ -77,7 +79,7 @@ export function UomEditorPage({ client, profileId }: { client: Client; profileId
       const variantCache = await patchVariantCatalog(profileId, savedItem as VariantItem)
       if (itemCache) queryClient.setQueryData(['item-catalog', profileId], itemCache)
       if (variantCache) queryClient.setQueryData(['variant-catalog', profileId], variantCache)
-      queryClient.setQueryData(['item-uoms', name], savedItem)
+      queryClient.setQueryData(['item-uoms', profileId, name], savedItem)
       await queryClient.invalidateQueries({ queryKey: ['item-catalog', profileId] })
       await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] })
       navigate(`/items/${encodeURIComponent(name)}`)

@@ -1,8 +1,29 @@
 import { ErpNextError, type ErpNextClient } from './erpnext'
-import type { VariantItem } from './types'
+import type { UomCatalogCache, VariantItem } from './types'
 
 export type ItemSearchDetails = { barcodes: string[]; sku?: unknown; barcode?: unknown }
 export type ItemUomRow = { parent: string; uom: string; conversion_factor: number }
+
+const UOM_PAGE_LENGTH = 500
+export const UOM_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+export async function syncUomCatalog(client: ErpNextClient, profileId: string, cached: UomCatalogCache | null) {
+  if (cached && Date.now() - Date.parse(cached.updatedAt) < UOM_CACHE_TTL_MS) return cached
+  try {
+    const uoms: string[] = []
+    let start = 0
+    while (true) {
+      const batch = await client.listDocuments<{ name: string }>('UOM', { fields: ['name'], start, pageLength: UOM_PAGE_LENGTH, orderBy: 'name asc' })
+      uoms.push(...batch.data.map((row) => row.name).filter(Boolean))
+      if (batch.data.length < UOM_PAGE_LENGTH) break
+      start += batch.data.length
+    }
+    return { profileId, updatedAt: new Date().toISOString(), uoms: Array.from(new Set(uoms)) }
+  } catch (error) {
+    if (cached) return cached
+    throw error
+  }
+}
 
 export async function readItemUomsThroughItems(client: ErpNextClient, items: VariantItem[], setMessage: (message: string) => void) {
   const rows: ItemUomRow[] = []

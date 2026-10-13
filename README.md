@@ -21,6 +21,8 @@ Los catálogos se guardan en IndexedDB por perfil de conexión y no se vuelven a
 
 La lectura de UOM intenta consultar `UOM Conversion Detail` en una sola carga paginada. Si el usuario no tiene permiso sobre ese child DocType, la aplicación usa las filas `uoms` incluidas en cada documento `Item` como fallback. Esto evita exigir permisos adicionales solo para visualizar presentaciones.
 
+El editor por producto consulta el documento `Item` una sola vez para cargar sus UOM y conversiones. El catálogo de nombres del DocType `UOM` se guarda en IndexedDB separado por perfil, se reutiliza durante 24 horas y se sincroniza en páginas de 500 registros cuando caduca. Si la sincronización falla pero existe una copia local, se conserva esa copia para no bloquear el editor. Las claves de React Query también incluyen el perfil para evitar mezclar datos entre conexiones ERPNext.
+
 ## Desarrollo
 
 ```bash
