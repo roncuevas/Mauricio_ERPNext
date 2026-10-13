@@ -55,6 +55,17 @@ test.describe('responsive navigation and empty states', () => {
     expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport + 1)
   })
 
+  test('imports shared credentials, pre-fills the form, and removes secrets from the URL', async ({ page }) => {
+    await page.goto('/?base_url=https%3A%2F%2Ferp.example.test&label=Enlace%20compartido&api_key=e2e-key&api_secret=e2e-secret')
+    await expect(page.getByLabel('Nombre del perfil')).toHaveValue('Enlace compartido')
+    await expect(page.getByLabel('URL de ERPNext')).toHaveValue('https://erp.example.test')
+    await expect(page.getByLabel('API Key')).toHaveValue('e2e-key')
+    await expect(page).not.toHaveURL(/api_secret/)
+    await page.getByLabel('Contraseña local').fill('e2e-passphrase')
+    await page.getByRole('button', { name: 'Cifrar y conectar' }).click()
+    await expect(page).toHaveURL(/\/items$/)
+  })
+
   test('mobile routes remain usable screen by screen', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'Este caso corresponde al proyecto móvil')
     await createConnection(page)
