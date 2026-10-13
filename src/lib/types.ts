@@ -47,6 +47,22 @@ export type DocTypeCatalogCache = {
   doctypes: Array<{ name: string }>
 }
 
+export type VariantItem = {
+  name: string
+  item_name?: string
+  item_group?: string
+  stock_uom?: string
+  variant_of?: string
+  has_variants?: number | boolean
+  disabled?: number | boolean
+}
+
+export type VariantCatalogCache = {
+  profileId: string
+  updatedAt: string
+  items: VariantItem[]
+}
+
 export type DocTypeField = {
   fieldname: string
   label?: string
