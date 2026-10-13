@@ -1,8 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { hasMultipleUoms } from '../lib/variant-cache'
 import { fuzzyMatch } from '../lib/search'
 import type { VariantItem } from '../lib/types'
+
+const VIRTUALIZATION_THRESHOLD = 200
 
 export function variantMatches(item: VariantItem, search: string) {
   return fuzzyMatch(search, [item])
@@ -33,4 +37,12 @@ export function VariantTreeNode({ item, childrenByParent, depth = 0, uomOnly = f
   const isTemplate = Boolean(item.has_variants) || children.length > 0
   const isExpanded = expanded.has(item.name)
   return <div><div className="flex flex-wrap items-center gap-3 px-4 py-3" style={{ paddingLeft: `${16 + depth * 28}px` }}><div className="flex min-w-0 flex-1 items-start gap-2"><div className="w-5 shrink-0 pt-0.5">{children.length > 0 && <button className="text-slate-500 hover:text-slate-900" aria-label={isExpanded ? `Ocultar variantes de ${item.name}` : `Mostrar variantes de ${item.name}`} aria-expanded={isExpanded} onClick={() => onToggle(item.name)}>{isExpanded ? '▾' : '▸'}</button>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="truncate text-sm text-slate-900">{item.item_name || item.name}</strong>{isTemplate && <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Plantilla</span>}{multipleUoms && <span className="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{item.uoms?.length} UOM</span>}{uomOnly && !multipleUoms && <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">Contexto</span>}{item.disabled ? <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">Deshabilitado</span> : null}</div><div className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500"><span className="font-mono">{item.name}</span>{item.stock_uom && <span>Stock: {item.stock_uom}</span>}{children.length > 0 && <span>{children.length} variantes</span>}</div>{multipleUoms && <UomConversionSummary item={item} />}</div></div><div className="flex shrink-0 gap-2"><Link className="button button-secondary" to={`/variants/${encodeURIComponent(item.name)}`}>Editar</Link>{isTemplate && <Link className="button button-primary" to={`/variants/new?template=${encodeURIComponent(item.name)}`}>Nueva variante</Link>}</div></div>{isExpanded && visibleChildren.map((child) => <VariantTreeNode key={child.name} item={child} childrenByParent={childrenByParent} depth={depth + 1} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} />)}</div>
+}
+
+export function VariantRoots({ items, childrenByParent, uomOnly, search, expanded, onToggle }: { items: VariantItem[]; childrenByParent: Map<string, VariantItem[]>; uomOnly: boolean; search: string; expanded: Set<string>; onToggle: (name: string) => void }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const virtualized = items.length > VIRTUALIZATION_THRESHOLD
+  const rowVirtualizer = useVirtualizer({ count: virtualized ? items.length : 0, getScrollElement: () => scrollRef.current, estimateSize: () => 80, overscan: 8 })
+  if (!virtualized) return <>{items.map((item) => <VariantTreeNode key={item.name} item={item} childrenByParent={childrenByParent} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} />)}</>
+  return <div ref={scrollRef} className="max-h-[70vh] overflow-auto"><div className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>{rowVirtualizer.getVirtualItems().map((virtualRow) => { const item = items[virtualRow.index]; return <div key={item.name} ref={rowVirtualizer.measureElement} data-index={virtualRow.index} className="absolute left-0 w-full" style={{ transform: `translateY(${virtualRow.start}px)` }}><VariantTreeNode item={item} childrenByParent={childrenByParent} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} /></div> })}</div></div>
 }
