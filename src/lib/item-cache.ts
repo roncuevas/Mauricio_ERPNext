@@ -1,4 +1,5 @@
 import type { ItemCatalogCache } from './types'
+import { fuzzyMatch } from './search'
 
 const databaseName = 'mauricio-erpnext'
 const storeName = 'item-catalogs'
@@ -32,7 +33,5 @@ export async function writeItemCatalog(cache: ItemCatalogCache): Promise<ItemCat
 }
 
 export function filterItems(items: ItemCatalogCache['items'], search: string) {
-  const normalized = search.trim().toLocaleLowerCase()
-  if (!normalized) return items
-  return items.filter((item) => `${item.name} ${item.item_name ?? ''}`.toLocaleLowerCase().includes(normalized))
+  return items.filter((item) => fuzzyMatch(search, [item]))
 }
