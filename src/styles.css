@@ -206,16 +206,27 @@ button { cursor: pointer; }
 
 @media (max-width: 1023px) {
   .app-sidebar { display: none; }
-  .mobile-navigation { display: block; position: fixed; inset: 0 0 auto; z-index: 50; border-bottom: 1px solid #e2e8f0; background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
+  .mobile-navigation { display: block; position: fixed; inset: 0 0 auto; z-index: 50; border-bottom: 1px solid #dbe4ef; background: rgba(255,255,255,.96); box-shadow: 0 5px 18px rgba(15, 23, 42, .08); backdrop-filter: blur(12px); }
   .mobile-navigation-open { height: 100dvh; background: white; }
-  main { padding-top: 3.75rem; }
-  .mobile-navigation-bar { display: flex; min-height: 3.75rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; }
-  .mobile-navigation-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #2563eb; }
-  .menu-button, .menu-lock-button { min-height: 2.75rem; border-radius: .5rem; padding: .5rem .75rem; font-size: .875rem; font-weight: 700; }
-  .menu-button { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid #cbd5e1; background: white; color: #334155; }
-  .menu-lock-button { border: 0; background: transparent; color: #64748b; }
-  .mobile-navigation-menu { display: grid; align-content: start; gap: .25rem; min-height: calc(100dvh - 3.75rem); overflow-y: auto; border-top: 1px solid #f1f5f9; background: white; padding: .75rem; }
-  .mobile-navigation-menu a { min-height: 2.75rem; display: flex; align-items: center; padding: .5rem .75rem; }
+  main { padding-top: 4rem; }
+  .mobile-navigation-bar { display: flex; min-height: 4rem; align-items: center; justify-content: space-between; gap: .65rem; padding: .65rem max(1rem, env(safe-area-inset-left)) .65rem max(1rem, env(safe-area-inset-right)); }
+  .mobile-navigation-brand, .mobile-navigation-actions { display: flex; min-width: 0; align-items: center; }
+  .mobile-navigation-brand { gap: .55rem; }
+  .mobile-brand-mark { display: inline-flex; width: 2.15rem; height: 2.15rem; flex: 0 0 2.15rem; align-items: center; justify-content: center; border-radius: .65rem; background: linear-gradient(135deg, #2563eb, #0ea5e9); color: white; font-size: .95rem; font-weight: 900; box-shadow: 0 5px 12px rgba(37, 99, 235, .2); }
+  .mobile-navigation-heading { display: grid; min-width: 0; gap: .05rem; }
+  .mobile-navigation-heading strong, .mobile-navigation-heading span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-navigation-heading strong { color: #0f172a; font-size: .82rem; line-height: 1.15; }
+  .mobile-navigation-heading span { color: #64748b; font-size: .6rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+  .mobile-navigation-actions { flex-shrink: 0; gap: .3rem; }
+  .menu-button, .menu-lock-button { min-height: 2.65rem; border-radius: .55rem; padding: .45rem .65rem; font-size: .76rem; font-weight: 800; }
+  .menu-button { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+  .menu-button-icon { width: 1rem; font-size: 1.05rem; line-height: 1; text-align: center; }
+  .menu-lock-button { border: 1px solid transparent; background: transparent; color: #64748b; }
+  .menu-lock-button:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
+  .mobile-navigation-menu { display: grid; align-content: start; gap: .35rem; min-height: calc(100dvh - 4rem); overflow-y: auto; border-top: 1px solid #e2e8f0; background: linear-gradient(180deg, #f8fbff 0%, #fff 28%); padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-left)); }
+  .mobile-navigation-menu-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: .35rem; padding: 0 .25rem .4rem; color: #334155; font-size: .78rem; font-weight: 850; }
+  .mobile-navigation-menu-heading small { color: #64748b; font-size: .65rem; font-weight: 600; text-align: right; }
+  .mobile-navigation-menu a { min-height: 3.2rem; display: flex; align-items: center; padding: .65rem .85rem; }
 }
 
 @media (max-width: 639px) {

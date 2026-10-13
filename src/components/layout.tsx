@@ -19,6 +19,7 @@ export function NavLink({ to, children }: { to: string; children: ReactNode }) {
 export function MobileNavigation({ onLock }: { onLock: () => void }) {
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const currentPage = navigation.find(([to]) => location.pathname === to)?.[1] ?? 'Mauricio'
 
   useEffect(() => setOpen(false), [location.pathname])
   useEffect(() => {
@@ -28,14 +29,23 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
 
   return <div className={`mobile-navigation${open ? ' mobile-navigation-open' : ''}`}>
     <div className="mobile-navigation-bar">
-      <button className="menu-button" type="button" aria-expanded={open} aria-controls="mobile-navigation-menu" onClick={() => setOpen((current) => !current)}>
-        <span aria-hidden="true">☰</span>
-        <span>Menú</span>
-      </button>
-      <span className="mobile-navigation-title">Mauricio</span>
-      <button className="menu-lock-button" type="button" onClick={onLock}>Bloquear</button>
+      <div className="mobile-navigation-brand">
+        <span className="mobile-brand-mark" aria-hidden="true">M</span>
+        <div className="mobile-navigation-heading">
+          <strong>{currentPage}</strong>
+          <span>Mauricio</span>
+        </div>
+      </div>
+      <div className="mobile-navigation-actions">
+        <button className="menu-lock-button" type="button" onClick={onLock}>Bloquear</button>
+        <button className="menu-button" type="button" aria-expanded={open} aria-controls="mobile-navigation-menu" onClick={() => setOpen((current) => !current)}>
+          <span className="menu-button-icon" aria-hidden="true">{open ? '×' : '☰'}</span>
+          <span>Menú</span>
+        </button>
+      </div>
     </div>
     {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label="Navegación principal">
+      <div className="mobile-navigation-menu-heading"><span>Ir a</span><small>Sección actual: {currentPage}</small></div>
       {navigation.map(([to, label]) => <NavLink key={to} to={to}>{label}</NavLink>)}
     </nav>}
   </div>
