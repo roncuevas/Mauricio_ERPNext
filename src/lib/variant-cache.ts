@@ -1,4 +1,4 @@
-import type { VariantCatalogCache, VariantItem } from './types'
+import type { ItemUom, VariantCatalogCache, VariantItem } from './types'
 
 const databaseName = 'mauricio-erpnext-variants'
 const storeName = 'variant-catalogs'
@@ -29,6 +29,25 @@ export async function writeVariantCatalog(cache: VariantCatalogCache): Promise<V
     request.onsuccess = () => resolve(cache)
     request.onerror = () => reject(request.error ?? new Error('No se pudo guardar la caché local.'))
   })
+}
+
+export function mergeItemUoms(items: VariantItem[], rows: Array<{ parent: string; uom: string; conversion_factor: number }>) {
+  const rowsByItem = new Map<string, ItemUom[]>()
+  for (const row of rows) {
+    const current = rowsByItem.get(row.parent) ?? []
+    current.push({ uom: row.uom, conversion_factor: Number(row.conversion_factor) })
+    rowsByItem.set(row.parent, current)
+  }
+  return items.map((item) => {
+    const uoms = [{ uom: item.stock_uom ?? '', conversion_factor: 1 }, ...(rowsByItem.get(item.name) ?? [])]
+      .filter((uom) => uom.uom)
+      .filter((uom, index, all) => all.findIndex((candidate) => candidate.uom === uom.uom) === index)
+    return { ...item, uoms }
+  })
+}
+
+export function hasMultipleUoms(item: VariantItem) {
+  return (item.uoms?.length ?? 0) > 1
 }
 
 export function buildVariantTree(items: VariantItem[]) {

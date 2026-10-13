@@ -55,6 +55,12 @@ export type VariantItem = {
   variant_of?: string
   has_variants?: number | boolean
   disabled?: number | boolean
+  uoms?: ItemUom[]
+}
+
+export type ItemUom = {
+  uom: string
+  conversion_factor: number
 }
 
 export type VariantCatalogCache = {
