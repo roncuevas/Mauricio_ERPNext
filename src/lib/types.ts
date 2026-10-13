@@ -26,6 +26,21 @@ export type ListOptions = {
 
 export type ListResult<T> = { data: T[]; total?: number }
 
+export type CachedItem = {
+  name: string
+  item_name?: string
+  item_group?: string
+  stock_uom?: string
+  disabled?: number | boolean
+  [key: string]: unknown
+}
+
+export type ItemCatalogCache = {
+  profileId: string
+  updatedAt: string
+  items: CachedItem[]
+}
+
 export type DocTypeField = {
   fieldname: string
   label?: string
