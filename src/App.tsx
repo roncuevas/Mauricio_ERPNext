@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, Input, Notice, PageHeader, Spinner } from './components/ui'
 import { MetadataDocEditor } from './components/metadata-editor'
+import { NavLink, PageLayout } from './components/layout'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from './lib/crypto'
 import { createErpNextClient, ErpNextError } from './lib/erpnext'
 import { readDocTypeCatalog, writeDocTypeCatalog } from './lib/doctype-cache'
@@ -10,6 +11,7 @@ import { filterItems, patchItemCatalog, readItemCatalog, writeItemCatalog } from
 import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles, removeProfile, writeProfiles } from './lib/storage'
 import { fuzzyMatch } from './lib/search'
+import { listAllDocuments } from './lib/pagination'
 import { buildVariantTree, hasMultipleUoms, mergeItemUoms, patchVariantCatalog, readVariantCatalog, writeVariantCatalog } from './lib/variant-cache'
 import type { CachedItem, ConnectionProfile, DocTypeCatalogCache, DocTypeField, ItemCatalogCache, StoredProfile, VariantCatalogCache, VariantItem } from './lib/types'
 
@@ -64,9 +66,6 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
   const client = useMemo(() => createErpNextClient(connection), [connection])
   return <div className="min-h-screen lg:flex"><aside className="border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r"><div className="flex items-center justify-between gap-3 p-4 lg:block"><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">ERPNext Admin</p><p className="mt-1 truncate text-sm font-semibold text-slate-900">{connection.label}</p></div><button className="text-xs font-semibold text-slate-500 hover:text-slate-900" onClick={onLock}>Bloquear</button></div><nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:grid lg:gap-1 lg:px-3"><NavLink to="/items">Productos</NavLink><NavLink to="/variants">Variantes</NavLink><NavLink to="/doctypes">DocTypes</NavLink><NavLink to="/settings">Conexión</NavLink></nav></aside><main className="min-w-0 flex-1"><Routes><Route element={<PageLayout client={client} />}><Route path="/" element={<Navigate to="/items" replace />} /><Route path="/items" element={<ItemsPage client={client} profileId={connection.id} />} /><Route path="/items/new" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/variants" element={<VariantsPage client={client} profileId={connection.id} />} /><Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} /><Route path="/settings" element={<SettingsPage connection={connection} onLock={onLock} />} /></Route></Routes></main></div>
 }
-
-function NavLink({ to, children }: { to: string; children: React.ReactNode }) { const location = useLocation(); const active = location.pathname === to; return <Link className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${active ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`} to={to}>{children}</Link> }
-function PageLayout({ children }: { client: ReturnType<typeof createErpNextClient>; children?: React.ReactNode }) { return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">{children ?? <Outlet />}</div> }
 
 function ItemsPage({ client, profileId }: { client: ReturnType<typeof createErpNextClient>; profileId: string }) {
   const [searchInput, setSearchInput] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(0); const [syncMessage, setSyncMessage] = useState(''); const pageLength = 25
@@ -253,7 +252,7 @@ function DocTypesPage({ client, profileId }: { client: ReturnType<typeof createE
   const [syncMessage, setSyncMessage] = useState('')
   const queryClient = useQueryClient()
   const query = useQuery({ queryKey: ['doctype-catalog', profileId], queryFn: () => readDocTypeCatalog(profileId), staleTime: Infinity })
-  const refresh = useMutation({ mutationFn: async () => { const doctypes: Array<{ name: string }> = []; let start = 0; const batchSize = 500; while (true) { setSyncMessage(`Descargando DocTypes: ${doctypes.length}`); const batch = await client.listDocuments<{ name: string }>('DocType', { fields: ['name'], start, pageLength: batchSize, orderBy: 'name asc' }); doctypes.push(...batch.data); if (batch.data.length < batchSize) break; start += batch.data.length } const next: DocTypeCatalogCache = { profileId, updatedAt: new Date().toISOString(), doctypes }; return writeDocTypeCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['doctype-catalog', profileId], next); setSyncMessage(`DocTypes actualizados: ${next.doctypes.length}`) }, onError: (error) => setSyncMessage(error.message) })
+  const refresh = useMutation({ mutationFn: async () => { const doctypes = await listAllDocuments<{ name: string }>(client, 'DocType', { fields: ['name'], orderBy: 'name asc' }, (count) => setSyncMessage(`Descargando DocTypes: ${count}`)); const next: DocTypeCatalogCache = { profileId, updatedAt: new Date().toISOString(), doctypes }; return writeDocTypeCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['doctype-catalog', profileId], next); setSyncMessage(`DocTypes actualizados: ${next.doctypes.length}`) }, onError: (error) => setSyncMessage(error.message) })
   const names = useMemo(() => query.data?.doctypes ?? [], [query.data?.doctypes])
   const hasCache = Boolean(query.data)
   const updated = query.data ? new Date(query.data.updatedAt).toLocaleString() : ''
