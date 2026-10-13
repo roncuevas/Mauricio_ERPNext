@@ -34,7 +34,8 @@ export function createErpNextClient(connection: ConnectionProfile) {
       const params = new URLSearchParams({ fields: JSON.stringify(options.fields ?? ['name']), limit_start: String(options.start ?? 0), limit_page_length: String(options.pageLength ?? 25) })
       if (options.filters?.length) params.set('filters', JSON.stringify(options.filters))
       if (options.orderBy) params.set('order_by', options.orderBy)
-      return request<ListResult<T>>(`/api/resource/${encodeURIComponent(doctype)}?${params}`)
+      const data = await request<T[]>(`/api/resource/${encodeURIComponent(doctype)}?${params}`)
+      return { data }
     },
     async getDocument<T>(doctype: string, name: string) { return request<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`) },
     async createDocument<T>(doctype: string, data: Record<string, unknown>) { return request<T>(`/api/resource/${encodeURIComponent(doctype)}`, { method: 'POST', body: JSON.stringify(data) }) },
