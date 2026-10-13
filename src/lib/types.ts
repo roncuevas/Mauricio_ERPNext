@@ -97,12 +97,20 @@ export type DocTypeCatalogCache = {
 export type VariantItem = {
   name: string
   item_name?: string
+  brand?: string
   item_group?: string
   stock_uom?: string
   variant_of?: string
   has_variants?: number | boolean
   disabled?: number | boolean
   uoms?: ItemUom[]
+  attributes?: VariantAttribute[]
+}
+
+export type VariantAttribute = {
+  attribute: string
+  attribute_value?: string
+  values?: string[]
 }
 
 export type ItemUom = {

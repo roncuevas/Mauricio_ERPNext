@@ -34,6 +34,19 @@ export function hasMultipleUoms(item: VariantItem) {
   return (item.uoms?.length ?? 0) > 1
 }
 
+export type VariantAttributeCoverage = { attribute: string; expected: string[]; created: string[]; missing: string[] }
+
+export function getVariantAttributeCoverage(template: VariantItem, variants: VariantItem[]): VariantAttributeCoverage[] {
+  const templateAttributes = template.attributes ?? []
+  const attributeNames = Array.from(new Set(templateAttributes.map((attribute) => attribute.attribute).filter(Boolean)))
+  return attributeNames.map((attribute) => {
+    const definition = templateAttributes.find((candidate) => candidate.attribute === attribute)
+    const created = Array.from(new Set(variants.flatMap((variant) => (variant.attributes ?? []).filter((candidate) => candidate.attribute === attribute).map((candidate) => candidate.attribute_value ?? '').filter(Boolean))))
+    const expected = Array.from(new Set(definition?.values?.filter(Boolean) ?? created))
+    return { attribute, expected, created, missing: expected.filter((value) => !created.includes(value)) }
+  })
+}
+
 export function buildVariantTree(items: VariantItem[]) {
   const children = new Map<string, VariantItem[]>()
   for (const item of items) {
