@@ -41,7 +41,12 @@ antes de guardarse localmente y nunca se incluyen en el bundle.
 npm run build
 npm test
 npm run lint
+npm run test:e2e
 ```
+
+La suite E2E usa datos mockeados y valida navegación responsive en móvil y escritorio.
+Requiere un Chrome local compatible con Playwright; no necesita credenciales ni una
+instancia ERPNext real.
 
 La instancia ERPNext debe permitir CORS desde el dominio donde se despliega la SPA.
 En producción se aceptan URLs HTTPS; HTTP queda limitado a `localhost` para desarrollo.

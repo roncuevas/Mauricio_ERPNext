@@ -25,6 +25,8 @@ npm test          # Run the Vitest suite once
 npm run test:watch # Run Vitest interactively
 ```
 
+After completing changes that need to be tested locally, restart the server even if Vite HMR is active: stop the existing process listening on port 5173, start a fresh `npm run dev -- --host 127.0.0.1`, and confirm the new PID and listening port.
+
 The production build is the required type-check because `tsc -b` runs before Vite. ERPNext integration tests require a real instance and credentials; never commit those credentials. If the UOM child DocType returns HTTP 403, preserve the Item-document fallback used by the Variants screen.
 
 ## Coding Style & Naming Conventions
