@@ -79,4 +79,4 @@ export type DocTypeField = {
   hidden?: boolean | number
 }
 
-export type DocTypeMeta = { name: string; fields: DocTypeField[] }
+export type DocTypeMeta = { name: string; fields: DocTypeField[]; is_single?: boolean | number; issingle?: boolean | number; istable?: boolean | number }
