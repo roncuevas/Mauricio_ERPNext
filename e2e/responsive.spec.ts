@@ -56,7 +56,7 @@ test.describe('responsive navigation and empty states', () => {
   })
 
   test('imports shared credentials, pre-fills the form, and removes secrets from the URL', async ({ page }) => {
-    await page.goto('/?base_url=https%3A%2F%2Ferp.example.test&label=Enlace%20compartido&api_key=e2e-key&api_secret=e2e-secret')
+    await page.goto('/#share=eyJiYXNlVXJsIjoiaHR0cHM6Ly9lcnAuZXhhbXBsZS50ZXN0IiwibGFiZWwiOiJFbmxhY2UgY29tcGFydGlkbyIsImFwaUtleSI6ImUyZS1rZXkiLCJhcGlTZWNyZXQiOiJlMmUtc2VjcmV0In0')
     await expect(page.getByLabel('Nombre del perfil')).toHaveValue('Enlace compartido')
     await expect(page.getByLabel('URL de ERPNext')).toHaveValue('https://erp.example.test')
     await expect(page.getByLabel('API Key')).toHaveValue('e2e-key')
