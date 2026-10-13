@@ -3,7 +3,7 @@ import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, usePar
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, Input, Notice, Spinner } from './components/ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from './lib/crypto'
-import { createErpNextClient } from './lib/erpnext'
+import { createErpNextClient, ErpNextError } from './lib/erpnext'
 import { readDocTypeCatalog, writeDocTypeCatalog } from './lib/doctype-cache'
 import { filterItems, readItemCatalog, writeItemCatalog } from './lib/item-cache'
 import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
@@ -83,7 +83,7 @@ function VariantsPage({ client, profileId }: { client: ReturnType<typeof createE
   const query = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
   const [syncMessage, setSyncMessage] = useState('')
   const [view, setView] = useState<'tree' | 'uoms'>('tree')
-  const refresh = useMutation({ mutationFn: async () => { const items: VariantItem[] = []; let start = 0; const batchSize = 500; while (true) { setSyncMessage(`Descargando productos y variantes: ${items.length}`); const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'item_name', 'item_group', 'stock_uom', 'variant_of', 'has_variants', 'disabled'], start, pageLength: batchSize, orderBy: 'item_name asc' }); items.push(...batch.data); if (batch.data.length < batchSize) break; start += batch.data.length } const uomRows: Array<{ parent: string; uom: string; conversion_factor: number }> = []; let uomStart = 0; while (true) { setSyncMessage(`Descargando UOM: ${uomRows.length}`); const batch = await client.listDocuments<{ parent: string; uom: string; conversion_factor: number }>('UOM Conversion Detail', { fields: ['parent', 'uom', 'conversion_factor'], filters: [['parenttype', '=', 'Item'], ['parentfield', '=', 'uoms']], start: uomStart, pageLength: batchSize, orderBy: 'parent asc, idx asc' }); uomRows.push(...batch.data); if (batch.data.length < batchSize) break; uomStart += batch.data.length } const next: VariantCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: mergeItemUoms(items, uomRows) }; return writeVariantCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['variant-catalog', profileId], next); setSyncMessage(`Catálogo actualizado: ${next.items.length} productos`) }, onError: (error) => setSyncMessage(error.message) })
+  const refresh = useMutation({ mutationFn: async () => { const items: VariantItem[] = []; let start = 0; const batchSize = 500; while (true) { setSyncMessage(`Descargando productos y variantes: ${items.length}`); const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'item_name', 'item_group', 'stock_uom', 'variant_of', 'has_variants', 'disabled'], start, pageLength: batchSize, orderBy: 'item_name asc' }); items.push(...batch.data); if (batch.data.length < batchSize) break; start += batch.data.length } let uomRows: Array<{ parent: string; uom: string; conversion_factor: number }> = []; try { let uomStart = 0; while (true) { setSyncMessage(`Descargando UOM: ${uomRows.length}`); const batch = await client.listDocuments<{ parent: string; uom: string; conversion_factor: number }>('UOM Conversion Detail', { fields: ['parent', 'uom', 'conversion_factor'], filters: [['parenttype', '=', 'Item'], ['parentfield', '=', 'uoms']], start: uomStart, pageLength: batchSize, orderBy: 'parent asc, idx asc' }); uomRows.push(...batch.data); if (batch.data.length < batchSize) break; uomStart += batch.data.length } } catch (error) { if (!(error instanceof ErpNextError) || error.status !== 403) throw error; setSyncMessage('Sin permiso para leer UOM directamente; usando los Items...'); uomRows = await readItemUomsThroughItems(client, items, setSyncMessage) } const next: VariantCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: mergeItemUoms(items, uomRows) }; return writeVariantCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['variant-catalog', profileId], next); setSyncMessage(`Catálogo actualizado: ${next.items.length} productos`) }, onError: (error) => setSyncMessage(error.message) })
   const hasCache = Boolean(query.data)
   const tree = buildVariantTree(query.data?.items ?? [])
   const uomSynced = Boolean(query.data?.items.some((item) => item.uoms !== undefined))
@@ -101,6 +101,20 @@ function VariantTreeNode({ item, childrenByParent, depth = 0, uomOnly = false }:
   if (uomOnly && !multipleUoms && !visibleChildren.length) return null
   const isTemplate = Boolean(item.has_variants) || children.length > 0
   return <div><div className="flex flex-wrap items-center gap-3 px-4 py-3" style={{ paddingLeft: `${16 + depth * 28}px` }}><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="truncate text-sm text-slate-900">{item.item_name || item.name}</strong>{isTemplate && <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Plantilla</span>}{multipleUoms && <span className="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{item.uoms?.length} UOM</span>}{uomOnly && !multipleUoms && <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">Contexto</span>}{item.disabled ? <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">Deshabilitado</span> : null}</div><div className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500"><span className="font-mono">{item.name}</span>{item.stock_uom && <span>Stock: {item.stock_uom}</span>}{children.length > 0 && <span>{children.length} variantes</span>}</div>{multipleUoms && <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">{item.uoms?.map((uom) => <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1" key={`${item.name}-${uom.uom}`}>{uom.uom} · ×{uom.conversion_factor}</span>)}</div>}</div><div className="flex shrink-0 gap-2"><Link className="button button-secondary" to={`/variants/${encodeURIComponent(item.name)}`}>Editar</Link>{isTemplate && <Link className="button button-primary" to={`/variants/new?template=${encodeURIComponent(item.name)}`}>Nueva variante</Link>}</div></div>{visibleChildren.map((child) => <VariantTreeNode key={child.name} item={child} childrenByParent={childrenByParent} depth={depth + 1} uomOnly={uomOnly} />)}</div>
+}
+
+async function readItemUomsThroughItems(client: ReturnType<typeof createErpNextClient>, items: VariantItem[], setMessage: (message: string) => void) {
+  const rows: Array<{ parent: string; uom: string; conversion_factor: number }> = []
+  const concurrency = 8
+  for (let start = 0; start < items.length; start += concurrency) {
+    const batch = items.slice(start, start + concurrency)
+    setMessage(`Leyendo UOM desde Items: ${Math.min(start + batch.length, items.length)} de ${items.length}`)
+    const documents = await Promise.all(batch.map((item) => client.getDocument<VariantItem>('Item', item.name)))
+    for (const document of documents) {
+      for (const uom of document.uoms ?? []) rows.push({ parent: document.name, uom: uom.uom, conversion_factor: uom.conversion_factor })
+    }
+  }
+  return rows
 }
 
 function VariantEditorPage({ client, profileId }: { client: ReturnType<typeof createErpNextClient>; profileId: string }) {
