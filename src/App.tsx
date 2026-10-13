@@ -11,16 +11,19 @@ import { SettingsPage } from './pages/settings-page'
 import { createErpNextClient } from './lib/erpnext'
 import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles } from './lib/storage'
+import { readSharedConnection } from './lib/share-link'
 import type { ConnectionProfile } from './lib/types'
 
 function App() {
   const [profiles, setProfiles] = useState(readProfiles)
   const [connection, setConnection] = useState<ConnectionProfile | null>(null)
   const [restoring, setRestoring] = useState(true)
+  const sharedConnection = useMemo(() => readSharedConnection(window.location.search, window.location.hash), [])
 
   useEffect(() => {
+    if (sharedConnection) { setRestoring(false); return }
     restoreLocalSession().then(setConnection).finally(() => setRestoring(false))
-  }, [])
+  }, [sharedConnection])
 
   async function unlock(profile: ConnectionProfile) {
     await startLocalSession(profile)
