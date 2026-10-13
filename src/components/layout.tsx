@@ -13,7 +13,7 @@ const navigation = [
 export function NavLink({ to, children }: { to: string; children: ReactNode }) {
   const location = useLocation()
   const active = location.pathname === to
-  return <Link className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${active ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`} to={to}>{children}</Link>
+  return <Link className={`app-nav-link whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${active ? 'app-nav-link-active bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`} aria-current={active ? 'page' : undefined} to={to}>{children}</Link>
 }
 
 export function MobileNavigation({ onLock }: { onLock: () => void }) {

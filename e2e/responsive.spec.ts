@@ -129,8 +129,12 @@ test.describe('responsive navigation and empty states', () => {
   test('desktop preserves the sidebar and compact actions stay hidden', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'Este caso corresponde al proyecto de escritorio')
     await createConnection(page)
+    await expect(page.locator('.app-sidebar')).toBeVisible()
+    await expect(page.locator('.app-sidebar .app-brand-name')).toHaveText('Mauricio')
+    await expect(page.getByText('Conexión activa')).toBeVisible()
     await expect(page.getByRole('link', { name: 'Productos' })).toBeVisible()
     await expect(page.locator('.mobile-actions')).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Bloquear sesión' })).toBeVisible()
     await page.getByRole('link', { name: 'Conexión' }).click()
     await expect(page.getByRole('heading', { name: 'Conexión' })).toBeVisible()
   })
