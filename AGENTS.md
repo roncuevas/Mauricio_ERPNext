@@ -4,14 +4,16 @@
 
 This repository is a client-only React/Vite SPA for connecting directly to user-configured ERPNext instances.
 
-- `src/App.tsx`: routing, connection flow, product workspace, and DocType screens.
+- `src/App.tsx`: routing, connection flow, product workspace, variants/UOM workspace, and DocType screens.
 - `src/components/`: shared Tailwind-based UI primitives.
-- `src/lib/`: ERPNext REST client, local encrypted storage, cryptography, and shared types.
+- `src/lib/`: ERPNext REST client, local encrypted storage, cryptography, cache adapters, and shared types.
 - `src/lib/*.test.ts`: unit tests.
 - `src/styles.css`: global styles and shared utility component classes.
 - `index.html`, `vite.config.ts`, and `tsconfig*.json`: application and build configuration.
 
 Keep ERPNext API logic in `src/lib/erpnext.ts`; do not call `fetch` directly from page components. Keep reusable visual behavior in `src/components/` instead of duplicating Tailwind class groups.
+
+The app is local-first: Items, DocTypes, variants, and Item UOM conversions are cached in IndexedDB per connection profile. Refreshes are explicit and should not become automatic network requests on navigation. The Variants screen uses `variant_of` for hierarchy and supports local search, editing, and creation through ERPNext REST.
 
 ## Build, Test, and Development Commands
 
@@ -23,7 +25,7 @@ npm test          # Run the Vitest suite once
 npm run test:watch # Run Vitest interactively
 ```
 
-The production build is the required type-check because `tsc -b` runs before Vite. ERPNext integration tests require a real instance and credentials; never commit those credentials.
+The production build is the required type-check because `tsc -b` runs before Vite. ERPNext integration tests require a real instance and credentials; never commit those credentials. If the UOM child DocType returns HTTP 403, preserve the Item-document fallback used by the Variants screen.
 
 ## Coding Style & Naming Conventions
 
