@@ -5,17 +5,23 @@ import { Button, Field, Input, Notice, Spinner } from './components/ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from './lib/crypto'
 import { createErpNextClient } from './lib/erpnext'
 import { filterItems, readItemCatalog, writeItemCatalog } from './lib/item-cache'
+import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles, removeProfile, writeProfiles } from './lib/storage'
 import type { CachedItem, ConnectionProfile, DocTypeField, ItemCatalogCache, StoredProfile } from './lib/types'
 
 function App() {
   const [profiles, setProfiles] = useState(readProfiles)
   const [connection, setConnection] = useState<ConnectionProfile | null>(null)
-  if (!connection) return <ConnectionScreen profiles={profiles} onUnlock={setConnection} onProfilesChange={setProfiles} />
-  return <AppShell connection={connection} onLock={() => setConnection(null)} />
+  const [restoring, setRestoring] = useState(true)
+  useEffect(() => { restoreLocalSession().then(setConnection).finally(() => setRestoring(false)) }, [])
+  async function unlock(profile: ConnectionProfile) { await startLocalSession(profile); setConnection(profile) }
+  async function lock() { await clearLocalSession(); setConnection(null) }
+  if (restoring) return <main className="flex min-h-screen items-center justify-center p-4"><div className="flex items-center gap-2 muted"><Spinner /> Restaurando sesión local...</div></main>
+  if (!connection) return <ConnectionScreen profiles={profiles} onUnlock={unlock} onProfilesChange={setProfiles} />
+  return <AppShell connection={connection} onLock={lock} />
 }
 
-function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { profiles: StoredProfile[]; onUnlock: (p: ConnectionProfile) => void; onProfilesChange: (p: StoredProfile[]) => void }) {
+function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { profiles: StoredProfile[]; onUnlock: (p: ConnectionProfile) => Promise<void>; onProfilesChange: (p: StoredProfile[]) => void }) {
   const [selected, setSelected] = useState<StoredProfile | null>(null)
   const [form, setForm] = useState({ label: '', baseUrl: '', apiKey: '', apiSecret: '', passphrase: '' })
   const [error, setError] = useState('')
