@@ -31,6 +31,9 @@ export type CachedItem = {
   item_name?: string
   item_group?: string
   stock_uom?: string
+  sales_uom?: string
+  purchase_uom?: string
+  uoms?: ItemUom[]
   disabled?: number | boolean
   [key: string]: unknown
 }
