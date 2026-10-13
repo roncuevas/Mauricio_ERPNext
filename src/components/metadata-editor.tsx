@@ -22,7 +22,7 @@ const structuredFields = new Set(['Table', 'Table MultiSelect', 'JSON'])
 
 function isNumeric(fieldtype?: string) { return ['Int', 'Float', 'Currency', 'Percent'].includes(fieldtype ?? '') }
 function isLongText(fieldtype?: string) { return ['Small Text', 'Text', 'Long Text', 'Code', 'HTML'].includes(fieldtype ?? '') }
-function isLocked(field: DocTypeField) { return Boolean(field.read_only || field.hidden || field.fieldname === 'name') }
+function isLocked(field: DocTypeField) { return Boolean(field.read_only || field.fieldname === 'name') }
 
 function toEditorValue(field: DocTypeField, value: unknown): EditorValue {
   if (field.fieldtype === 'Check') return Boolean(value)
