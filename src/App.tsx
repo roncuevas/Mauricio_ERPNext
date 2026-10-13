@@ -1,111 +1,50 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Notice, PageHeader, Spinner } from './components/ui'
-import { MetadataDocEditor } from './components/metadata-editor'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { Spinner } from './components/ui'
 import { NavLink, PageLayout } from './components/layout'
-import { VariantRoots, variantNodeIsVisible } from './components/variant-tree'
 import { ConnectionScreen } from './components/connection-screen'
 import { ItemEditorPage, VariantEditorPage } from './pages/editors'
+import { DocTypesPage, ItemsPage, VariantsPage } from './pages/catalog-pages'
 import { SettingsPage } from './pages/settings-page'
-import { createErpNextClient, ErpNextError } from './lib/erpnext'
-import { readDocTypeCatalog, writeDocTypeCatalog } from './lib/doctype-cache'
-import { filterItems, readItemCatalog, writeItemCatalog } from './lib/item-cache'
+import { createErpNextClient } from './lib/erpnext'
 import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles } from './lib/storage'
-import { fuzzyMatch } from './lib/search'
-import { listAllDocuments } from './lib/pagination'
-import { readItemSearchDetails, readItemUomsThroughItems } from './lib/catalog-sync'
-import { buildVariantTree, mergeItemUoms, readVariantCatalog, writeVariantCatalog } from './lib/variant-cache'
-import type { CachedItem, ConnectionProfile, DocTypeCatalogCache, ItemCatalogCache, VariantCatalogCache, VariantItem } from './lib/types'
-
+import type { ConnectionProfile } from './lib/types'
 
 function App() {
   const [profiles, setProfiles] = useState(readProfiles)
   const [connection, setConnection] = useState<ConnectionProfile | null>(null)
   const [restoring, setRestoring] = useState(true)
-  useEffect(() => { restoreLocalSession().then(setConnection).finally(() => setRestoring(false)) }, [])
-  async function unlock(profile: ConnectionProfile) { await startLocalSession(profile); setConnection(profile) }
-  async function lock() { await clearLocalSession(); setConnection(null) }
-  if (restoring) return <main className="flex min-h-screen items-center justify-center p-4"><div className="flex items-center gap-2 muted"><Spinner /> Restaurando sesión local...</div></main>
-  if (!connection) return <ConnectionScreen profiles={profiles} onUnlock={unlock} onProfilesChange={setProfiles} />
+
+  useEffect(() => {
+    restoreLocalSession().then(setConnection).finally(() => setRestoring(false))
+  }, [])
+
+  async function unlock(profile: ConnectionProfile) {
+    await startLocalSession(profile)
+    setConnection(profile)
+  }
+
+  async function lock() {
+    await clearLocalSession()
+    setConnection(null)
+  }
+
+  if (restoring) {
+    return <main className="flex min-h-screen items-center justify-center p-4"><div className="flex items-center gap-2 muted"><Spinner /> Restaurando sesión local...</div></main>
+  }
+
+  if (!connection) {
+    return <ConnectionScreen profiles={profiles} onUnlock={unlock} onProfilesChange={setProfiles} />
+  }
+
   return <AppShell connection={connection} onLock={lock} />
 }
 
 function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
   const client = useMemo(() => createErpNextClient(connection), [connection])
+
   return <div className="min-h-screen lg:flex"><aside className="border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r"><div className="flex items-center justify-between gap-3 p-4 lg:block"><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">ERPNext Admin</p><p className="mt-1 truncate text-sm font-semibold text-slate-900">{connection.label}</p></div><button className="text-xs font-semibold text-slate-500 hover:text-slate-900" onClick={onLock}>Bloquear</button></div><nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:grid lg:gap-1 lg:px-3"><NavLink to="/items">Productos</NavLink><NavLink to="/variants">Variantes</NavLink><NavLink to="/doctypes">DocTypes</NavLink><NavLink to="/settings">Conexión</NavLink></nav></aside><main className="min-w-0 flex-1"><Routes><Route element={<PageLayout client={client} />}><Route path="/" element={<Navigate to="/items" replace />} /><Route path="/items" element={<ItemsPage client={client} profileId={connection.id} />} /><Route path="/items/new" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/variants" element={<VariantsPage client={client} profileId={connection.id} />} /><Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} /><Route path="/settings" element={<SettingsPage connection={connection} onLock={onLock} />} /></Route></Routes></main></div>
-}
-
-function ItemsPage({ client, profileId }: { client: ReturnType<typeof createErpNextClient>; profileId: string }) {
-  const [searchInput, setSearchInput] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(0); const [syncMessage, setSyncMessage] = useState(''); const pageLength = 25
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const catalog = useQuery({ queryKey: ['item-catalog', profileId], queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
-  const refresh = useMutation({ mutationFn: async () => { const items: CachedItem[] = []; let start = 0; const batchSize = 500; while (true) { setSyncMessage(`Descargando productos: ${items.length}`); const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'item_code', 'item_name', 'item_group', 'stock_uom', 'disabled'], start, pageLength: batchSize, orderBy: 'modified desc' }); items.push(...batch.data); if (batch.data.length < batchSize) break; start += batch.data.length } const searchDetails = await readItemSearchDetails(client, items, setSyncMessage); const next: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) })) }; return writeItemCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['item-catalog', profileId], next); setSyncMessage(`Catálogo actualizado: ${next.items.length} productos`) }, onError: (error) => setSyncMessage(error.message) })
-  const filtered = useMemo(() => filterItems(catalog.data?.items ?? [], search), [catalog.data?.items, search])
-  const rows = filtered.slice(page * pageLength, (page + 1) * pageLength)
-  const hasCache = Boolean(catalog.data)
-  const updated = catalog.data ? new Date(catalog.data.updatedAt).toLocaleString() : ''
-  return <section><PageHeader title="Productos" description="Busca por nombre, código, SKU, barcode o cualquier dato disponible en la caché local." action={<Button onClick={() => navigate('/items/new')}>Nuevo producto</Button>} /><div className="card overflow-hidden"><div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"><form className="flex min-w-0 flex-1 gap-2" onSubmit={(event) => { event.preventDefault(); setSearch(searchInput.trim()); setPage(0) }}><Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Ej. nupec cahorro, royal lata adulto o barcode..." /><Button type="submit">Buscar</Button></form><Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? <><Spinner /> <span className="ml-2">Actualizando</span></> : 'Refrescar catálogo'}</Button></div><div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-100 px-4 py-3 text-xs text-slate-500"><span>{hasCache ? `${catalog.data?.items.length ?? 0} productos en caché` : 'Catálogo sin descargar'}</span>{search && <span>Filtro: “{search}”</span>}{updated && <span>Actualizado: {updated}</span>}{syncMessage && <span className="font-medium text-blue-700">{syncMessage}</span>}</div>{catalog.isError && <div className="p-4"><Notice>{catalog.error.message}</Notice></div>}{refresh.isError && <div className="p-4"><Notice>{refresh.error.message}</Notice></div>}{catalog.isPending ? <div className="flex justify-center p-12"><Spinner /></div> : !hasCache ? <div className="p-12 text-center"><p className="font-medium text-slate-700">Aún no hay productos en la caché local.</p><p className="mt-1 muted">Pulsa “Refrescar catálogo” para descargar todos los Items una sola vez.</p></div> : rows.length === 0 ? <div className="p-12 text-center muted">No se encontraron productos.</div> : <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Código</th><th className="px-4 py-3">Nombre</th><th className="px-4 py-3">Grupo</th><th className="px-4 py-3">UOM</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={String(row.name)} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/items/${encodeURIComponent(String(row.name))}`)}><td className="px-4 py-3 font-mono text-xs">{String(row.name)}</td><td className="px-4 py-3 font-medium">{String(row.item_name ?? '—')}</td><td className="px-4 py-3">{String(row.item_group ?? '—')}</td><td className="px-4 py-3">{String(row.stock_uom ?? '—')}</td><td className="px-4 py-3">{row.disabled ? 'Deshabilitado' : 'Activo'}</td></tr>)}</tbody></table></div>}<div className="flex items-center justify-between border-t border-slate-200 p-4"><span className="muted">Página {page + 1} · {filtered.length} resultados</span><div className="flex gap-2"><Button variant="secondary" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Anterior</Button><Button variant="secondary" disabled={(page + 1) * pageLength >= filtered.length} onClick={() => setPage((p) => p + 1)}>Siguiente</Button></div></div></div></section>
-}
-
-function VariantsPage({ client, profileId }: { client: ReturnType<typeof createErpNextClient>; profileId: string }) {
-  const queryClient = useQueryClient()
-  const query = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
-  const [syncMessage, setSyncMessage] = useState('')
-  const [view, setView] = useState<'tree' | 'uoms'>('tree')
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const refresh = useMutation({ mutationFn: async () => { const items: VariantItem[] = []; let start = 0; const batchSize = 500; while (true) { setSyncMessage(`Descargando productos y variantes: ${items.length}`); const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'item_code', 'item_name', 'item_group', 'stock_uom', 'variant_of', 'has_variants', 'disabled'], start, pageLength: batchSize, orderBy: 'item_name asc' }); items.push(...batch.data); if (batch.data.length < batchSize) break; start += batch.data.length } const searchDetails = await readItemSearchDetails(client, items, setSyncMessage); const enrichedItems = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) })); let uomRows: Array<{ parent: string; uom: string; conversion_factor: number }> = []; try { let uomStart = 0; while (true) { setSyncMessage(`Descargando UOM: ${uomRows.length}`); const batch = await client.listDocuments<{ parent: string; uom: string; conversion_factor: number }>('UOM Conversion Detail', { fields: ['parent', 'uom', 'conversion_factor'], filters: [['parenttype', '=', 'Item'], ['parentfield', '=', 'uoms']], start: uomStart, pageLength: batchSize, orderBy: 'parent asc, idx asc' }); uomRows.push(...batch.data); if (batch.data.length < batchSize) break; uomStart += batch.data.length } } catch (error) { if (!(error instanceof ErpNextError) || error.status !== 403) throw error; setSyncMessage('Sin permiso para leer UOM directamente; usando los Items...'); uomRows = await readItemUomsThroughItems(client, enrichedItems, setSyncMessage) } const next: VariantCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: mergeItemUoms(enrichedItems, uomRows) }; return writeVariantCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['variant-catalog', profileId], next); setSyncMessage(`Catálogo actualizado: ${next.items.length} productos`) }, onError: (error) => setSyncMessage(error.message) })
-  const hasCache = Boolean(query.data)
-  const tree = useMemo(() => buildVariantTree(query.data?.items ?? []), [query.data?.items])
-  const uomSynced = Boolean(query.data?.items.some((item) => item.uoms !== undefined))
-  const visibleRoots = tree.roots.filter((item) => variantNodeIsVisible(item, tree.children, view === 'uoms', search))
-  const updated = query.data ? new Date(query.data.updatedAt).toLocaleString() : ''
-  useEffect(() => {
-    if (!search) return
-    const matchingParents = new Set<string>()
-    const collectParents = (item: VariantItem) => {
-      const children = tree.children.get(item.name) ?? []
-      const matchingChildren = children.filter((child) => variantNodeIsVisible(child, tree.children, view === 'uoms', search))
-      if (matchingChildren.length) { matchingParents.add(item.name); matchingChildren.forEach(collectParents) }
-    }
-    tree.roots.forEach(collectParents)
-    setExpanded(matchingParents)
-  }, [tree, search, view])
-  const expandableNames = query.data?.items.filter((item) => (tree.children.get(item.name) ?? []).length > 0).map((item) => item.name) ?? []
-  const toggleExpanded = (name: string) => setExpanded((current) => { const next = new Set(current); if (next.has(name)) next.delete(name); else next.add(name); return next })
-  return <section><PageHeader title="Variantes" description="Visualiza plantillas, variantes y presentaciones en una jerarquía local." action={<div className="flex flex-wrap gap-2"><Link className="button button-primary" to="/variants/new">Nuevo producto</Link><Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? <><Spinner /> <span className="ml-2">Actualizando</span></> : 'Refrescar catálogo'}</Button></div>} /><form className="mb-5 flex max-w-2xl gap-2" onSubmit={(event) => { event.preventDefault(); setSearch(searchInput.trim()) }}><Input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Buscar por código, nombre o UOM..." /><Button type="submit">Buscar</Button>{search && <Button type="button" variant="secondary" onClick={() => { setSearchInput(''); setSearch('') }}>Limpiar</Button>}</form><div className="mb-5 flex flex-wrap gap-2"><Button type="button" variant={view === 'tree' ? 'primary' : 'secondary'} onClick={() => setView('tree')}>Jerarquía completa</Button><Button type="button" variant={view === 'uoms' ? 'primary' : 'secondary'} onClick={() => setView('uoms')}>Múltiples UOM</Button><Button type="button" variant="secondary" onClick={() => setExpanded(new Set(expandableNames))}>Expandir todo</Button><Button type="button" variant="secondary" onClick={() => setExpanded(new Set())}>Colapsar todo</Button></div><div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{hasCache ? `${query.data?.items.length ?? 0} productos en caché` : 'Catálogo sin descargar'}</span>{search && <span>Filtro: “{search}”</span>}{updated && <span>Actualizado: {updated}</span>}{syncMessage && <span className="font-medium text-blue-700">{syncMessage}</span>}</div>{view === 'uoms' && uomSynced && <div className="mb-5"><Notice tone="info">Los factores se expresan contra la UOM de stock: por ejemplo, 1 Bulto = 20 Kg. El segundo valor muestra la misma equivalencia para 2 unidades.</Notice></div>}{!uomSynced && hasCache && <div className="mb-5"><Notice tone="info">La caché existente todavía no contiene UOM. Pulsa “Refrescar catálogo” para cargar las presentaciones y sus factores de conversión.</Notice></div>}{query.isError && <Notice>{query.error.message}</Notice>}{refresh.isError && <Notice>{refresh.error.message}</Notice>}{query.isPending ? <div className="flex justify-center p-12"><Spinner /></div> : !hasCache ? <div className="card p-12 text-center"><p className="font-medium text-slate-700">Aún no hay productos en la caché de variantes.</p><p className="mt-1 muted">Pulsa “Refrescar catálogo” para descargar productos, plantillas, variantes y UOM.</p></div> : <div className="card divide-y divide-slate-100 overflow-hidden">{visibleRoots.length ? <VariantRoots items={visibleRoots} childrenByParent={tree.children} uomOnly={view === 'uoms'} search={search} expanded={expanded} onToggle={toggleExpanded} /> : <div className="p-10 text-center muted">No hay coincidencias para la búsqueda actual.</div>}</div>}</section>
-}
-
-function DocTypesPage({ client, profileId }: { client: ReturnType<typeof createErpNextClient>; profileId: string }) {
-  const [doctype, setDoctype] = useState('')
-  const [selected, setSelected] = useState<string | null>(null)
-  const [doctypeSearchInput, setDoctypeSearchInput] = useState('')
-  const [doctypeSearch, setDoctypeSearch] = useState('')
-  const [documentSearchInput, setDocumentSearchInput] = useState('')
-  const [documentSearch, setDocumentSearch] = useState('')
-  const [syncMessage, setSyncMessage] = useState('')
-  const queryClient = useQueryClient()
-  const query = useQuery({ queryKey: ['doctype-catalog', profileId], queryFn: () => readDocTypeCatalog(profileId), staleTime: Infinity })
-  const refresh = useMutation({ mutationFn: async () => { const doctypes = await listAllDocuments<{ name: string }>(client, 'DocType', { fields: ['name'], orderBy: 'name asc' }, (count) => setSyncMessage(`Descargando DocTypes: ${count}`)); const next: DocTypeCatalogCache = { profileId, updatedAt: new Date().toISOString(), doctypes }; return writeDocTypeCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['doctype-catalog', profileId], next); setSyncMessage(`DocTypes actualizados: ${next.doctypes.length}`) }, onError: (error) => setSyncMessage(error.message) })
-  const names = useMemo(() => query.data?.doctypes ?? [], [query.data?.doctypes])
-  const hasCache = Boolean(query.data)
-  const updated = query.data ? new Date(query.data.updatedAt).toLocaleString() : ''
-  useEffect(() => { if (!doctype && names[0]?.name) setDoctype(names[0].name) }, [doctype, names])
-  const meta = useQuery({ queryKey: ['doctype-meta', doctype], queryFn: () => client.getDocTypeMeta(doctype), enabled: Boolean(doctype) })
-  const allFields = meta.data?.fields.filter((field) => field.fieldname) ?? []
-  const listFields = allFields.filter((field) => !field.hidden && !['Table', 'Table MultiSelect', 'Section Break', 'Column Break', 'Tab Break'].includes(field.fieldtype ?? '')).slice(0, 16)
-  const metadataSingle = Boolean(meta.data?.is_single || meta.data?.issingle)
-  const list = useQuery({ queryKey: ['doctype-list', doctype, listFields.map((field) => field.fieldname)], queryFn: () => client.listDocuments<Record<string, unknown>>(doctype, { fields: ['name', ...listFields.map((field) => field.fieldname)], pageLength: 50, orderBy: 'modified desc' }), enabled: Boolean(doctype && listFields.length && !metadataSingle) })
-  const single = useQuery({ queryKey: ['doctype-single', doctype], queryFn: () => client.getDocument<Record<string, unknown>>(doctype, doctype), enabled: Boolean(doctype && (metadataSingle || list.isError)) })
-  const isSingle = metadataSingle || Boolean(single.data)
-  const rows = isSingle && single.data ? [single.data] : list.data?.data ?? []
-  const filteredNames = names.filter((item) => fuzzyMatch(doctypeSearch, [item.name]))
-  const visibleRows = rows.filter((row) => fuzzyMatch(documentSearch, [row]))
-  return <section><PageHeader title="DocTypes" description="Usa la caché local; ERPNext solo se consulta al actualizarla." action={<Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? <><Spinner /> <span className="ml-2">Actualizando</span></> : 'Refrescar DocTypes'}</Button>} /><form className="mb-3 flex max-w-2xl gap-2" onSubmit={(event) => { event.preventDefault(); setDoctypeSearch(doctypeSearchInput.trim()) }}><Input value={doctypeSearchInput} onChange={(event) => setDoctypeSearchInput(event.target.value)} placeholder="Buscar DocType por nombre o ID..." /><Button type="submit">Buscar</Button></form><div className="mb-5 flex flex-col gap-3 sm:flex-row"><select className="control max-w-md" value={doctype} onChange={(event) => { setDoctype(event.target.value); setSelected(null); setDocumentSearchInput(''); setDocumentSearch('') }} disabled={!hasCache}><option value="">Selecciona un DocType</option>{filteredNames.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select>{meta.isPending && <div className="flex items-center gap-2 muted"><Spinner /> Cargando metadata</div>}</div><div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{hasCache ? `${names.length} DocTypes en caché` : 'DocTypes sin descargar'}</span>{doctypeSearch && <span>Filtro: “{doctypeSearch}”</span>}{updated && <span>Actualizados: {updated}</span>}{syncMessage && <span className="font-medium text-blue-700">{syncMessage}</span>}</div>{isSingle && <div className="mb-5"><Notice tone="info">Este DocType es Single: ERPNext guarda una sola configuración, no una tabla de registros.</Notice></div>}{selected && doctype && <MetadataDocEditor client={client} doctype={doctype} name={selected} fields={allFields} onClose={() => setSelected(null)} />}{query.isError && <Notice>{query.error.message}</Notice>}{refresh.isError && <Notice>{refresh.error.message}</Notice>}{meta.isError && <Notice>{meta.error.message}</Notice>}{list.isError && !single.data && <Notice>{list.error.message}</Notice>}{single.isError && !list.data && <Notice>{single.error.message}</Notice>}{query.isPending ? <div className="flex justify-center p-12"><Spinner /></div> : !hasCache ? <div className="card p-10 text-center"><p className="font-medium text-slate-700">Aún no hay DocTypes en la caché local.</p><p className="mt-1 muted">Pulsa “Refrescar DocTypes” para descargarlos una sola vez.</p></div> : list.isPending || single.isPending ? <Spinner /> : <div className="card overflow-x-auto"><form className="flex gap-2 border-b border-slate-200 p-4" onSubmit={(event) => { event.preventDefault(); setDocumentSearch(documentSearchInput.trim()) }}><Input value={documentSearchInput} onChange={(event) => setDocumentSearchInput(event.target.value)} placeholder="Buscar registros por ID o cualquier campo..." /><Button type="submit">Buscar</Button></form>{visibleRows.length ? <table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Nombre</th>{listFields.slice(0, 5).map((field) => <th className="px-4 py-3" key={field.fieldname}>{field.label ?? field.fieldname}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{visibleRows.map((row) => <tr className="cursor-pointer hover:bg-slate-50" key={String(row.name ?? doctype)} onClick={() => setSelected(String(row.name ?? doctype))}><td className="px-4 py-3 font-mono text-xs">{String(row.name ?? doctype)}</td>{listFields.slice(0, 5).map((field) => <td className="px-4 py-3" key={field.fieldname}>{String(row[field.fieldname] ?? '—')}</td>)}</tr>)}</tbody></table> : <div className="p-10 text-center muted">No hay coincidencias.</div>}</div>}</section>
 }
 
 export default App
