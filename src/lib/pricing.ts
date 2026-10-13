@@ -10,6 +10,17 @@ export function findComparablePurchase(selling: ItemPrice, prices: ItemPrice[]) 
   return [...supplierCandidates].sort((left, right) => Number(left.price_list_rate ?? 0) - Number(right.price_list_rate ?? 0))[0] ?? null
 }
 
+export function findComparablePurchases(selling: ItemPrice, prices: ItemPrice[]) {
+  const candidates = prices.filter((price) => price.buying && price.item_code === selling.item_code && (price.uom || '') === (selling.uom || '') && currencyOf(price) === currencyOf(selling))
+  const bySupplier = new Map<string, ItemPrice>()
+  for (const candidate of candidates) {
+    const supplier = candidate.supplier || 'Proveedor general'
+    const previous = bySupplier.get(supplier)
+    if (!previous || Number(candidate.price_list_rate ?? 0) < Number(previous.price_list_rate ?? 0)) bySupplier.set(supplier, candidate)
+  }
+  return Array.from(bySupplier.values()).sort((left, right) => Number(left.price_list_rate ?? 0) - Number(right.price_list_rate ?? 0))
+}
+
 export function calculateGrossMargin(selling: ItemPrice, purchase: ItemPrice) {
   const sale = Number(selling.price_list_rate ?? 0)
   const cost = Number(purchase.price_list_rate ?? 0)
