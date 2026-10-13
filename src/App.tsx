@@ -5,6 +5,7 @@ import { Button, Field, Input, Notice, PageHeader, Spinner } from './components/
 import { MetadataDocEditor } from './components/metadata-editor'
 import { NavLink, PageLayout } from './components/layout'
 import { VariantRoots, VariantTreeNode, variantMatches, variantNodeIsVisible } from './components/variant-tree'
+import { ConnectionScreen } from './components/connection-screen'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from './lib/crypto'
 import { createErpNextClient, ErpNextError } from './lib/erpnext'
 import { readDocTypeCatalog, writeDocTypeCatalog } from './lib/doctype-cache'
@@ -29,7 +30,7 @@ function App() {
   return <AppShell connection={connection} onLock={lock} />
 }
 
-function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { profiles: StoredProfile[]; onUnlock: (p: ConnectionProfile) => Promise<void>; onProfilesChange: (p: StoredProfile[]) => void }) {
+function _ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { profiles: StoredProfile[]; onUnlock: (p: ConnectionProfile) => Promise<void>; onProfilesChange: (p: StoredProfile[]) => void }) {
   const [selected, setSelected] = useState<StoredProfile | null>(null)
   const [form, setForm] = useState({ label: '', baseUrl: '', apiKey: '', apiSecret: '', passphrase: '' })
   const [error, setError] = useState('')
