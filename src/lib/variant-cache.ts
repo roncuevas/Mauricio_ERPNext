@@ -1,34 +1,18 @@
 import type { ItemUom, VariantCatalogCache, VariantItem } from './types'
+import { readCache, writeCache } from './indexed-db'
 
 const databaseName = 'mauricio-erpnext-variants'
 const storeName = 'variant-catalogs'
-const databaseVersion = 1
+const config = { databaseName, storeName }
 
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, databaseVersion)
-    request.onupgradeneeded = () => request.result.createObjectStore(storeName, { keyPath: 'profileId' })
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error ?? new Error('No se pudo abrir la caché local.'))
-  })
-}
+export const readVariantCatalog = (profileId: string) => readCache<VariantCatalogCache>(config, profileId)
 
-export async function readVariantCatalog(profileId: string): Promise<VariantCatalogCache | null> {
-  const database = await openDatabase()
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(storeName, 'readonly').objectStore(storeName).get(profileId)
-    request.onsuccess = () => resolve((request.result as VariantCatalogCache | undefined) ?? null)
-    request.onerror = () => reject(request.error ?? new Error('No se pudo leer la caché local.'))
-  })
-}
+export const writeVariantCatalog = (cache: VariantCatalogCache) => writeCache(config, cache)
 
-export async function writeVariantCatalog(cache: VariantCatalogCache): Promise<VariantCatalogCache> {
-  const database = await openDatabase()
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(storeName, 'readwrite').objectStore(storeName).put(cache)
-    request.onsuccess = () => resolve(cache)
-    request.onerror = () => reject(request.error ?? new Error('No se pudo guardar la caché local.'))
-  })
+export async function patchVariantCatalog(profileId: string, item: VariantItem) {
+  const cache = await readVariantCatalog(profileId)
+  if (!cache) return null
+  return writeVariantCatalog({ ...cache, locallyModified: true, items: [...cache.items.filter((candidate) => candidate.name !== item.name), item] })
 }
 
 export function mergeItemUoms(items: VariantItem[], rows: Array<{ parent: string; uom: string; conversion_factor: number }>) {

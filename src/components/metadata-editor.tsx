@@ -62,7 +62,7 @@ export function MetadataDocEditor({ client, doctype, name, fields, initialValues
     if (initialized || (name && !query.data)) return
     const source = name ? query.data ?? {} : initialValues
     setForm(Object.fromEntries(fields.filter((field) => field.fieldname).map((field) => [field.fieldname, toEditorValue(field, source[field.fieldname])]))); setInitialized(true)
-  }, [fields, initialized, name, query.data])
+  }, [fields, initialized, initialValues, name, query.data])
 
   async function save(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('')

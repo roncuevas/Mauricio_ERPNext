@@ -23,8 +23,8 @@ export function createErpNextClient(connection: ConnectionProfile) {
       return (body.data ?? body.message ?? body) as T
     } catch (error) {
       if (error instanceof ErpNextError) throw error
-      if (error instanceof DOMException && error.name === 'AbortError') throw new Error('La solicitud tardó demasiado o fue cancelada.')
-      throw new Error('No se pudo conectar con ERPNext. Revisa HTTPS y CORS en la instancia.')
+      if (error instanceof DOMException && error.name === 'AbortError') throw new Error('La solicitud tardó demasiado o fue cancelada.', { cause: error })
+      throw new Error('No se pudo conectar con ERPNext. Revisa HTTPS y CORS en la instancia.', { cause: error })
     } finally { window.clearTimeout(timeout) }
   }
 

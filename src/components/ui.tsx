@@ -17,3 +17,11 @@ export function Notice({ children, tone = 'error' }: { children: ReactNode; tone
 }
 
 export function Spinner() { return <span className="inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="Cargando" /> }
+
+export function PageHeader({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
+  return <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1><p className="mt-1 muted">{description}</p></div>{action}</header>
+}
+
+export function SyncStatus({ children }: { children?: ReactNode }) {
+  return children ? <span className="font-medium text-blue-700">{children}</span> : null
+}

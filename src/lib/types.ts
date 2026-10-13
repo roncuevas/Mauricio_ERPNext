@@ -38,12 +38,14 @@ export type CachedItem = {
 export type ItemCatalogCache = {
   profileId: string
   updatedAt: string
+  locallyModified?: boolean
   items: CachedItem[]
 }
 
 export type DocTypeCatalogCache = {
   profileId: string
   updatedAt: string
+  locallyModified?: boolean
   doctypes: Array<{ name: string }>
 }
 
@@ -66,6 +68,7 @@ export type ItemUom = {
 export type VariantCatalogCache = {
   profileId: string
   updatedAt: string
+  locallyModified?: boolean
   items: VariantItem[]
 }
 

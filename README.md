@@ -26,6 +26,7 @@ La lectura de UOM intenta consultar `UOM Conversion Detail` en una sola carga pa
 ```bash
 npm install
 npm run dev
+npm run lint
 ```
 
 La aplicación no tiene backend propio. Cada usuario configura la URL de su instancia,
@@ -37,6 +38,7 @@ antes de guardarse localmente y nunca se incluyen en el bundle.
 ```bash
 npm run build
 npm test
+npm run lint
 ```
 
 La instancia ERPNext debe permitir CORS desde el dominio donde se despliega la SPA.
@@ -50,4 +52,6 @@ En producción se aceptan URLs HTTPS; HTTP queda limitado a `localhost` para des
 - `/settings`: prueba y bloqueo de la conexión local.
 
 No incluyas API keys, API secrets, contraseñas locales ni respuestas reales de ERPNext en commits, capturas o issues.
+
+Las cachés locales se mantienen en IndexedDB por perfil. Las ediciones exitosas pueden actualizar localmente una entidad, pero conservan la marca de cambios locales hasta que se ejecute un refresco completo del catálogo.
 
