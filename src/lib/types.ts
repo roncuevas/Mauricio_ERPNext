@@ -51,6 +51,41 @@ export type UomCatalogCache = {
   uoms: string[]
 }
 
+export type ItemPrice = {
+  name: string
+  item_code?: string
+  price_list?: string
+  price_list_rate?: number
+  buying?: number | boolean
+  selling?: number | boolean
+  uom?: string
+  currency?: string
+  supplier?: string
+  valid_from?: string
+  valid_upto?: string
+}
+
+export type ItemPriceCatalogCache = {
+  profileId: string
+  updatedAt: string
+  prices: ItemPrice[]
+}
+
+export type Supplier = {
+  name: string
+  supplier_name?: string
+  supplier_group?: string
+  supplier_type?: string
+  country?: string
+  disabled?: number | boolean
+}
+
+export type SupplierCatalogCache = {
+  profileId: string
+  updatedAt: string
+  suppliers: Supplier[]
+}
+
 export type DocTypeCatalogCache = {
   profileId: string
   updatedAt: string

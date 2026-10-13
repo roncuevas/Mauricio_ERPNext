@@ -50,6 +50,8 @@ En producción se aceptan URLs HTTPS; HTTP queda limitado a `localhost` para des
 
 - `/items`: catálogo local de productos.
 - `/variants`: jerarquía de plantillas, variantes y múltiples UOM.
+- `/prices`: precios de compra, venta y precios específicos por proveedor.
+- `/suppliers`: catálogo de proveedores y alta de nuevos registros.
 - `/doctypes`: explorador de DocTypes cacheado.
 - `/settings`: prueba y bloqueo de la conexión local.
 
