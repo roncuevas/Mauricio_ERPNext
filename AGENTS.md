@@ -13,7 +13,7 @@ This repository is a client-only React/Vite SPA for connecting directly to user-
 
 Keep ERPNext API logic in `src/lib/erpnext.ts`; do not call `fetch` directly from page components. Keep reusable visual behavior in `src/components/` instead of duplicating Tailwind class groups.
 
-The app is local-first: Items, DocTypes, variants, and Item UOM conversions are cached in IndexedDB per connection profile. Refreshes are explicit and should not become automatic network requests on navigation. The Variants screen uses `variant_of` for hierarchy and supports local search, editing, and creation through ERPNext REST.
+The app is local-first: Items, DocTypes, variants, and Item UOM conversions are cached in IndexedDB per connection profile. Refreshes are explicit and should not become automatic network requests on navigation. The Variants screen uses `variant_of` for hierarchy and supports local search, editing, and creation through ERPNext REST. Hierarchy branches start collapsed; preserve the individual toggle, “Expandir todo”, “Colapsar todo”, and search-driven ancestor expansion when changing this view.
 
 ## Build, Test, and Development Commands
 
@@ -29,7 +29,7 @@ The production build is the required type-check because `tsc -b` runs before Vit
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript with strict mode, two-space indentation, single quotes, and semicolon-free statements, matching the existing code. Use `PascalCase` for React components and types, `camelCase` for functions and variables, and descriptive query keys such as `['items', search, page]`. Keep user-facing text in Spanish unless the surrounding feature establishes another language.
+Use TypeScript with strict mode, two-space indentation, single quotes, and semicolon-free statements, matching the existing code. Use `PascalCase` for React components and types, `camelCase` for functions and variables, and descriptive query keys such as `['items', search, page]`. Keep user-facing text in Spanish unless the surrounding feature establishes another language. For hierarchy controls, include accessible labels and `aria-expanded` state on toggle buttons.
 
 ## Testing Guidelines
 

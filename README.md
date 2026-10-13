@@ -10,13 +10,14 @@ Incluye:
 
 - Productos `Item` con caché local, búsqueda explícita y edición en página separada.
 - DocTypes con catálogo cacheado y actualización manual.
-- Vista **Variantes** con jerarquía de plantillas y variantes usando `variant_of`.
+- Vista **Variantes** con jerarquía de plantillas y variantes usando `variant_of`; inicia colapsada para evitar una lista extensa.
+- Controles para expandir/colapsar cada rama o toda la jerarquía, con expansión automática de las ramas relevantes al buscar.
 - Creación y edición de productos/variantes desde la jerarquía.
 - Vista **Múltiples UOM** para detectar presentaciones como `Kg`, `Bulto` o `Caja`, mostrando sus factores de conversión.
 
 ## Caché y ERPNext
 
-Los catálogos se guardan en IndexedDB por perfil de conexión y no se vuelven a descargar al navegar entre vistas. Usa los botones de refresco cuando necesites sincronizar cambios externos.
+Los catálogos se guardan en IndexedDB por perfil de conexión y no se vuelven a descargar al navegar entre vistas. La jerarquía se renderiza desde esa caché; usa los botones de refresco cuando necesites sincronizar cambios externos.
 
 La lectura de UOM intenta consultar `UOM Conversion Detail` en una sola carga paginada. Si el usuario no tiene permiso sobre ese child DocType, la aplicación usa las filas `uoms` incluidas en cada documento `Item` como fallback. Esto evita exigir permisos adicionales solo para visualizar presentaciones.
 
