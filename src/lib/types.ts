@@ -68,6 +68,7 @@ export type ItemPrice = {
 export type ItemPriceCatalogCache = {
   profileId: string
   updatedAt: string
+  locallyModified?: boolean
   prices: ItemPrice[]
 }
 
