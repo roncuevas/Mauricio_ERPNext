@@ -55,3 +55,5 @@ No incluyas API keys, API secrets, contraseñas locales ni respuestas reales de 
 
 Las cachés locales se mantienen en IndexedDB por perfil. Las ediciones exitosas pueden actualizar localmente una entidad, pero conservan la marca de cambios locales hasta que se ejecute un refresco completo del catálogo.
 
+La jerarquía de variantes virtualiza sus raíces cuando la búsqueda produce más de 200 nodos; con catálogos pequeños conserva el render normal para mantener una interacción sencilla y accesible.
+
