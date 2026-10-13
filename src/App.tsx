@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, Input, Notice, Spinner } from './components/ui'
+import { MetadataDocEditor } from './components/metadata-editor'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from './lib/crypto'
 import { createErpNextClient, ErpNextError } from './lib/erpnext'
 import { readDocTypeCatalog, writeDocTypeCatalog } from './lib/doctype-cache'
@@ -150,6 +151,23 @@ function VariantEditorPage({ client, profileId }: { client: ReturnType<typeof cr
 
 function VariantEditor({ client, profileId, name, initialTemplate, onClose }: { client: ReturnType<typeof createErpNextClient>; profileId: string; name: string | null; initialTemplate: string; onClose: () => void }) {
   const queryClient = useQueryClient()
+  const meta = useQuery({ queryKey: ['doctype-meta', 'Item'], queryFn: () => client.getDocTypeMeta('Item') })
+  async function updateVariantCache(saved: Record<string, unknown>) {
+    const savedName = String(saved.name ?? name ?? '')
+    const cache = await readVariantCatalog(profileId)
+    if (!cache || !savedName) return
+    const previous = cache.items.find((item) => item.name === savedName)
+    const savedItem = { ...previous, ...saved, name: savedName } as VariantItem
+    const next = { ...cache, updatedAt: new Date().toISOString(), items: [...cache.items.filter((item) => item.name !== savedName), savedItem] }
+    await writeVariantCatalog(next); queryClient.setQueryData(['variant-catalog', profileId], next)
+  }
+  if (meta.isError) return <Notice>{meta.error.message}</Notice>
+  if (meta.isPending) return <Spinner />
+  return <MetadataDocEditor client={client} doctype="Item" name={name} initialValues={{ variant_of: initialTemplate, has_variants: 0 }} onClose={onClose} onSaved={updateVariantCache} fields={meta.data.fields} />
+}
+
+function LegacyVariantEditor({ client, profileId, name, initialTemplate, onClose }: { client: ReturnType<typeof createErpNextClient>; profileId: string; name: string | null; initialTemplate: string; onClose: () => void }) {
+  const queryClient = useQueryClient()
   const catalog = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
   const query = useQuery({ queryKey: ['variant-item', name], queryFn: () => client.getDocument<VariantItem>('Item', name!), enabled: Boolean(name) })
   const [form, setForm] = useState({ item_code: '', item_name: '', item_group: '', stock_uom: '', variant_of: initialTemplate, disabled: false })
@@ -164,7 +182,9 @@ function ItemEditorPage({ client }: { client: ReturnType<typeof createErpNextCli
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const isNew = !name || name === 'new'
-  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item en ERPNext.' : `Edita el Item ${name}.`} /><ItemEditor client={client} name={isNew ? null : name} onClose={() => navigate('/items')} /></section>
+  const queryClient = useQueryClient()
+  const meta = useQuery({ queryKey: ['doctype-meta', 'Item'], queryFn: () => client.getDocTypeMeta('Item') })
+  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async () => { await queryClient.invalidateQueries({ queryKey: ['item-catalog'] }); await queryClient.invalidateQueries({ queryKey: ['variant-catalog'] }) }} />}</section>
 }
 
 function ItemEditor({ client, name, onClose }: { client: ReturnType<typeof createErpNextClient>; name: string | null; onClose: () => void }) {
@@ -189,12 +209,17 @@ function DocTypesPage({ client, profileId }: { client: ReturnType<typeof createE
   const updated = query.data ? new Date(query.data.updatedAt).toLocaleString() : ''
   useEffect(() => { if (!doctype && names[0]?.name) setDoctype(names[0].name) }, [doctype, names])
   const meta = useQuery({ queryKey: ['doctype-meta', doctype], queryFn: () => client.getDocTypeMeta(doctype), enabled: Boolean(doctype) })
-  const fields = meta.data?.fields.filter((field) => field.fieldname && !field.hidden).slice(0, 16) ?? []
-  const list = useQuery({ queryKey: ['doctype-list', doctype, fields.map((field) => field.fieldname)], queryFn: () => client.listDocuments<Record<string, unknown>>(doctype, { fields: ['name', ...fields.map((field) => field.fieldname)], pageLength: 50, orderBy: 'modified desc' }), enabled: Boolean(doctype && fields.length) })
-  return <section><PageHeader title="DocTypes" description="Usa la caché local; ERPNext solo se consulta al actualizarla." action={<Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? <><Spinner /> <span className="ml-2">Actualizando</span></> : 'Refrescar DocTypes'}</Button>} /><div className="mb-5 flex flex-col gap-3 sm:flex-row"><select className="control max-w-md" value={doctype} onChange={(event) => { setDoctype(event.target.value); setSelected(null) }} disabled={!hasCache}><option value="">Selecciona un DocType</option>{names.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select>{meta.isPending && <div className="flex items-center gap-2 muted"><Spinner /> Cargando metadata</div>}</div><div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{hasCache ? `${names.length} DocTypes en caché` : 'DocTypes sin descargar'}</span>{updated && <span>Actualizados: {updated}</span>}{syncMessage && <span className="font-medium text-blue-700">{syncMessage}</span>}</div>{selected && doctype && <GenericDocEditor client={client} doctype={doctype} name={selected} fields={fields} onClose={() => setSelected(null)} />}{query.isError && <Notice>{query.error.message}</Notice>}{refresh.isError && <Notice>{refresh.error.message}</Notice>}{meta.isError && <Notice>{meta.error.message}</Notice>}{list.isError && <Notice>{list.error.message}</Notice>}{query.isPending ? <div className="flex justify-center p-12"><Spinner /></div> : !hasCache ? <div className="card p-10 text-center"><p className="font-medium text-slate-700">Aún no hay DocTypes en la caché local.</p><p className="mt-1 muted">Pulsa “Refrescar DocTypes” para descargarlos una sola vez.</p></div> : list.isPending ? <Spinner /> : <div className="card overflow-x-auto">{list.data?.data.length ? <table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Nombre</th>{fields.slice(0, 5).map((field) => <th className="px-4 py-3" key={field.fieldname}>{field.label ?? field.fieldname}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{list.data.data.map((row) => <tr className="cursor-pointer hover:bg-slate-50" key={String(row.name)} onClick={() => setSelected(String(row.name))}><td className="px-4 py-3 font-mono text-xs">{String(row.name)}</td>{fields.slice(0, 5).map((field) => <td className="px-4 py-3" key={field.fieldname}>{String(row[field.fieldname] ?? '—')}</td>)}</tr>)}</tbody></table> : <div className="p-10 text-center muted">No hay documentos para mostrar.</div>}</div>}</section>
+  const allFields = meta.data?.fields.filter((field) => field.fieldname) ?? []
+  const listFields = allFields.filter((field) => !field.hidden && !['Table', 'Table MultiSelect', 'Section Break', 'Column Break', 'Tab Break'].includes(field.fieldtype ?? '')).slice(0, 16)
+  const list = useQuery({ queryKey: ['doctype-list', doctype, listFields.map((field) => field.fieldname)], queryFn: () => client.listDocuments<Record<string, unknown>>(doctype, { fields: ['name', ...listFields.map((field) => field.fieldname)], pageLength: 50, orderBy: 'modified desc' }), enabled: Boolean(doctype && listFields.length) })
+  return <section><PageHeader title="DocTypes" description="Usa la caché local; ERPNext solo se consulta al actualizarla." action={<Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? <><Spinner /> <span className="ml-2">Actualizando</span></> : 'Refrescar DocTypes'}</Button>} /><div className="mb-5 flex flex-col gap-3 sm:flex-row"><select className="control max-w-md" value={doctype} onChange={(event) => { setDoctype(event.target.value); setSelected(null) }} disabled={!hasCache}><option value="">Selecciona un DocType</option>{names.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select>{meta.isPending && <div className="flex items-center gap-2 muted"><Spinner /> Cargando metadata</div>}</div><div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{hasCache ? `${names.length} DocTypes en caché` : 'DocTypes sin descargar'}</span>{updated && <span>Actualizados: {updated}</span>}{syncMessage && <span className="font-medium text-blue-700">{syncMessage}</span>}</div>{selected && doctype && <GenericDocEditor client={client} doctype={doctype} name={selected} fields={allFields} onClose={() => setSelected(null)} />}{query.isError && <Notice>{query.error.message}</Notice>}{refresh.isError && <Notice>{refresh.error.message}</Notice>}{meta.isError && <Notice>{meta.error.message}</Notice>}{list.isError && <Notice>{list.error.message}</Notice>}{query.isPending ? <div className="flex justify-center p-12"><Spinner /></div> : !hasCache ? <div className="card p-10 text-center"><p className="font-medium text-slate-700">Aún no hay DocTypes en la caché local.</p><p className="mt-1 muted">Pulsa “Refrescar DocTypes” para descargarlos una sola vez.</p></div> : list.isPending ? <Spinner /> : <div className="card overflow-x-auto">{list.data?.data.length ? <table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Nombre</th>{listFields.slice(0, 5).map((field) => <th className="px-4 py-3" key={field.fieldname}>{field.label ?? field.fieldname}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{list.data.data.map((row) => <tr className="cursor-pointer hover:bg-slate-50" key={String(row.name)} onClick={() => setSelected(String(row.name))}><td className="px-4 py-3 font-mono text-xs">{String(row.name)}</td>{listFields.slice(0, 5).map((field) => <td className="px-4 py-3" key={field.fieldname}>{String(row[field.fieldname] ?? '—')}</td>)}</tr>)}</tbody></table> : <div className="p-10 text-center muted">No hay documentos para mostrar.</div>}</div>}</section>
 }
 
 function GenericDocEditor({ client, doctype, name, fields, onClose }: { client: ReturnType<typeof createErpNextClient>; doctype: string; name: string; fields: DocTypeField[]; onClose: () => void }) {
+  return <MetadataDocEditor client={client} doctype={doctype} name={name} fields={fields} onClose={onClose} />
+}
+
+function LegacyGenericDocEditor({ client, doctype, name, fields, onClose }: { client: ReturnType<typeof createErpNextClient>; doctype: string; name: string; fields: DocTypeField[]; onClose: () => void }) {
   const queryClient = useQueryClient(); const query = useQuery({ queryKey: ['document', doctype, name], queryFn: () => client.getDocument<Record<string, unknown>>(doctype, name) }); const [form, setForm] = useState<Record<string, string>>({}); const [initialized, setInitialized] = useState(false)
   useEffect(() => { if (query.data && !initialized) { setForm(Object.fromEntries(fields.map((field) => [field.fieldname, String(query.data[field.fieldname] ?? '')]))); setInitialized(true) } }, [fields, initialized, query.data])
   const save = useMutation({ mutationFn: () => client.updateDocument(doctype, name, form), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['doctype-list', doctype] }); await queryClient.invalidateQueries({ queryKey: ['document', doctype, name] }); onClose() } })
