@@ -32,7 +32,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
         <span aria-hidden="true">☰</span>
         <span>Menú</span>
       </button>
-      <span className="mobile-navigation-title">ERPNext Admin</span>
+      <span className="mobile-navigation-title">Mauricio</span>
       <button className="menu-lock-button" type="button" onClick={onLock}>Bloquear</button>
     </div>
     {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label="Navegación principal">
