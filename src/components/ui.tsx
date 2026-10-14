@@ -19,6 +19,10 @@ export function Button({ variant = 'primary', size = 'default', fullWidth = fals
   return <button className={classes('button', `button-${variant}`, size !== 'default' && `button-${size}`, fullWidth && 'button-full-width', className)} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>{loading ? <Spinner /> : null}{children}</button>
 }
 
+export function RefreshButton({ label, loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; loading?: boolean }) {
+  return <Button {...props} type="button" variant="secondary" size="icon" loading={loading} aria-label={label} title={label}>↻</Button>
+}
+
 export function ButtonLink({ variant = 'primary', size = 'default', fullWidth = false, className = '', children, ...props }: LinkProps & { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean }) {
   return <Link className={classes('button', `button-${variant}`, size !== 'default' && `button-${size}`, fullWidth && 'button-full-width', className)} {...props}>{children}</Link>
 }
