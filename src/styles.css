@@ -138,6 +138,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-sidebar-lock:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
 .page-header-actions { display: flex; min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
 .page-header-actions > * { max-width: 100%; }
+.prices-workspace .page-header-actions a[href="/suppliers"], .prices-workspace .mobile-actions-content a[href="/suppliers"] { display: none; }
 .mobile-actions { display: none; }
 .settings-grid { display: grid; gap: 1rem; }
 .settings-connection-card, .settings-theme-card { min-width: 0; padding: 1.25rem; }
