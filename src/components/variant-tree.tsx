@@ -37,7 +37,7 @@ function UomConversionSummary({ item }: { item: VariantItem }) {
   const alternatives = (item.uoms ?? []).filter((uom) => uom.uom !== stockUom)
   if (!alternatives.length) return null
   const colors = ['border-emerald-200 bg-emerald-50 text-emerald-800', 'border-violet-200 bg-violet-50 text-violet-800', 'border-amber-200 bg-amber-50 text-amber-800', 'border-rose-200 bg-rose-50 text-rose-800']
-  return <div className="variant-uom-summary"><div className="variant-uom-heading"><span className="variant-stock-badge">UOM stock: {stockUom}</span></div>{alternatives.map((uom, index) => <div className={`variant-conversion ${colors[index % colors.length]}`} key={`${item.name}-${uom.uom}`}>1x {uom.uom} = {formatFactor(uom.conversion_factor)} {stockUom} · 2x {uom.uom} = {formatFactor(uom.conversion_factor * 2)} {stockUom}</div>)}</div>
+  return <div className="variant-uom-summary"><div className="variant-uom-heading"><span className="variant-stock-badge variant-stock-conversion-badge">UOM stock: {stockUom}</span></div>{alternatives.map((uom, index) => <div className={`variant-conversion ${colors[index % colors.length]}`} key={`${item.name}-${uom.uom}`}>1x {uom.uom} = {formatFactor(uom.conversion_factor)} {stockUom} · 2x {uom.uom} = {formatFactor(uom.conversion_factor * 2)} {stockUom}</div>)}</div>
 }
 
 function AttributeCoverageSummary({ template, variants }: { template: VariantItem; variants: VariantItem[] }) {
