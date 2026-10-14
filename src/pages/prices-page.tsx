@@ -143,7 +143,7 @@ function PriceNode({ item, depth, childrenByParent, pricesByItem, visibleNames, 
           <div className={`price-node-toggle${children.length ? '' : ' price-node-toggle-empty'}`}>{children.length > 0 && <button className="price-expand-button" aria-label={expandedNode ? `Ocultar ${item.name}` : `Mostrar ${item.name}`} aria-expanded={expandedNode} onClick={() => onToggle(item.name)}>{expandedNode ? '▾' : '▸'}</button>}</div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2"><strong className="price-node-title">{item.item_name || item.name}</strong>{isTemplate ? <span className="price-template-badge">Plantilla</span> : null}</div>
-            <div className="price-node-meta"><span className="font-mono">{item.name}</span>{item.brand && <span>Marca: {item.brand}</span>}{item.stock_uom && <span className="variant-stock-badge">UOM stock: {item.stock_uom}</span>}{!isTemplate && <span>{prices.length} precios</span>}</div>
+            <div className="price-node-meta"><span className="font-mono">{item.name}</span>{item.brand && <span>Marca: {item.brand}</span>}{item.stock_uom && <span className="variant-stock-badge">{item.stock_uom}</span>}{!isTemplate && <span>{prices.length} precios</span>}</div>
           </div>
         </div>
         {prices.length > 0 && <div className="price-entry-list">{prices.map((price) => <div className="price-entry" key={price.name}>

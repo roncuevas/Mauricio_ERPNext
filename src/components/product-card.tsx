@@ -60,7 +60,7 @@ export function ProductCard({ item, prices, variant, onOpen }: { item: CachedIte
 
     <div className="product-card-conversions">
       <div className="product-section-heading"><span>Conversiones UOM</span><span className="product-count">{conversions.length}</span></div>
-      {conversions.length ? <div className="conversion-chips">{conversions.map((uom) => <span className="conversion-chip" key={`${itemId}-${uom.uom}`}><b>1 {uom.uom}</b> = {uom.conversion_factor} {stockUom}</span>)}</div> : <span className="product-empty-detail">Sin conversiones registradas</span>}
+      {conversions.length ? <div className="conversion-chips">{conversions.map((uom) => <span className="conversion-chip" key={`${itemId}-${uom.uom}`}><b>1x {uom.uom}</b> = {uom.conversion_factor} {stockUom}</span>)}</div> : <span className="product-empty-detail">Sin conversiones registradas</span>}
     </div>
 
     <div className="product-card-actions"><Button type="button" variant="action" size="compact" onClick={onOpen}>Editar producto</Button><ButtonLink variant="action" size="compact" to={`/items/${encodeURIComponent(itemId)}/uoms`}>Configurar UOM</ButtonLink></div>
