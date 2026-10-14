@@ -27,6 +27,10 @@ export function SearchButton({ label = 'Buscar', loading = false, ...props }: Om
   return <Button {...props} type="submit" variant="secondary" size="icon" loading={loading} aria-label={label} title={`${label} (Enter)`}><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 16 5 5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg></Button>
 }
 
+export function FilterButton({ label = 'Filtros', activeCount = 0, expanded = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant'> & { label?: string; activeCount?: number; expanded?: boolean }) {
+  return <Button {...props} type="button" variant="secondary" size="icon" aria-label={label} title={label} aria-expanded={expanded}><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg>{activeCount > 0 && <span className="filter-button-count">{activeCount}</span>}</Button>
+}
+
 export function ButtonLink({ variant = 'primary', size = 'default', fullWidth = false, className = '', children, ...props }: LinkProps & { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean }) {
   return <Link className={classes('button', `button-${variant}`, size !== 'default' && `button-${size}`, fullWidth && 'button-full-width', className)} {...props}>{children}</Link>
 }
