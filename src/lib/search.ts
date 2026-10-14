@@ -23,9 +23,63 @@ function valuesOf(value: unknown): string[] {
   return [String(value)]
 }
 
+export type SearchField = {
+  value: unknown
+  weight?: number
+}
+
+export type SearchMatch = {
+  score: number
+  matchedFields: number[]
+}
+
+function tokensOf(value: unknown) {
+  return valuesOf(value).flatMap((entry) => normalize(entry).split(/[^a-z0-9]+/).filter(Boolean))
+}
+
+function scoreToken(token: string, field: SearchField) {
+  const weight = field.weight ?? 1
+  const values = valuesOf(field.value).map(normalize)
+  const candidates = values.flatMap((value) => value.split(/[^a-z0-9]+/).filter(Boolean))
+  let best = 0
+  for (const value of values) {
+    if (value === token) best = Math.max(best, 120 * weight)
+    else if (value.includes(token)) best = Math.max(best, 82 * weight)
+  }
+  for (const candidate of candidates) {
+    if (candidate === token) best = Math.max(best, 100 * weight)
+    else if (candidate.startsWith(token)) best = Math.max(best, 70 * weight)
+    else if (candidate.includes(token) || token.includes(candidate)) best = Math.max(best, 42 * weight)
+    else if (token.length >= 4 && distance(token, candidate) <= Math.max(1, Math.floor(token.length / 5))) best = Math.max(best, 18 * weight)
+  }
+  return best
+}
+
+export function searchScore(query: string, fields: SearchField[]): SearchMatch | null {
+  const queryTokens = normalize(query).split(/[^a-z0-9]+/).filter(Boolean)
+  if (!queryTokens.length) return { score: 0, matchedFields: [] }
+  const normalizedQuery = normalize(query).trim()
+  let score = 0
+  const matchedFields = new Set<number>()
+  for (const token of queryTokens) {
+    let best = 0
+    let bestField = -1
+    fields.forEach((field, index) => {
+      const candidateScore = scoreToken(token, field)
+      if (candidateScore > best) { best = candidateScore; bestField = index }
+    })
+    if (!best) return null
+    score += best
+    if (bestField >= 0) matchedFields.add(bestField)
+  }
+  fields.forEach((field, index) => {
+    if (valuesOf(field.value).some((value) => normalize(value).includes(normalizedQuery))) score += 300 * (field.weight ?? 1)
+    if (tokensOf(field.value).length === queryTokens.length && queryTokens.every((token) => tokensOf(field.value).includes(token))) score += 90 * (field.weight ?? 1)
+    if (scoreToken(queryTokens[0], field) > 0 && matchedFields.has(index)) matchedFields.add(index)
+  })
+  return { score, matchedFields: Array.from(matchedFields) }
+}
+
 export function fuzzyMatch(query: string, values: unknown[]) {
-  const tokens = normalize(query).split(/[^a-z0-9]+/).filter(Boolean)
-  if (!tokens.length) return true
-  const candidates = values.flatMap(valuesOf).flatMap((value) => normalize(value).split(/[^a-z0-9]+/).filter(Boolean))
-  return tokens.every((token) => candidates.some((candidate) => candidate.includes(token) || token.includes(candidate) || (token.length >= 4 && distance(token, candidate) <= Math.max(1, Math.floor(token.length / 5)))))
+  return searchScore(query, values.map((value) => ({ value, weight: 1 }))) !== null
 }
