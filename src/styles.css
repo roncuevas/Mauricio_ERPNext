@@ -79,6 +79,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .price-edit-button:hover:not(:disabled), .price-add-button:hover:not(:disabled), .price-management-entry > .button-secondary:hover:not(:disabled), .price-management-summary > .button-secondary:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary); color: white; }
   .button-compact { min-height: var(--control-height-compact); padding: .35rem .65rem; font-size: .75rem; }
   .button-icon { width: var(--control-height-compact); min-height: var(--control-height-compact); padding: .25rem; }
+  .button-icon svg { width: 1rem; height: 1rem; }
   .button-full-width { width: 100%; }
   .card { @apply rounded-xl border bg-white shadow-sm; border-color: var(--color-border-subtle); }
   .notice { @apply rounded-lg border p-3 text-sm; }

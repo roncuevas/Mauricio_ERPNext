@@ -23,6 +23,10 @@ export function RefreshButton({ label, loading = false, ...props }: Omit<ButtonP
   return <Button {...props} type="button" variant="secondary" size="icon" loading={loading} aria-label={label} title={label}>↻</Button>
 }
 
+export function SearchButton({ label = 'Buscar', loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label?: string; loading?: boolean }) {
+  return <Button {...props} type="submit" variant="secondary" size="icon" loading={loading} aria-label={label} title={`${label} (Enter)`}><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 16 5 5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg></Button>
+}
+
 export function ButtonLink({ variant = 'primary', size = 'default', fullWidth = false, className = '', children, ...props }: LinkProps & { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean }) {
   return <Link className={classes('button', `button-${variant}`, size !== 'default' && `button-${size}`, fullWidth && 'button-full-width', className)} {...props}>{children}</Link>
 }
