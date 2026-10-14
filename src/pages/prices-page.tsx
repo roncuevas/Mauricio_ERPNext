@@ -24,6 +24,13 @@ function money(price: ItemPrice) {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: price.currency || 'MXN' }).format(Number(price.price_list_rate ?? 0))
 }
 
+function sortPricesByPriceList(prices: ItemPrice[]) {
+  return [...prices].sort((left, right) => {
+    const listOrder = (left.price_list || 'Sin lista').localeCompare(right.price_list || 'Sin lista', 'es', { sensitivity: 'base' })
+    return listOrder || (left.name || '').localeCompare(right.name || '', 'es', { sensitivity: 'base' })
+  })
+}
+
 function MarginSummary({ selling, purchases }: { selling: ItemPrice; purchases: ItemPrice[] }) {
   if (!purchases.length) return <span className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-500">Sin compra comparable</span>
   return <div className="price-margin-list" title="Margen bruto: no incluye impuestos, flete ni otros costos">{purchases.map((purchase) => { const margin = calculateGrossMargin(selling, purchase); const positive = margin.amount >= 0; return <span className={`price-margin-row ${positive ? 'price-margin-positive' : 'price-margin-negative'}`} key={`${selling.name}-${purchase.name}`}><strong>{purchase.supplier || 'Proveedor general'}</strong><span>Ganancia: {money({ ...selling, price_list_rate: margin.amount })}</span><span>{margin.percentage.toFixed(2)}%</span><span className="price-margin-cost">Costo {money(purchase)}</span></span> })}</div>
@@ -126,7 +133,7 @@ function PriceEditor({ client, item, price, priceLists, onSaved, onClose }: Pric
 
 function PriceNode({ item, depth, childrenByParent, pricesByItem, visibleNames, expanded, onToggle, onAdd, onEdit }: { item: VariantItem; depth: number; childrenByParent: Map<string, VariantItem[]>; pricesByItem: Map<string, ItemPrice[]>; visibleNames: Set<string>; expanded: Set<string>; onToggle: (name: string) => void; onAdd: (item: VariantItem) => void; onEdit: (item: VariantItem, price: ItemPrice) => void }) {
   const children = childrenByParent.get(item.name) ?? []
-  const prices = pricesByItem.get(item.name) ?? []
+  const prices = sortPricesByPriceList(pricesByItem.get(item.name) ?? [])
   const expandedNode = expanded.has(item.name)
   const isTemplate = Boolean(item.has_variants) || children.length > 0
   return <div className="price-node">
@@ -216,7 +223,7 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   const [editingPriceName, setEditingPriceName] = useState(searchParams.get('price') ?? '')
   const [message, setMessage] = useState('')
   const item = variantsQuery.data?.items.find((candidate) => candidate.name === itemName)
-  const existingPrices = (pricesQuery.data?.prices ?? []).filter((price) => price.item_code === itemName)
+  const existingPrices = useMemo(() => sortPricesByPriceList((pricesQuery.data?.prices ?? []).filter((price) => price.item_code === itemName)), [itemName, pricesQuery.data?.prices])
   const editingPrice = existingPrices.find((price) => price.name === editingPriceName)
 
   async function savePrice(price: ItemPrice) {
