@@ -406,7 +406,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .variant-node-actions .button { min-height: 2.35rem; padding: .35rem .65rem; font-size: .72rem; }
 .variant-uom-summary { display: grid; gap: .35rem; margin-top: .65rem; }
 .variant-uom-heading { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem; color: #94a3b8; font-size: .65rem; }
-.variant-stock-badge { border: 1px solid #bfdbfe; border-radius: .35rem; background: #eff6ff; padding: .2rem .35rem; color: #1e40af; font-weight: 800; }
+.variant-stock-badge { border: 1px solid #bfdbfe; border-radius: .35rem; background: #eff6ff; padding: .2rem .35rem; color: #1e40af; font-size: .65rem; font-weight: 800; line-height: 1.2; white-space: nowrap; }
 .variant-conversion { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; border-radius: .45rem; padding: .35rem .45rem; font-size: .68rem; font-weight: 600; }
 .variant-conversion-secondary { opacity: .72; }
 .variant-coverage { display: grid; gap: .4rem; margin-top: .65rem; border: 1px solid #dbeafe; border-radius: .55rem; background: #f8fbff; padding: .55rem; }
