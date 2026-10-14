@@ -30,7 +30,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
   return <div className={`mobile-navigation${open ? ' mobile-navigation-open' : ''}`}>
     <div className="mobile-navigation-bar">
       <div className="mobile-navigation-brand">
-        <span className="mobile-brand-mark" aria-hidden="true">M</span>
+        <img className="mobile-brand-logo" src="/mauricio-logo.png" alt="Mauricio" />
         <div className="mobile-navigation-heading">
           <strong>{currentPage}</strong>
           <span>Mauricio</span>
