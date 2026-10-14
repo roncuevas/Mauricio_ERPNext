@@ -116,7 +116,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 [data-theme] .prices-filter-count { background: var(--color-primary); }
 
 .mobile-navigation { display: none; }
-.app-sidebar { position: sticky; top: 0; display: flex; width: 17rem; min-height: 100vh; height: 100vh; flex: 0 0 17rem; flex-direction: column; overflow: hidden; border-color: var(--color-border-subtle); background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-page) 100%); }
+.app-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; width: 17rem; min-height: 100vh; height: 100dvh; flex: 0 0 17rem; flex-direction: column; overflow: hidden; border-color: var(--color-border-subtle); background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-page) 100%); }
+.app-sidebar + main { margin-left: 17rem; }
 .app-sidebar-brand { display: flex; align-items: center; gap: .7rem; padding: 1.35rem 1.25rem 1rem; }
 .app-brand-mark { display: inline-flex; width: 2.4rem; height: 2.4rem; align-items: center; justify-content: center; border-radius: .75rem; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: white; font-size: 1.05rem; font-weight: 900; box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 22%, transparent); }
 .app-brand-name { margin: 0; color: #0f172a; font-family: var(--app-font-family); font-size: 1rem; font-weight: 850; letter-spacing: -.01em; }
@@ -340,6 +341,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 @media (max-width: 1023px) {
   .app-sidebar { display: none; }
+  .app-sidebar + main { margin-left: 0; }
   .mobile-navigation { display: block; position: fixed; inset: 0 0 auto; z-index: 50; border-bottom: 1px solid #dbe4ef; background: rgba(255,255,255,.96); box-shadow: 0 5px 18px rgba(15, 23, 42, .08); backdrop-filter: blur(12px); }
   .mobile-navigation-open { height: 100dvh; background: white; }
   main { padding-top: 4rem; }
