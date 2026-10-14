@@ -8,9 +8,17 @@ import { patchItemPriceCatalog, readItemPriceCatalog, writeItemPriceCatalog } fr
 import { buildVariantTree, readVariantCatalog } from '../lib/variant-cache'
 import { variantSearchScore } from '../components/variant-tree'
 import { calculateGrossMargin, findComparablePurchases } from '../lib/pricing'
-import type { ItemPrice, ItemPriceCatalogCache, VariantItem } from '../lib/types'
+import type { ItemPrice, ItemPriceCatalogCache, PriceList, VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
+
+async function loadPriceLists(client: Client) {
+  return listAllDocuments<PriceList>(client, 'Price List', { fields: ['name', 'selling', 'buying', 'enabled'], filters: [['enabled', '=', 1]], orderBy: 'name asc' })
+}
+
+function priceListSupports(priceList: PriceList, kind: 'buying' | 'selling') {
+  return Boolean(priceList[kind])
+}
 
 function money(price: ItemPrice) {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: price.currency || 'MXN' }).format(Number(price.price_list_rate ?? 0))
@@ -76,9 +84,9 @@ function collectVisibleNames(items: VariantItem[], childrenByParent: Map<string,
   return { visibleNames, directNames, contextNames, expandedNames, scores }
 }
 
-type PriceEditorProps = { client: Client; item: VariantItem; price?: ItemPrice; onSaved: (price: ItemPrice) => void; onClose: () => void }
+type PriceEditorProps = { client: Client; item: VariantItem; price?: ItemPrice; priceLists: PriceList[]; onSaved: (price: ItemPrice) => void; onClose: () => void }
 
-function PriceEditor({ client, item, price, onSaved, onClose }: PriceEditorProps) {
+function PriceEditor({ client, item, price, priceLists, onSaved, onClose }: PriceEditorProps) {
   const [kind, setKind] = useState<'buying' | 'selling'>(price?.buying ? 'buying' : 'selling')
   const [priceList, setPriceList] = useState(price?.price_list ?? (price?.buying ? 'Standard Buying' : 'Standard Selling'))
   const [rate, setRate] = useState(String(price?.price_list_rate ?? ''))
@@ -88,6 +96,8 @@ function PriceEditor({ client, item, price, onSaved, onClose }: PriceEditorProps
   const [supplier, setSupplier] = useState(price?.supplier ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const availablePriceLists = priceLists.filter((candidate) => priceListSupports(candidate, kind))
+  const selectedPriceListIsAvailable = availablePriceLists.some((candidate) => candidate.name === priceList)
 
   async function save(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('')
@@ -104,7 +114,7 @@ function PriceEditor({ client, item, price, onSaved, onClose }: PriceEditorProps
     {error && <div className="mb-4"><Notice>{error}</Notice></div>}
     <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>
       <Field label="Tipo"><select className="control" value={kind} onChange={(event) => setKind(event.target.value as 'buying' | 'selling')}><option value="buying">Compra</option><option value="selling">Venta</option></select></Field>
-      <Field label="Lista de precios *"><Input value={priceList} onChange={(event) => setPriceList(event.target.value)} placeholder="Standard Selling" required /></Field>
+      <Field label="Lista de precios *"><select className="control" value={priceList} onChange={(event) => setPriceList(event.target.value)} required><option value="" disabled>Selecciona una lista</option>{!selectedPriceListIsAvailable && priceList && <option value={priceList}>{priceList} (actual)</option>}{availablePriceLists.map((candidate) => <option key={candidate.name} value={candidate.name}>{candidate.name}</option>)}</select></Field>
       <Field label="Precio *"><Input type="number" min="0" step="any" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="0.00" required /></Field>
       <Field label="Moneda"><Input value={currency} onChange={(event) => setCurrency(event.target.value)} placeholder="MXN" /></Field>
       <Field label="UOM"><Input value={uom} onChange={(event) => setUom(event.target.value)} placeholder={item.stock_uom || 'UOM de stock'} /></Field>
@@ -147,6 +157,7 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
   const navigate = useNavigate()
   const pricesQuery = useQuery({ queryKey: ['item-price-catalog', profileId], queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
   const variantsQuery = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const priceListsQuery = useQuery({ queryKey: ['price-lists', profileId], queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<PriceFilters>(emptyPriceFilters)
@@ -163,10 +174,10 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
       brands: Array.from(new Set(items.map((item) => item.brand || 'Sin marca'))).sort(),
       itemGroups: Array.from(new Set(items.map((item) => item.item_group || 'Sin grupo'))).sort(),
       suppliers: Array.from(new Set(prices.map((price) => price.supplier || 'General'))).sort(),
-      priceLists: Array.from(new Set(prices.map((price) => price.price_list || 'Sin lista'))).sort(),
+      priceLists: Array.from(new Set([...prices.map((price) => price.price_list || 'Sin lista'), ...(priceListsQuery.data ?? []).map((priceList) => priceList.name)])).sort(),
       uoms: Array.from(new Set(prices.map((price) => price.uom || '—'))).sort(),
     }
-  }, [pricesQuery.data?.prices, variantsQuery.data?.items])
+  }, [priceListsQuery.data, pricesQuery.data?.prices, variantsQuery.data?.items])
   const refresh = useMutation({ mutationFn: async () => { const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => setSyncMessage(`Descargando precios: ${count}`)); const next: ItemPriceCatalogCache = { profileId, updatedAt: new Date().toISOString(), prices }; return writeItemPriceCatalog(next) }, onSuccess: (next) => { queryClient.setQueryData(['item-price-catalog', profileId], next); setSyncMessage(`Precios actualizados: ${next.prices.length}`) }, onError: (error) => setSyncMessage(error.message) })
   const searchResult = useMemo(() => collectVisibleNames(tree.roots, tree.children, pricesByItem, search, filters), [tree.children, tree.roots, pricesByItem, search, filters])
   const visibleNames = searchResult.visibleNames
@@ -201,6 +212,7 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   const queryClient = useQueryClient()
   const pricesQuery = useQuery({ queryKey: ['item-price-catalog', profileId], queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
   const variantsQuery = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const priceListsQuery = useQuery({ queryKey: ['price-lists', profileId], queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [editingPriceName, setEditingPriceName] = useState(searchParams.get('price') ?? '')
   const [message, setMessage] = useState('')
   const item = variantsQuery.data?.items.find((candidate) => candidate.name === itemName)
@@ -216,5 +228,5 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
 
   if (pricesQuery.isPending || variantsQuery.isPending) return <section><Spinner /></section>
   if (!item) return <section><Notice>No se encontró el producto en la caché de Variantes.</Notice><Button className="mt-3" type="button" variant="secondary" onClick={() => navigate('/prices')}>Volver a Precios</Button></section>
-  return <section className="price-management-workspace"><PageHeader title={editingPrice ? 'Editar precio' : 'Agregar precio'} description={`${item.item_name || item.name} · administra listas, UOM y cliente/proveedor según el tipo.`} action={<Button type="button" variant="secondary" onClick={() => navigate('/prices')}>Volver a Precios</Button>} /><div className="price-management-summary"><div><span className="price-management-label">Producto</span><strong>{item.item_name || item.name}</strong><code>{item.name}</code></div><div><span className="price-management-label">Precios existentes</span><strong>{existingPrices.length}</strong></div><Button type="button" variant="secondary" onClick={() => setEditingPriceName('')}>Agregar otro precio</Button></div><div className="price-management-existing"><div className="price-management-section-heading"><h2>Precios y clientes/proveedores actuales</h2><span>{existingPrices.length}</span></div>{existingPrices.length ? existingPrices.map((price) => <div className={`price-management-entry${price.name === editingPriceName ? ' price-management-entry-active' : ''}`} key={price.name}><div><span className={`price-kind ${price.buying ? 'price-kind-buying' : 'price-kind-selling'}`}>{price.buying ? 'Compra' : 'Venta'}</span><strong>{money(price)}</strong></div><div><span>{price.price_list || 'Sin lista'}</span><span>UOM: {price.uom || item.stock_uom || '—'}</span>{price.buying ? <span>Proveedor: {price.supplier || 'General'}</span> : price.customer ? <span>Cliente: {price.customer}</span> : null}</div><Button type="button" variant="secondary" onClick={() => setEditingPriceName(price.name)}>Editar</Button></div>) : <p className="muted">Todavía no hay precios guardados para este producto.</p>}</div>{message && <Notice tone="info">{message}</Notice>}<PriceEditor key={`${item.name}-${editingPrice?.name ?? 'new'}`} client={client} item={item} price={editingPrice} onSaved={savePrice} onClose={() => navigate('/prices')} /></section>
+  return <section className="price-management-workspace"><PageHeader title={editingPrice ? 'Editar precio' : 'Agregar precio'} description={`${item.item_name || item.name} · administra listas, UOM y cliente/proveedor según el tipo.`} action={<Button type="button" variant="secondary" onClick={() => navigate('/prices')}>Volver a Precios</Button>} /><div className="price-management-summary"><div><span className="price-management-label">Producto</span><strong>{item.item_name || item.name}</strong><code>{item.name}</code></div><div><span className="price-management-label">Precios existentes</span><strong>{existingPrices.length}</strong></div><Button type="button" variant="secondary" onClick={() => setEditingPriceName('')}>Agregar otro precio</Button></div><div className="price-management-existing"><div className="price-management-section-heading"><h2>Precios y clientes/proveedores actuales</h2><span>{existingPrices.length}</span></div>{existingPrices.length ? existingPrices.map((price) => <div className={`price-management-entry${price.name === editingPriceName ? ' price-management-entry-active' : ''}`} key={price.name}><div><span className={`price-kind ${price.buying ? 'price-kind-buying' : 'price-kind-selling'}`}>{price.buying ? 'Compra' : 'Venta'}</span><strong>{money(price)}</strong></div><div><span>{price.price_list || 'Sin lista'}</span><span>UOM: {price.uom || item.stock_uom || '—'}</span>{price.buying ? <span>Proveedor: {price.supplier || 'General'}</span> : price.customer ? <span>Cliente: {price.customer}</span> : null}</div><Button type="button" variant="secondary" onClick={() => setEditingPriceName(price.name)}>Editar</Button></div>) : <p className="muted">Todavía no hay precios guardados para este producto.</p>}</div>{message && <Notice tone="info">{message}</Notice>}{priceListsQuery.isError && <Notice tone="warning">No se pudieron cargar las listas de precios; solo se conservará la lista actual del registro.</Notice>}<PriceEditor key={`${item.name}-${editingPrice?.name ?? 'new'}`} client={client} item={item} price={editingPrice} priceLists={priceListsQuery.data ?? []} onSaved={savePrice} onClose={() => navigate('/prices')} /></section>
 }

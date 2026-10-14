@@ -73,6 +73,13 @@ export type ItemPriceCatalogCache = {
   prices: ItemPrice[]
 }
 
+export type PriceList = {
+  name: string
+  selling?: number | boolean
+  buying?: number | boolean
+  enabled?: number | boolean
+}
+
 export type Supplier = {
   name: string
   supplier_name?: string
