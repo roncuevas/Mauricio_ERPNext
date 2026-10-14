@@ -60,6 +60,7 @@ export type ItemPrice = {
   selling?: number | boolean
   uom?: string
   currency?: string
+  customer?: string
   supplier?: string
   valid_from?: string
   valid_upto?: string
