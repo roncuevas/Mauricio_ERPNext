@@ -230,9 +230,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .prices-tree { background: #fff; }
 .price-node { border-bottom: 1px solid #e2e8f0; }
 .price-node:last-child { border-bottom: 0; }
-.price-node-row { display: flex; align-items: flex-start; gap: .75rem; padding-top: 1rem; padding-right: 1rem; padding-bottom: 1rem; }
-.price-node-main { min-width: 0; flex: 1; }
-.price-node-heading { display: flex; min-width: 0; align-items: flex-start; gap: .5rem; }
+.price-node-row { position: relative; display: flex; align-items: flex-start; gap: .75rem; padding-top: 1rem; padding-right: 1rem; padding-bottom: 1rem; }
+.price-node-main { width: 100%; min-width: 0; flex: 1; }
+.price-node-heading { display: flex; min-width: 0; align-items: flex-start; gap: .5rem; padding-right: 9rem; }
 .price-node-toggle { flex: 0 0 2.25rem; }
 .price-node-toggle-empty { flex-basis: 0; width: 0; overflow: hidden; }
 .price-expand-button { display: inline-flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border-radius: .55rem; color: #64748b; font-size: 1.35rem; font-weight: 800; line-height: 1; }
@@ -256,7 +256,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .price-margin-row strong { font-size: .68rem; }
 .price-margin-cost { font-weight: 400; opacity: .8; }
 .price-edit-button { min-height: 2.25rem; padding: .35rem .65rem; font-size: .72rem; }
-.price-add-button { flex: 0 0 auto; min-height: 2.4rem; white-space: nowrap; }
+.price-add-button { position: absolute; top: 1rem; right: 1rem; min-height: 2.4rem; white-space: nowrap; }
 .price-editor-anchor { scroll-margin-top: 5rem; }
 .price-node, .variant-tree-node { position: relative; }
 .price-node-row, .variant-node-row { position: relative; transition: background .15s ease, box-shadow .15s ease; }
@@ -472,7 +472,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .price-margin-row strong { width: 100%; font-size: .6rem; }
   .price-margin-cost { width: 100%; }
   .price-edit-button { width: 100%; min-height: 2.2rem; padding: .3rem .5rem; font-size: .65rem; }
-  .price-add-button { width: 100%; min-height: 2.45rem; }
+  .price-node-row { display: block; }
+  .price-node-heading { padding-right: 0; }
+  .price-add-button { position: static; width: 100%; min-height: 2.45rem; margin-top: .65rem; }
   .price-management-summary { align-items: stretch; flex-direction: column; gap: .65rem; padding: .75rem; }
   .price-management-summary .button { width: 100%; }
   .price-management-entry { grid-template-columns: minmax(0, 1fr) auto; gap: .45rem; padding: .55rem; }
