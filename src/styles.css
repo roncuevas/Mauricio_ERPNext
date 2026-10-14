@@ -253,6 +253,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .product-workspace-card { box-shadow: 0 12px 30px rgba(15, 23, 42, .06); }
 .product-workspace-card > .overflow-x-auto { margin: 0; padding: 0; }
 .product-workspace-card > .overflow-x-auto > table { margin: 0; border-spacing: 0; }
+.product-workspace-card > .overflow-x-auto > table th:nth-child(4), .product-workspace-card > .overflow-x-auto > table td:nth-child(4) { text-align: center; }
 .product-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .75rem; border-bottom: 1px solid #e2e8f0; background: #fff; padding: 1rem; }
 .product-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; min-width: 0; }
 .product-search .button { min-width: 5.5rem; }
@@ -499,6 +500,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .product-workspace-card > .overflow-x-auto > table tbody { gap: .5rem; padding: 0; }
   .product-workspace-card > .overflow-x-auto > table tr { margin: 0; padding: 0 .75rem; }
   .product-workspace-card > .overflow-x-auto > table td { padding: .65rem 0; }
+  .product-workspace-card > .overflow-x-auto > table td:nth-child(4) { text-align: left; }
   .mobile-stack-actions { display: grid; width: 100%; gap: .5rem; }
   .mobile-stack-actions .button { width: 100%; }
   .product-controls { grid-template-columns: 1fr; gap: .6rem; padding: .75rem; }
