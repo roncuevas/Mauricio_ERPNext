@@ -7,6 +7,7 @@ const navigation = [
   ['/items', 'Productos'],
   ['/variants', 'Variantes'],
   ['/prices', 'Precios'],
+  ['/stock', 'Inventario'],
   ['/suppliers', 'Proveedores'],
   ['/doctypes', 'DocTypes'],
   ['/settings', 'Conexión'],

@@ -111,6 +111,9 @@ export type VariantItem = {
   variant_of?: string
   has_variants?: number | boolean
   disabled?: number | boolean
+  is_stock_item?: number | boolean
+  has_serial_no?: number | boolean
+  has_batch_no?: number | boolean
   uoms?: ItemUom[]
   attributes?: VariantAttribute[]
 }
@@ -131,6 +134,44 @@ export type VariantCatalogCache = {
   updatedAt: string
   locallyModified?: boolean
   items: VariantItem[]
+}
+
+export type Company = {
+  name: string
+  company_name?: string
+  abbr?: string
+  default_currency?: string
+}
+
+export type Warehouse = {
+  name: string
+  warehouse_name?: string
+  parent_warehouse?: string
+  company?: string
+  warehouse_type?: string
+  is_group?: number | boolean
+  disabled?: number | boolean
+}
+
+export type StockBin = {
+  name?: string
+  item_code: string
+  warehouse: string
+  actual_qty?: number
+  reserved_qty?: number
+  ordered_qty?: number
+  projected_qty?: number
+  valuation_rate?: number
+  stock_value?: number
+}
+
+export type StockCache = {
+  profileId: string
+  updatedAt: string
+  companies: Company[]
+  warehouses: Warehouse[]
+  bins: StockBin[]
+  items?: VariantItem[]
 }
 
 export type DocTypeField = {
