@@ -13,6 +13,8 @@
 html, body { overflow-x: hidden; }
 body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--app-font-family); }
 button, input, select, textarea { font: inherit; font-family: var(--app-font-family); }
+button, .button, [role="button"] { letter-spacing: -.01em; }
+.button, button { font-family: var(--app-font-family); font-weight: 850; }
 button { cursor: pointer; }
 
 @layer components {
