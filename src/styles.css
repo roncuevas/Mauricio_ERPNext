@@ -244,7 +244,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .price-expand-button:hover { background: #f1f5f9; color: #0f172a; }
 .price-node-title { overflow-wrap: anywhere; color: #0f172a; font-size: .9rem; line-height: 1.25; }
 .price-template-badge { border-radius: .35rem; background: #eff6ff; padding: .18rem .4rem; color: #1d4ed8; font-size: .62rem; font-weight: 800; }
-.price-node-meta { display: flex; flex-wrap: wrap; gap: .3rem .8rem; margin-top: .3rem; color: #64748b; font-size: .68rem; }
+.price-node-meta { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; color: #64748b; font-size: .66rem; }
+.price-node-meta > span { display: inline-flex; min-height: 1.45rem; align-items: center; border: 1px solid var(--color-border-subtle); border-radius: 999px; background: var(--color-surface-muted); padding: .2rem .5rem; color: #475569; line-height: 1.1; }
+.price-node-meta > span.font-mono { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); }
+.price-node-meta > span:last-child { border-color: #bbf7d0; background: var(--color-success-soft); color: var(--color-success); font-weight: 750; }
 .price-entry-list { display: grid; gap: .5rem; margin-top: .7rem; }
 .price-entry { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .5rem .75rem; border: 1px solid #e2e8f0; border-radius: .65rem; background: #f8fafc; padding: .55rem .65rem; }
 .price-entry-top { display: flex; align-items: center; gap: .5rem; }
