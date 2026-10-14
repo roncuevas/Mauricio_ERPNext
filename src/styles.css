@@ -304,6 +304,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .price-management-entry:has(.price-kind-selling) > div:nth-child(2) > span:last-child { display: none; }
 .variants-search { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; max-width: 48rem; margin-bottom: 1rem; }
 .variants-controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.variants-controls .button-icon { font-size: 1.15rem; line-height: 1; }
 .variants-status { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-bottom: 1rem; color: #64748b; font-size: .72rem; line-height: 1.35; }
 .variants-tree { background: #fff; }
 .variant-tree-node { border-bottom: 1px solid #e2e8f0; }
@@ -502,8 +503,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .price-management-entry .button { min-height: 2.3rem; padding: .3rem .6rem; font-size: .68rem; }
   .variants-search { grid-template-columns: minmax(0, 1fr) auto; max-width: none; margin-bottom: .75rem; }
   .variants-search .button:last-child { grid-column: 1 / -1; }
-  .variants-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-bottom: .75rem; }
-  .variants-controls .button { width: 100%; min-height: 2.55rem; padding: .35rem .45rem; font-size: .68rem; }
+  .variants-controls { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
+  .variants-controls .button-icon { width: 2.55rem; min-height: 2.55rem; flex: 0 0 2.55rem; padding: .35rem .45rem; font-size: 1.1rem; }
   .variants-status { display: grid; gap: .2rem; margin-bottom: .75rem; padding: 0 .15rem; font-size: .65rem; }
   .variants-tree { border: 0; border-radius: .75rem; background: #f1f5f9; padding: .5rem; box-shadow: none; }
   .variant-tree-node { border-bottom: 0; }
