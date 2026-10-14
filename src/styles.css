@@ -408,7 +408,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .variant-uom-summary { display: grid; gap: .35rem; margin-top: .65rem; }
 .variant-uom-heading { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem; color: #94a3b8; font-size: .65rem; }
 .variant-stock-badge { display: inline-flex; width: fit-content; align-items: center; justify-content: center; justify-self: center; border: 1px solid #bfdbfe; border-radius: .25rem; background: #eff6ff; padding: .12rem .28rem; color: #1e40af; font-size: .6rem; font-weight: 800; line-height: 1.15; text-align: center; white-space: nowrap; }
-.variant-conversion { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: .3rem; border-radius: .35rem; padding: .25rem .35rem; font-size: .65rem; font-weight: 600; }
+.variant-conversion { display: block; width: 100%; border-radius: .35rem; padding: .25rem .35rem; font-size: .65rem; font-weight: 600; }
 .variant-conversion-secondary { opacity: .72; }
 .variant-coverage { display: grid; gap: .4rem; margin-top: .65rem; border: 1px solid #dbeafe; border-radius: .55rem; background: #f8fbff; padding: .55rem; }
 .variant-coverage-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; color: #1e40af; font-size: .68rem; font-weight: 800; }
@@ -605,8 +605,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .variant-node-actions .button-primary { grid-column: 1 / -1; }
   .variant-uom-summary { gap: .3rem; margin-top: .5rem; }
   .variant-uom-heading { font-size: .6rem; }
-  .variant-conversion { gap: .25rem; padding: .3rem .35rem; font-size: .6rem; line-height: 1.2; }
-  .variant-conversion-secondary { width: 100%; }
+  .variant-conversion { padding: .3rem .35rem; font-size: .6rem; line-height: 1.2; }
   .variant-coverage { gap: .3rem; margin-top: .5rem; padding: .45rem; }
   .variant-coverage-heading { font-size: .62rem; }
   .variant-coverage-title { font-size: .64rem; }
