@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { applyTheme, DEFAULT_THEME, isThemeId, readTheme, saveTheme, THEME_STORAGE_KEY } from './theme'
+import { applyColorMode, applyTheme, COLOR_MODE_STORAGE_KEY, DEFAULT_THEME, isColorMode, isThemeId, readColorMode, readTheme, saveColorMode, saveTheme, THEME_STORAGE_KEY } from './theme'
 
 describe('theme preferences', () => {
   beforeEach(() => {
     localStorage.clear()
     document.documentElement.removeAttribute('data-theme')
+    document.documentElement.removeAttribute('data-color-mode')
   })
 
   it('uses the ERP blue theme by default', () => {
@@ -30,5 +31,17 @@ describe('theme preferences', () => {
     applyTheme('minimal-graphite')
     expect(document.documentElement.dataset.theme).toBe('minimal-graphite')
     expect(document.title).toBe('Mauricio ERPNext')
+  })
+
+  it('reads, saves, and applies dark mode', () => {
+    expect(readColorMode()).toBe('light')
+    expect(isColorMode('dark')).toBe(true)
+    expect(isColorMode('sepia')).toBe(false)
+    saveColorMode('dark')
+    expect(localStorage.getItem(COLOR_MODE_STORAGE_KEY)).toBe('dark')
+    expect(document.documentElement.dataset.colorMode).toBe('dark')
+    expect(readColorMode()).toBe('dark')
+    applyColorMode('light')
+    expect(document.documentElement.dataset.colorMode).toBe('light')
   })
 })
