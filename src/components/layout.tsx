@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { IconButton } from './ui'
+import { useTheme } from './theme-provider'
 
 const navigation = [
   ['/items', 'Productos'],
@@ -49,6 +51,12 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
       {navigation.map(([to, label]) => <NavLink key={to} to={to}>{label}</NavLink>)}
     </nav>}
   </div>
+}
+
+export function ThemeModeToggle() {
+  const { colorMode, toggleColorMode } = useTheme()
+  const label = colorMode === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'
+  return <IconButton className="app-sidebar-theme-toggle" type="button" label={label} title={label} onClick={toggleColorMode} icon="☀" />
 }
 
 export function PageLayout({ children }: { client?: unknown; children?: ReactNode }) {

@@ -10,6 +10,8 @@ export type ThemeId =
   | 'minimal-graphite'
   | 'modern-rose'
 
+export type ColorMode = 'light' | 'dark'
+
 export type ThemeDefinition = {
   id: ThemeId
   name: string
@@ -24,6 +26,7 @@ export type ThemeDefinition = {
 
 export const DEFAULT_THEME: ThemeId = 'erp-blue'
 export const THEME_STORAGE_KEY = 'mauricio-erpnext:theme'
+export const COLOR_MODE_STORAGE_KEY = 'mauricio-erpnext:color-mode'
 
 export const themes: ThemeDefinition[] = [
   { id: 'erp-blue', name: 'Azul ERP', description: 'Claro, profesional y familiar para operación diaria.', colors: { primary: '#2563eb', secondary: '#0ea5e9', accent: '#dbeafe', page: '#f5f7fb' } },
@@ -60,4 +63,26 @@ export function applyTheme(theme: ThemeId) {
 export function saveTheme(theme: ThemeId) {
   localStorage.setItem(THEME_STORAGE_KEY, theme)
   applyTheme(theme)
+}
+
+export function isColorMode(value: string | null): value is ColorMode {
+  return value === 'light' || value === 'dark'
+}
+
+export function readColorMode(): ColorMode {
+  try {
+    const saved = localStorage.getItem(COLOR_MODE_STORAGE_KEY)
+    return isColorMode(saved) ? saved : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+export function applyColorMode(mode: ColorMode) {
+  document.documentElement.dataset.colorMode = mode
+}
+
+export function saveColorMode(mode: ColorMode) {
+  localStorage.setItem(COLOR_MODE_STORAGE_KEY, mode)
+  applyColorMode(mode)
 }

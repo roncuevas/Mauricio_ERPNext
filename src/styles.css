@@ -47,6 +47,23 @@
 [data-theme="minimal-graphite"] { --color-primary: #334155; --color-primary-hover: #1e293b; --color-primary-soft: #f1f5f9; --color-secondary: #64748b; --color-secondary-soft: #e2e8f0; --color-accent: #e2e8f0; --color-page: #f8fafc; }
 [data-theme="modern-rose"] { --color-primary: #db2777; --color-primary-hover: #be185d; --color-primary-soft: #fdf2f8; --color-secondary: #ec4899; --color-secondary-soft: #fce7f3; --color-accent: #fce7f3; --color-page: #fff7fb; }
 
+[data-color-mode="dark"] {
+  color-scheme: dark;
+  --color-ink: #e5e7eb;
+  --color-heading: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-border: #475569;
+  --color-border-subtle: #334155;
+  --color-surface: #111827;
+  --color-surface-muted: #1f2937;
+  --color-page: #0b1120;
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 18%, #111827);
+  --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 18%, #111827);
+  --color-accent: color-mix(in srgb, var(--color-primary) 35%, #1f2937);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, .35);
+  --shadow-card: 0 4px 14px rgba(0, 0, 0, .24);
+}
+
 * { box-sizing: border-box; }
 html, body { overflow-x: hidden; }
 body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--app-font-family); }
@@ -118,6 +135,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 [data-theme] .segmented-control button:hover, [data-theme] .segmented-control .segmented-control-active { border-color: var(--color-accent); color: var(--color-primary-hover); }
 [data-theme] .prices-filter-count { background: var(--color-primary); }
 
+[data-color-mode="dark"] body { background: var(--color-page); color: var(--color-ink); }
+[data-color-mode="dark"] .bg-white, [data-color-mode="dark"] .card, [data-color-mode="dark"] .control, [data-color-mode="dark"] .button-secondary { background-color: var(--color-surface) !important; }
+[data-color-mode="dark"] .bg-slate-50, [data-color-mode="dark"] .bg-slate-100 { background-color: var(--color-surface-muted) !important; }
+[data-color-mode="dark"] .text-slate-900, [data-color-mode="dark"] .text-slate-800, [data-color-mode="dark"] .text-slate-700 { color: var(--color-heading) !important; }
+[data-color-mode="dark"] .text-slate-600, [data-color-mode="dark"] .text-slate-500 { color: var(--color-muted) !important; }
+[data-color-mode="dark"] .border-slate-100, [data-color-mode="dark"] .border-slate-200, [data-color-mode="dark"] .border-slate-300 { border-color: var(--color-border-subtle) !important; }
+[data-color-mode="dark"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border-subtle) !important; }
+[data-color-mode="dark"] .app-brand-name, [data-color-mode="dark"] .price-node-title, [data-color-mode="dark"] .variant-node-title { color: var(--color-heading); }
+[data-color-mode="dark"] .app-sidebar-profile small, [data-color-mode="dark"] .app-sidebar-lock { color: var(--color-muted); }
+[data-color-mode="dark"] .app-sidebar-lock:hover { border-color: #7f1d1d; background: #450a0a; color: #fecaca; }
+
 .mobile-navigation { display: none; }
 .app-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; width: 17rem; min-height: 100vh; height: 100dvh; flex: 0 0 17rem; flex-direction: column; overflow: hidden; border-color: var(--color-border-subtle); background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-page) 100%); }
 .app-sidebar + main { margin-left: 17rem; }
@@ -139,6 +167,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-nav-link-active { border-color: var(--color-accent); background: var(--color-primary-soft) !important; color: var(--color-primary-hover) !important; box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 8%, transparent); }
 .app-nav-link-active::before { opacity: 1; box-shadow: 0 0 0 4px var(--color-accent); }
 .app-sidebar-footer { margin-top: auto; border-top: 1px solid var(--color-border-subtle); padding: .85rem .75rem 1rem; }
+.app-sidebar-theme-toggle { margin: 0 0 .5rem auto; }
 .app-sidebar-lock { display: flex; width: 100%; min-height: 2.65rem; align-items: center; justify-content: space-between; border: 1px solid transparent; border-radius: .65rem; padding: .55rem .75rem; color: #64748b; font-size: .72rem; font-weight: 750; text-align: left; transition: background .15s ease, border-color .15s ease, color .15s ease; }
 .app-sidebar-lock:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
 .page-header { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
