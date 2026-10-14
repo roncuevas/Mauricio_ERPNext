@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, FilterButton, Input, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
@@ -171,7 +171,20 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [collapsedDuringSearch, setCollapsedDuringSearch] = useState<Set<string>>(new Set())
+  const [isMobile, setIsMobile] = useState(false)
   const [syncMessage, setSyncMessage] = useState('')
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)')
+    const sync = () => setIsMobile(media.matches)
+    sync()
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
+  }, [])
+  useEffect(() => {
+    if (!isMobile) return
+    setExpanded(new Set())
+    setCollapsedDuringSearch(new Set())
+  }, [isMobile])
   const tree = useMemo(() => buildVariantTree(variantsQuery.data?.items ?? []), [variantsQuery.data?.items])
   const pricesByItem = useMemo(() => { const result = new Map<string, ItemPrice[]>(); for (const price of pricesQuery.data?.prices ?? []) { const item = price.item_code ?? ''; result.set(item, [...(result.get(item) ?? []), price]) } return result }, [pricesQuery.data?.prices])
   const filterOptions = useMemo(() => {
