@@ -83,8 +83,8 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.getByRole('alert')).toHaveCount(0)
     await page.goto('/prices')
     await expect(page.getByRole('heading', { name: 'Precios por producto' })).toBeVisible()
-    await page.getByLabel('Buscar precios por producto').fill('Croquetas')
-    await page.getByRole('button', { name: 'Buscar', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Buscar precios por producto' }).fill('Croquetas')
+    await page.getByRole('button', { name: 'Buscar precios por producto' }).click()
     await expect(page.getByText('Croquetas Adulto Premium')).toBeVisible()
     await expect(page.getByRole('button', { name: /Filtros/ })).toHaveAttribute('aria-expanded', 'false')
     await page.getByRole('button', { name: /Filtros/ }).click()
@@ -95,11 +95,11 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.getByText('No hay productos para la búsqueda actual.')).toBeVisible()
     await page.getByLabel('Precio mínimo').fill('100')
     await expect(page.getByText('Croquetas Adulto Premium')).toBeVisible()
-    await page.getByLabel('Buscar precios por producto').fill('producto que no existe')
-    await page.getByRole('button', { name: 'Buscar', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Buscar precios por producto' }).fill('producto que no existe')
+    await page.getByRole('button', { name: 'Buscar precios por producto' }).click()
     await expect(page.getByText('No hay productos para la búsqueda actual.')).toBeVisible()
-    await page.getByLabel('Buscar precios por producto').fill('Croquetas')
-    await page.getByRole('button', { name: 'Buscar', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Buscar precios por producto' }).fill('Croquetas')
+    await page.getByRole('button', { name: 'Buscar precios por producto' }).click()
     await page.getByRole('button', { name: 'Agregar precio' }).first().click()
     await expect(page.locator('h1').filter({ hasText: 'Agregar precio' })).toBeVisible()
     await expect(page.getByLabel('Precio *')).toBeVisible()
@@ -110,15 +110,18 @@ test.describe('responsive navigation and empty states', () => {
       ['/prices', 'Precios por producto'],
       ['/suppliers', 'Proveedores'],
       ['/doctypes', 'DocTypes'],
-      ['/settings', 'Conexión'],
+      ['/settings', 'Configuración'],
     ] as const
 
     for (const [path, heading] of routes) {
       await page.goto(path)
       await expect(page.getByRole('heading', { name: heading })).toBeVisible()
+      await expect(page.locator('.page-header')).toBeVisible()
+      await expect(page.locator('.page-header')).toHaveCSS('position', 'static')
+      if (['/items', '/suppliers'].includes(path)) await expect(page.locator('.page-header-toolbar')).toBeVisible()
       if (path === '/suppliers') {
-        await page.getByLabel('Buscar proveedores').fill('demo')
-        await page.getByRole('button', { name: 'Buscar', exact: true }).click()
+        await page.getByRole('textbox', { name: 'Buscar proveedores' }).fill('demo')
+        await page.getByRole('button', { name: 'Buscar proveedores' }).click()
       }
       const dimensions = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: window.innerWidth }))
       expect(dimensions.body, `${path} has horizontal page overflow`).toBeLessThanOrEqual(dimensions.viewport + 1)
@@ -136,6 +139,6 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.locator('.mobile-actions')).toBeHidden()
     await expect(page.getByRole('button', { name: 'Bloquear sesión' })).toBeVisible()
     await page.getByRole('link', { name: 'Conexión' }).click()
-    await expect(page.getByRole('heading', { name: 'Conexión' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Configuración' })).toBeVisible()
   })
 })
