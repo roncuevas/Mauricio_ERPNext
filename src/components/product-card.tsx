@@ -53,7 +53,7 @@ export function ProductCard({ item, prices, variant, onOpen }: { item: CachedIte
     </div>
 
     <div className="product-card-details">
-      <div><span className="variant-stock-badge">UOM stock: {stockUom}</span></div>
+      <div><span className="variant-stock-badge">{stockUom}</span></div>
       <div><span className="product-detail-label">Venta predeterminada</span><strong>{item.sales_uom || '—'}</strong></div>
       <div><span className="product-detail-label">Compra predeterminada</span><strong>{item.purchase_uom || '—'}</strong></div>
     </div>
