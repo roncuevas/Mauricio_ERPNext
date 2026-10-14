@@ -3,13 +3,24 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { getVariantAttributeCoverage, hasMultipleUoms } from '../lib/variant-cache'
-import { fuzzyMatch } from '../lib/search'
+import { searchScore } from '../lib/search'
 import type { VariantItem } from '../lib/types'
 
 const VIRTUALIZATION_THRESHOLD = 200
 
 export function variantMatches(item: VariantItem, search: string) {
-  return fuzzyMatch(search, [item])
+  return variantSearchScore(item, search) !== null
+}
+
+export function variantSearchScore(item: VariantItem, search: string) {
+  return searchScore(search, [
+    { value: item.item_name, weight: 5 },
+    { value: item.name, weight: 5 },
+    { value: item.brand, weight: 3 },
+    { value: item.item_group, weight: 2 },
+    { value: item.stock_uom, weight: 1 },
+    { value: item.attributes, weight: 1 },
+  ])
 }
 
 export function variantNodeIsVisible(item: VariantItem, childrenByParent: Map<string, VariantItem[]>, uomOnly: boolean, search: string): boolean {
@@ -47,8 +58,9 @@ export function VariantTreeNode({ item, childrenByParent, depth = 0, uomOnly = f
 
 export function VariantRoots({ items, childrenByParent, uomOnly, search, expanded, onToggle }: { items: VariantItem[]; childrenByParent: Map<string, VariantItem[]>; uomOnly: boolean; search: string; expanded: Set<string>; onToggle: (name: string) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const orderedItems = [...items].sort((left, right) => (variantSearchScore(right, search)?.score ?? 0) - (variantSearchScore(left, search)?.score ?? 0))
   const virtualized = items.length > VIRTUALIZATION_THRESHOLD
   const rowVirtualizer = useVirtualizer({ count: virtualized ? items.length : 0, getScrollElement: () => scrollRef.current, estimateSize: () => 80, overscan: 8 })
-  if (!virtualized) return <>{items.map((item) => <VariantTreeNode key={item.name} item={item} childrenByParent={childrenByParent} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} />)}</>
-  return <div ref={scrollRef} className="max-h-[70vh] overflow-auto"><div className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>{rowVirtualizer.getVirtualItems().map((virtualRow) => { const item = items[virtualRow.index]; return <div key={item.name} ref={rowVirtualizer.measureElement} data-index={virtualRow.index} className="absolute left-0 w-full" style={{ transform: `translateY(${virtualRow.start}px)` }}><VariantTreeNode item={item} childrenByParent={childrenByParent} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} /></div> })}</div></div>
+  if (!virtualized) return <>{orderedItems.map((item) => <VariantTreeNode key={item.name} item={item} childrenByParent={childrenByParent} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} />)}</>
+  return <div ref={scrollRef} className="max-h-[70vh] overflow-auto"><div className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>{rowVirtualizer.getVirtualItems().map((virtualRow) => { const item = orderedItems[virtualRow.index]; return <div key={item.name} ref={rowVirtualizer.measureElement} data-index={virtualRow.index} className="absolute left-0 w-full" style={{ transform: `translateY(${virtualRow.start}px)` }}><VariantTreeNode item={item} childrenByParent={childrenByParent} uomOnly={uomOnly} search={search} expanded={expanded} onToggle={onToggle} /></div> })}</div></div>
 }
