@@ -84,7 +84,7 @@ function collectVisibleNames(items: VariantItem[], childrenByParent: Map<string,
   return { visibleNames, directNames, contextNames, expandedNames, scores }
 }
 
-type PriceEditorProps = { client: Client; item: VariantItem; price?: ItemPrice; priceLists: PriceList[]; onSaved: (price: ItemPrice) => void; onClose: () => void }
+type PriceEditorProps = { client: Client; item: VariantItem; price?: ItemPrice; priceLists: PriceList[]; onSaved: (price: ItemPrice) => Promise<void>; onClose: () => void }
 
 function PriceEditor({ client, item, price, priceLists, onSaved, onClose }: PriceEditorProps) {
   const [kind, setKind] = useState<'buying' | 'selling'>(price?.buying ? 'buying' : 'selling')
@@ -105,7 +105,7 @@ function PriceEditor({ client, item, price, priceLists, onSaved, onClose }: Pric
     const data = { item_code: item.name, price_list: priceList.trim(), price_list_rate: Number(rate), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || null, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || null : null, supplier: kind === 'buying' ? supplier.trim() || null : null }
     try {
       const saved = price ? await client.updateDocument<Record<string, unknown>>('Item Price', price.name, data) : await client.createDocument<Record<string, unknown>>('Item Price', data)
-      onSaved({ ...data, ...saved, name: String(saved.name ?? price?.name ?? '') } as ItemPrice)
+      await onSaved({ ...data, ...saved, name: String(saved.name ?? price?.name ?? '') } as ItemPrice)
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo guardar el precio.') } finally { setBusy(false) }
   }
 
@@ -221,7 +221,8 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
 
   async function savePrice(price: ItemPrice) {
     const next = await patchItemPriceCatalog(profileId, price)
-    if (next) queryClient.setQueryData(['item-price-catalog', profileId], next)
+    if (!next) throw new Error('ERPNext guardó el precio, pero no se pudo actualizar la caché local.')
+    queryClient.setQueryData(['item-price-catalog', profileId], next)
     setEditingPriceName(price.name)
     setMessage(`Precio guardado para ${price.item_code}`)
   }
