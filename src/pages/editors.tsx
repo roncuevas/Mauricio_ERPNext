@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { MetadataDocEditor } from '../components/metadata-editor'
-import { Button, Notice, PageHeader, Spinner } from '../components/ui'
+import { Button, ButtonLink, Notice, PageHeader, Spinner } from '../components/ui'
 import { UomEditor, type UomEditorValues } from '../components/uom-editor'
 import { createErpNextClient } from '../lib/erpnext'
 import { patchItemCatalog } from '../lib/item-cache'
@@ -18,7 +18,7 @@ export function VariantEditorPage({ client, profileId }: { client: Client; profi
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const isNew = !name || name === 'new'
-  return <section><PageHeader title={isNew ? 'Nueva variante' : 'Editar producto'} description={isNew ? 'Crea un Item y asígnalo a una plantilla.' : `Edita el Item ${name}.`} action={!isNew && name ? <Link className="button button-secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</Link> : undefined} /><VariantEditor client={client} profileId={profileId} name={isNew ? null : name} initialTemplate={searchParams.get('template') ?? ''} onClose={() => navigate('/variants')} /></section>
+  return <section><PageHeader title={isNew ? 'Nueva variante' : 'Editar producto'} description={isNew ? 'Crea un Item y asígnalo a una plantilla.' : `Edita el Item ${name}.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} /><VariantEditor client={client} profileId={profileId} name={isNew ? null : name} initialTemplate={searchParams.get('template') ?? ''} onClose={() => navigate('/variants')} /></section>
 }
 
 function VariantEditor({ client, profileId, name, initialTemplate, onClose }: { client: Client; profileId: string; name: string | null; initialTemplate: string; onClose: () => void }) {
@@ -43,7 +43,7 @@ export function ItemEditorPage({ client, profileId }: { client: Client; profileI
   const isNew = !name || name === 'new'
   const queryClient = useQueryClient()
   const meta = useQuery({ queryKey: ['doctype-meta', 'Item'], queryFn: () => client.getDocTypeMeta('Item') })
-  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} action={!isNew && name ? <Link className="button button-secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</Link> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(['item-catalog', profileId], next) } await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] }) }} />}</section>
+  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(['item-catalog', profileId], next) } await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] }) }} />}</section>
 }
 
 function readUomValues(document: Record<string, unknown>): UomEditorValues {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Button } from './ui'
+import { Button, ButtonLink } from './ui'
 import { calculateGrossMargin } from '../lib/pricing'
 import type { CachedItem, ItemPrice, VariantItem } from '../lib/types'
 
@@ -63,6 +63,6 @@ export function ProductCard({ item, prices, variant, onOpen }: { item: CachedIte
       {conversions.length ? <div className="conversion-chips">{conversions.map((uom) => <span className="conversion-chip" key={`${itemId}-${uom.uom}`}><b>1 {uom.uom}</b> = {uom.conversion_factor} {stockUom}</span>)}</div> : <span className="product-empty-detail">Sin conversiones registradas</span>}
     </div>
 
-    <div className="product-card-actions"><Button type="button" variant="secondary" onClick={onOpen}>Editar producto</Button><Link className="button button-secondary" to={`/items/${encodeURIComponent(itemId)}/uoms`}>Configurar UOM</Link></div>
+    <div className="product-card-actions"><Button type="button" variant="secondary" onClick={onOpen}>Editar producto</Button><ButtonLink variant="secondary" to={`/items/${encodeURIComponent(itemId)}/uoms`}>Configurar UOM</ButtonLink></div>
   </article>
 }
