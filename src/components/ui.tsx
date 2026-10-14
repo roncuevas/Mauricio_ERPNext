@@ -1,7 +1,7 @@
 import { Link, type LinkProps } from 'react-router-dom'
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger'
+type ButtonVariant = 'primary' | 'secondary' | 'action' | 'danger'
 type ButtonSize = 'default' | 'compact' | 'icon'
 
 function classes(...values: Array<string | false | undefined>) {

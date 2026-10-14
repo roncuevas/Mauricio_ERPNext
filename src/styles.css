@@ -70,8 +70,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .button-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
   .button-secondary { border-color: var(--color-border); background: var(--color-surface); color: #334155; }
   .button-secondary:hover:not(:disabled) { background: var(--color-surface-muted); }
+  .button-action { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); }
+  .button-action:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-accent); }
   .button-danger { background: var(--color-danger); color: white; }
   .button-danger:hover:not(:disabled) { background: var(--color-danger-hover); }
+  .price-edit-button, .price-add-button, .price-management-entry > .button-secondary, .price-management-summary > .button-secondary { min-height: var(--control-height-compact); border-color: var(--color-accent); background: var(--color-primary-soft); padding: .35rem .7rem; color: var(--color-primary-hover); font-size: .75rem; }
+  .price-edit-button:hover:not(:disabled), .price-add-button:hover:not(:disabled), .price-management-entry > .button-secondary:hover:not(:disabled), .price-management-summary > .button-secondary:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-accent); }
   .button-compact { min-height: var(--control-height-compact); padding: .35rem .65rem; font-size: .75rem; }
   .button-icon { width: var(--control-height-compact); min-height: var(--control-height-compact); padding: .25rem; }
   .button-full-width { width: 100%; }
