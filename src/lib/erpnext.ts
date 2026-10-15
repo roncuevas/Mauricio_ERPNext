@@ -1,7 +1,7 @@
 import type { ConnectionProfile, DocTypeMeta, ListOptions, ListResult } from './types'
 
 export class ErpNextError extends Error {
-  constructor(public status: number, message: string) { super(message) }
+  constructor(public status: number, message: string, public details?: unknown) { super(message) }
 }
 
 export function createErpNextClient(connection: ConnectionProfile) {
@@ -17,9 +17,16 @@ export function createErpNextClient(connection: ConnectionProfile) {
         headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `token ${connection.apiKey}:${connection.apiSecret}`, ...init.headers },
       })
       const raw = await response.text()
-      let body: { data?: T; message?: string; exc_type?: string } = {}
+      let body: { data?: T; message?: string; exc_type?: string; exception?: string; _server_messages?: string } = {}
       try { body = raw ? JSON.parse(raw) : {} } catch { body = {} }
-      if (!response.ok) throw new ErpNextError(response.status, body.message ?? body.exc_type ?? `ERPNext respondió ${response.status}.`)
+      if (!response.ok) {
+        let serverMessage = body.message
+        try {
+          const messages = JSON.parse(body._server_messages ?? '[]') as Array<{ message?: string; title?: string }>
+          serverMessage = messages.map((item) => item.message || item.title).filter(Boolean).join(' ') || serverMessage
+        } catch { /* Frappe may return non-JSON server messages. */ }
+        throw new ErpNextError(response.status, serverMessage ?? body.exception ?? body.exc_type ?? `ERPNext respondió ${response.status}.`, body)
+      }
       return (body.data ?? body.message ?? body) as T
     } catch (error) {
       if (error instanceof ErpNextError) throw error
@@ -30,6 +37,7 @@ export function createErpNextClient(connection: ConnectionProfile) {
 
   return {
     async getCurrentUser() { return request<string>('/api/method/frappe.auth.get_logged_user') },
+    async callMethod<T>(method: string, args: Record<string, unknown> = {}) { return request<T>(`/api/method/${method}`, { method: 'POST', body: JSON.stringify(args) }) },
     async listDocuments<T>(doctype: string, options: ListOptions = {}): Promise<ListResult<T>> {
       const params = new URLSearchParams({ fields: JSON.stringify(options.fields ?? ['name']), limit_start: String(options.start ?? 0), limit_page_length: String(options.pageLength ?? 25) })
       if (options.filters?.length) params.set('filters', JSON.stringify(options.filters))

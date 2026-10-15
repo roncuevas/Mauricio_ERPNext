@@ -4,6 +4,8 @@ import { IconButton } from './ui'
 import { useTheme } from './theme-provider'
 
 const navigation = [
+  ['/pos', 'POS'],
+  ['/pos/turnos', 'Turnos'],
   ['/items', 'Productos'],
   ['/variants', 'Variantes'],
   ['/prices', 'Precios'],

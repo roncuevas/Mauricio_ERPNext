@@ -28,11 +28,18 @@ export type ListResult<T> = { data: T[]; total?: number }
 
 export type CachedItem = {
   name: string
+  item_code?: string
   item_name?: string
+  brand?: string
   item_group?: string
   stock_uom?: string
   sales_uom?: string
   purchase_uom?: string
+  weight_per_unit?: number
+  weight_uom?: string
+  variant_of?: string
+  has_variants?: number | boolean
+  attributes?: VariantAttribute[]
   uoms?: ItemUom[]
   disabled?: number | boolean
   [key: string]: unknown
@@ -104,10 +111,14 @@ export type DocTypeCatalogCache = {
 
 export type VariantItem = {
   name: string
+  item_code?: string
   item_name?: string
   brand?: string
   item_group?: string
   stock_uom?: string
+  sales_uom?: string
+  weight_per_unit?: number
+  weight_uom?: string
   variant_of?: string
   has_variants?: number | boolean
   disabled?: number | boolean
@@ -185,3 +196,124 @@ export type DocTypeField = {
 }
 
 export type DocTypeMeta = { name: string; fields: DocTypeField[]; is_single?: boolean | number; issingle?: boolean | number; istable?: boolean | number }
+
+export type PosProfile = {
+  name: string
+  company?: string
+  warehouse?: string
+  currency?: string
+  selling_price_list?: string
+  customer?: string
+  write_off_account?: string
+  write_off_cost_center?: string
+  taxes_and_charges?: string
+  tax_category?: string
+  allow_rate_change?: number | boolean
+  allow_user_to_edit_rate?: number | boolean
+  disabled?: number | boolean
+  applicable_for_users?: Array<{ user?: string }>
+  payments?: PosPaymentMethod[]
+}
+
+export type PosOpeningEntry = {
+  name: string
+  user?: string
+  pos_profile?: string
+  company?: string
+  status?: string
+  period_start_date?: string
+  period_end_date?: string
+  posting_date?: string
+  pos_closing_entry?: string
+  docstatus?: number
+  balance_details?: Array<{ mode_of_payment?: string; opening_amount?: number }>
+}
+
+export type PosTaxRow = {
+  charge_type?: 'Actual' | 'On Net Total' | 'On Previous Row Amount' | 'On Previous Row Total' | 'On Item Quantity' | string
+  account_head?: string
+  description?: string
+  rate?: number
+  tax_amount?: number
+  row_id?: string
+  reference_row?: number | string
+  included_in_print_rate?: number | boolean | string
+  add_deduct_tax?: 'Add' | 'Deduct' | string
+  category?: string
+}
+
+export type PosTaxTemplate = {
+  name: string
+  company?: string
+  title?: string
+  taxes?: PosTaxRow[]
+}
+
+export type PosPaymentMethod = {
+  mode_of_payment: string
+  default?: number | boolean
+  opening_amount?: number
+  account?: string
+  allow_in_returns?: number | boolean
+}
+
+export type PosCartLine = {
+  itemCode: string
+  itemName: string
+  qty: number
+  rate: number
+  price_list_rate?: number
+  uom?: string
+  stockUom?: string
+  conversionFactor?: number
+  weightPerUnit?: number
+  weightUom?: string
+  warehouse?: string
+  discountPercentage?: number
+  priceListRate?: number
+  rateOverride?: boolean
+}
+
+export type PosPaymentLine = {
+  modeOfPayment: string
+  amount: number
+}
+
+export type PosSaleSummary = {
+  name: string
+  doctype?: 'Sales Invoice' | 'POS Invoice'
+  customer?: string
+  postingDate?: string
+  grandTotal?: number
+  grand_total?: number
+  status?: string
+}
+
+export type PosDraftSummary = {
+  name: string
+  customer?: string
+  grand_total?: number
+  modified?: string
+  posting_date?: string
+  docstatus?: number
+}
+
+export type PosDraftItem = {
+  item_code: string
+  item_name?: string
+  qty: number
+  rate: number
+  uom?: string
+  stock_uom?: string
+  conversion_factor?: number
+  weight_per_unit?: number
+  weight_uom?: string
+  warehouse?: string
+  discount_percentage?: number
+}
+
+export type PosDraftDocument = PosDraftSummary & {
+  company: string
+  pos_profile?: string
+  items: PosDraftItem[]
+}
