@@ -734,13 +734,44 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-tooltip { display: inline-grid; width: 1rem; height: 1rem; margin-left: .2rem; place-items: center; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-primary); cursor: help; font-size: .62rem !important; vertical-align: middle; }
 .pos-closing-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1rem; }
 .pos-closing-actions .muted { font-size: .7rem; }
-.pos-closing-sheet { width: min(100%, 30rem); gap: 1rem; }
-.pos-closing-sheet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.pos-closing-sheet-header h2 { margin: .15rem 0 .25rem; color: var(--color-heading); font-size: 1.15rem; }
-.pos-closing-sheet-body { display: grid; gap: 1rem; min-height: 0; overflow-y: auto; padding: .25rem 0; }
+.pos-closing-sheet { width: min(100%, 34rem); gap: 1rem; padding: 1.25rem; }
+.pos-closing-sheet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 1rem; }
+.pos-closing-title { display: grid; min-width: 0; gap: .35rem; }
+.pos-closing-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.pos-closing-sheet-header h2 { margin: 0; color: var(--color-heading); font-size: 1.35rem; letter-spacing: -.025em; }
+.pos-closing-title > p { max-width: 25rem; line-height: 1.45; }
+.pos-closing-status, .pos-closing-required { display: inline-flex; width: fit-content; align-items: center; border: 1px solid var(--color-accent); border-radius: 999px; background: var(--color-primary-soft); padding: .2rem .5rem; color: var(--color-primary-hover); font-size: .62rem; font-weight: 800; }
+.pos-closing-status.is-warning { border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border)); background: var(--color-warning-soft); color: var(--color-warning); }
+.pos-closing-sheet-body { display: grid; gap: 1rem; min-height: 0; overflow-y: auto; padding: .1rem 0; }
 .pos-closing-help { display: flex; flex-wrap: wrap; gap: .45rem; border: 1px solid var(--color-border-subtle); border-radius: .75rem; background: var(--color-surface-muted); padding: .75rem; }
 .pos-closing-help .pos-tooltip { width: auto; height: auto; margin: 0; border-radius: 999px; padding: .3rem .55rem; font-size: .68rem !important; }
-.pos-closing-fields { display: grid; gap: .75rem; }
+.pos-closing-summary { display: grid; gap: .8rem; border: 1px solid var(--color-border); border-radius: .85rem; background: var(--color-surface-muted); padding: .9rem; }
+.pos-closing-summary-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: .75rem; }
+.pos-closing-summary-heading > div:first-child { display: grid; gap: .2rem; }
+.pos-closing-label { color: var(--color-muted); font-size: .64rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.pos-closing-summary-heading strong { color: var(--color-heading); font-size: .9rem; }
+.pos-closing-total { display: grid; gap: .12rem; text-align: right; }
+.pos-closing-total span { color: var(--color-muted); font-size: .65rem; }
+.pos-closing-total strong { color: var(--color-primary-hover); font-size: 1.2rem; }
+.pos-closing-summary-rows { display: grid; gap: .45rem; }
+.pos-closing-summary-row { display: grid; gap: .45rem; border-bottom: 1px solid var(--color-border-subtle); padding: .35rem 0 .55rem; }
+.pos-closing-summary-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.pos-closing-summary-row > strong { color: var(--color-heading); font-size: .76rem; }
+.pos-closing-summary-row > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.pos-closing-summary-row > div span { display: grid; gap: .15rem; color: var(--color-heading); font-size: .75rem; }
+.pos-closing-summary-row small { color: var(--color-muted); font-size: .6rem; }
+.pos-closing-summary-row .is-warning { color: var(--color-warning); font-weight: 800; }
+.pos-closing-summary-meta { display: flex; flex-wrap: wrap; gap: .75rem; border-top: 1px solid var(--color-border-subtle); padding-top: .65rem; color: var(--color-muted); font-size: .68rem; }
+.pos-closing-capture { display: grid; gap: .8rem; border: 1px solid var(--color-border-subtle); border-radius: .85rem; padding: .9rem; }
+.pos-closing-section-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.pos-closing-section-heading p { margin: .2rem 0 0; color: var(--color-muted); font-size: .7rem; }
+.pos-closing-fields { display: grid; gap: .65rem; }
+.pos-closing-field { display: grid; gap: .25rem; }
+.pos-closing-field .field { gap: .3rem; }
+.pos-closing-field .field-label { color: var(--color-heading); font-size: .68rem; }
+.pos-closing-field .control { min-height: 2.75rem; height: 2.75rem; border-color: var(--color-border); background: var(--color-surface-muted); font-size: 1rem; font-weight: 700; text-align: right; }
+.pos-closing-field > span { color: var(--color-muted); font-size: .62rem; }
+.pos-closing-error { margin: 0; }
 .pos-closing-sheet-footer { gap: .75rem; border-top: 1px solid var(--color-border-subtle); padding-top: 1rem; }
 .pos-closing-sheet-footer .muted { font-size: .72rem; line-height: 1.45; }
 .pos-closing-sheet-footer > [data-radix-alert-dialog-trigger] { width: 100%; }
@@ -1011,4 +1042,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .pos-shifts-section-heading .segmented-control { width: 100%; overflow-x: auto; }
   .pos-shifts-section-heading .segmented-control button { flex: 1 0 auto; }
   .pos-shift-card { grid-column: auto; min-height: 0; padding: 1.25rem; }
+}
+
+@media (max-width: 520px) {
+  .pos-closing-sheet { width: 100%; padding: 1rem; }
+  .pos-closing-sheet-header { gap: .7rem; }
+  .pos-closing-sheet-header > .button { padding-right: .55rem; padding-left: .55rem; font-size: .7rem; }
+  .pos-closing-summary-heading { align-items: flex-start; flex-direction: column; }
+  .pos-closing-total { text-align: left; }
+  .pos-closing-summary-row > div { gap: .3rem; }
+  .pos-closing-section-heading { align-items: flex-start; flex-direction: column; }
 }
