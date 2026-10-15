@@ -1,5 +1,5 @@
 import { ErpNextError, type ErpNextClient } from './erpnext'
-import { readItemSearchDetails, readItemUomsThroughItems } from './catalog-sync'
+import { readItemSearchDetails, readItemUomsThroughItems, readItemVariantAttributes } from './catalog-sync'
 import { listAllDocuments } from './pagination'
 import { readItemPriceCatalog, writeItemPriceCatalog } from './price-cache'
 import { mergeItemUoms, readVariantCatalog, writeVariantCatalog } from './variant-cache'
@@ -22,11 +22,12 @@ export async function syncProductCardDetails(client: ErpNextClient, profileId: s
 
   setMessage('Descargando UOM y variantes para la vista Cards...')
   const items = await listAllDocuments<VariantItem>(client, 'Item', {
-    fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'variant_of', 'has_variants', 'disabled'],
+    fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled'],
     orderBy: 'item_name asc',
   }, (count) => setMessage(`Descargando productos y UOM para la vista Cards: ${count}`))
   const searchDetails = await readItemSearchDetails(client, items, setMessage)
-  const enrichedItems = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) }))
+  const attributesByItem = await readItemVariantAttributes(client, items, setMessage)
+  const enrichedItems = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }), attributes: attributesByItem[item.name] ?? [] }))
   let uomRows: Array<{ parent: string; uom: string; conversion_factor: number }>
   try {
     uomRows = await listAllDocuments<{ parent: string; uom: string; conversion_factor: number }>(client, 'UOM Conversion Detail', {

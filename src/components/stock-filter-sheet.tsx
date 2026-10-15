@@ -1,0 +1,7 @@
+import { Button, Field, Input } from './ui'
+import { FilterSheet } from './filter-sheet'
+import type { Company, Warehouse } from '../lib/types'
+
+export function StockFilterSheet({ open, onOpenChange, company, warehouse, search, companies, warehouses, onCompany, onWarehouse, onSearch, onApply }: { open: boolean; onOpenChange: (open: boolean) => void; company: string; warehouse: string; search: string; companies: Company[]; warehouses: Warehouse[]; onCompany: (value: string) => void; onWarehouse: (value: string) => void; onSearch: (value: string) => void; onApply: () => void }) {
+  return <FilterSheet label="Filtros" title="Filtros de Inventario" description="Filtra existencias por empresa, almacén y producto." open={open} onOpenChange={onOpenChange}><Field label="Empresa"><select className="control" value={company} onChange={(event) => onCompany(event.target.value)}><option value="">Todas las empresas</option>{companies.map((item) => <option key={item.name} value={item.name}>{item.company_name || item.name}</option>)}</select></Field><Field label="Sucursal / almacén"><select className="control" value={warehouse} onChange={(event) => onWarehouse(event.target.value)}><option value="">Todos los almacenes</option>{warehouses.map((item) => <option key={item.name} value={item.name}>{item.warehouse_name || item.name}</option>)}</select></Field><Field label="Producto"><Input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Código o nombre" /></Field><Button type="button" onClick={onApply}>Aplicar filtros</Button></FilterSheet>
+}
