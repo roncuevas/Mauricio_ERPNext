@@ -734,14 +734,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-tooltip { display: inline-grid; width: 1rem; height: 1rem; margin-left: .2rem; place-items: center; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-primary); cursor: help; font-size: .62rem !important; vertical-align: middle; }
 .pos-closing-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1rem; }
 .pos-closing-actions .muted { font-size: .7rem; }
-.pos-closing-sheet { width: min(100%, 34rem); gap: 1rem; padding: 1.25rem; }
-.pos-closing-sheet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 1rem; }
-.pos-closing-sheet-header > .button { flex: 0 0 auto; min-width: 6.6rem; white-space: nowrap; }
-.pos-closing-title { display: grid; min-width: 0; gap: .35rem; }
-.pos-closing-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
-.pos-closing-sheet-header h2 { margin: 0; color: var(--color-heading); font-size: 1.35rem; letter-spacing: -.025em; }
-.pos-closing-title > p { max-width: 25rem; line-height: 1.45; }
-.pos-closing-status, .pos-closing-required { display: inline-flex; width: fit-content; align-items: center; border: 1px solid var(--color-accent); border-radius: 999px; background: var(--color-primary-soft); padding: .2rem .5rem; color: var(--color-primary-hover); font-size: .62rem; font-weight: 800; }
+.pos-closing-sheet { width: min(100%, 34rem); gap: .85rem; padding: 1.15rem; }
+.pos-closing-sheet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: .8rem; }
+.pos-closing-sheet-header > .button { flex: 0 0 auto; min-width: 4.8rem; padding: .4rem .65rem; white-space: nowrap; font-size: .7rem; }
+.pos-closing-title { display: grid; min-width: 0; gap: .25rem; }
+.pos-closing-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.pos-closing-sheet-header h2 { margin: 0; color: var(--color-heading); font-size: 1.12rem; letter-spacing: -.02em; }
+.pos-closing-title > p { max-width: 25rem; line-height: 1.35; font-size: .74rem; }
+.pos-closing-status, .pos-closing-required { display: inline-flex; width: fit-content; align-items: center; border: 1px solid var(--color-accent); border-radius: 999px; background: var(--color-primary-soft); padding: .16rem .42rem; color: var(--color-primary-hover); font-size: .58rem; font-weight: 800; }
 .pos-closing-status.is-warning { border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border)); background: var(--color-warning-soft); color: var(--color-warning); }
 .pos-closing-sheet-body { display: grid; gap: 1rem; min-height: 0; overflow-y: auto; padding: .1rem 0; }
 .pos-closing-help { display: flex; flex-wrap: wrap; gap: .45rem; border: 1px solid var(--color-border-subtle); border-radius: .75rem; background: var(--color-surface-muted); padding: .75rem; }
