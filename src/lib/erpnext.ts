@@ -48,7 +48,10 @@ export function createErpNextClient(connection: ConnectionProfile) {
     async getDocument<T>(doctype: string, name: string) { return request<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`) },
     async createDocument<T>(doctype: string, data: Record<string, unknown>) { return request<T>(`/api/resource/${encodeURIComponent(doctype)}`, { method: 'POST', body: JSON.stringify(data) }) },
     async updateDocument<T>(doctype: string, name: string, data: Record<string, unknown>) { return request<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, { method: 'PUT', body: JSON.stringify(data) }) },
-    async submitDocument<T>(doctype: string, name: string) { return request<T>('/api/method/frappe.client.submit', { method: 'POST', body: JSON.stringify({ doc: JSON.stringify({ doctype, name }) }) }) },
+    async submitDocument<T>(doctype: string, name: string) {
+      const latest = await request<Record<string, unknown>>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`)
+      return request<T>('/api/method/frappe.client.submit', { method: 'POST', body: JSON.stringify({ doc: JSON.stringify({ ...latest, doctype, name }) }) })
+    },
     async deleteDocument(doctype: string, name: string) { await request(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, { method: 'DELETE' }) },
     async getDocTypeMeta(doctype: string): Promise<DocTypeMeta> {
       return request<DocTypeMeta>(`/api/v2/doctype/${encodeURIComponent(doctype)}/meta`)
