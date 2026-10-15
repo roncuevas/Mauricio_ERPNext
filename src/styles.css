@@ -736,6 +736,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-closing-actions .muted { font-size: .7rem; }
 .pos-closing-sheet { width: min(100%, 34rem); gap: 1rem; padding: 1.25rem; }
 .pos-closing-sheet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 1rem; }
+.pos-closing-sheet-header > .button { flex: 0 0 auto; min-width: 6.6rem; white-space: nowrap; }
 .pos-closing-title { display: grid; min-width: 0; gap: .35rem; }
 .pos-closing-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
 .pos-closing-sheet-header h2 { margin: 0; color: var(--color-heading); font-size: 1.35rem; letter-spacing: -.025em; }
