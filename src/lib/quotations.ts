@@ -75,6 +75,10 @@ export class RelatedSalesOrderError extends Error {
   }
 }
 
+export function relatedSalesOrderFilters(quotationName: string): Array<[string, string, unknown]> {
+  return [['items.prevdoc_docname', '=', quotationName], ['docstatus', '<', 2]]
+}
+
 export function relatedSalesOrderNames(rows: RelatedSalesOrderRow[]) {
   return [...new Set(rows.filter((row) => row.docstatus === undefined || row.docstatus < 2).map((row) => row.parent || row.name).filter((name): name is string => Boolean(name)))]
 }

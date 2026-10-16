@@ -5,7 +5,7 @@ import { Button, Field, Input, Notice, PageHeader, RefreshButton, SearchButton, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
-import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderNames, RelatedSalesOrderError, validateMappedSalesOrder, validateQuotationForSalesOrder } from '../lib/quotations'
+import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, RelatedSalesOrderError, validateMappedSalesOrder, validateQuotationForSalesOrder } from '../lib/quotations'
 import { createErpNextClient, ErpNextError } from '../lib/erpnext'
 import type { PosProfile, QuotationDocument, QuotationSummary } from '../lib/types'
 
@@ -31,9 +31,9 @@ export function QuotationsPage({ client, profileId }: { client: Client; profileI
       const sourceError = validateQuotationForSalesOrder(quotation, deliveryDate); if (sourceError) throw new Error(sourceError)
       let related
       try {
-        related = await client.listDocuments<{ name?: string; parent?: string; docstatus?: number }>('Sales Order Item', { fields: ['name', 'parent', 'docstatus'], filters: [['prevdoc_docname', '=', quotation.name], ['docstatus', '<', 2]], pageLength: 100, orderBy: 'modified desc' })
+        related = await client.listDocuments<{ name?: string; docstatus?: number }>('Sales Order', { fields: ['name', 'docstatus'], filters: relatedSalesOrderFilters(quotation.name), pageLength: 100, orderBy: 'modified desc' })
       } catch (error) {
-        if (error instanceof ErpNextError && error.status === 403) throw new Error('No tienes permiso para consultar Sales Order Item. Solicita permiso de lectura a tu administrador de ERPNext para verificar pedidos duplicados.', { cause: error })
+        if (error instanceof ErpNextError && error.status === 403) throw new Error('No se pudieron verificar pedidos relacionados. Confirma que tu rol tenga permiso de lectura sobre Sales Order.', { cause: error })
         throw error
       }
       const existing = relatedSalesOrderNames(related.data); if (existing.length) throw new RelatedSalesOrderError(existing)

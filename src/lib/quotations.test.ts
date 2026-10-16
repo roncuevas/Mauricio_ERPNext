@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderNames, validateMappedSalesOrder, validateQuotationForSalesOrder } from './quotations'
+import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, validateMappedSalesOrder, validateQuotationForSalesOrder } from './quotations'
 
 const quotations = [
   { name: 'SAL-QTN-0001', customer_name: 'Cliente Uno', company: 'Empresa MX', status: 'Open' },
@@ -51,6 +51,7 @@ describe('quotation helpers', () => {
   it('validates mapped required fields and detects draft or submitted related orders', () => {
     expect(validateMappedSalesOrder({ customer: 'Cliente', company: 'Empresa', items: [{}] })).toBeNull()
     expect(validateMappedSalesOrder({ customer: 'Cliente', items: [{}] })).toContain('compañía')
+    expect(relatedSalesOrderFilters('SAL-QTN-0001')).toEqual([['items.prevdoc_docname', '=', 'SAL-QTN-0001'], ['docstatus', '<', 2]])
     expect(relatedSalesOrderNames([{ parent: 'SO-1', docstatus: 0 }, { parent: 'SO-2', docstatus: 1 }, { parent: 'SO-3', docstatus: 2 }])).toEqual(['SO-1', 'SO-2'])
   })
 })
