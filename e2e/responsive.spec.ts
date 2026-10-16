@@ -38,6 +38,12 @@ async function createConnection(page: Page) {
   await expect(page).toHaveURL(/\/items$/)
 }
 
+async function refreshCatalog(page: Page) {
+  const actions = page.locator('details.mobile-actions')
+  if (await actions.isVisible()) await actions.locator('summary').click()
+  await page.getByRole('button', { name: 'Refrescar catálogo' }).click()
+}
+
 test.describe('responsive navigation and empty states', () => {
   test.beforeEach(async ({ page }) => {
     await mockErpNext(page)
@@ -79,7 +85,7 @@ test.describe('responsive navigation and empty states', () => {
   test('mobile routes remain usable screen by screen', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'Este caso corresponde al proyecto móvil')
     await createConnection(page)
-    await page.getByRole('button', { name: 'Refrescar catálogo' }).click()
+    await refreshCatalog(page)
     await expect(page.getByText('Croquetas Adulto Premium')).toBeVisible()
     await page.getByRole('button', { name: 'Cards' }).click()
     await expect(page.getByRole('alert')).toContainText('La vista Cards carga información enriquecida')
@@ -164,7 +170,7 @@ test.describe('responsive navigation and empty states', () => {
   test('POS keeps keyboard-accessible shadcn flows on mobile and desktop', async ({ page }, testInfo) => {
     await createConnection(page)
     await page.goto('/items')
-    await page.getByRole('button', { name: 'Refrescar catálogo' }).click()
+    await refreshCatalog(page)
     await page.goto('/pos')
     await expect(page.getByRole('heading', { name: 'POS' })).toBeVisible()
     await page.getByRole('button', { name: 'Abrir turno' }).click()
@@ -188,14 +194,14 @@ test.describe('responsive navigation and empty states', () => {
   test('POS prepares and submits an ERPNext closing entry after explicit confirmation', async ({ page }) => {
     await createConnection(page)
     await page.goto('/items')
-    await page.getByRole('button', { name: 'Refrescar catálogo' }).click()
+    await refreshCatalog(page)
     await page.goto('/pos')
     await page.getByRole('button', { name: 'Abrir turno' }).click()
     await expect(page.getByText(/Turno abierto:/)).toBeVisible()
     await page.getByRole('button', { name: 'Preparar cierre' }).click()
     await expect(page.getByRole('heading', { name: 'Arqueo de cierre' })).toBeVisible()
     await expect(page.getByText('Resumen del servidor')).toBeVisible()
-    await expect(page.getByText(/Esperado 150/)).toBeVisible()
+    await expect(page.locator('.pos-closing-summary-row').first()).toContainText('150.00')
     await page.getByRole('button', { name: 'Cerrar turno' }).click()
     await expect(page.getByRole('alertdialog')).toBeVisible()
     await page.getByRole('button', { name: 'Confirmar cierre' }).click()
@@ -205,9 +211,9 @@ test.describe('responsive navigation and empty states', () => {
   test('opens a POS shift from the dedicated turn management view', async ({ page }) => {
     await createConnection(page)
     await page.goto('/pos/turnos')
-    await expect(page.getByRole('heading', { name: 'Turnos POS' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Turnos' })).toBeVisible()
     await expect(page.getByText('Administrator', { exact: true })).toBeVisible()
-    await expect(page.getByText('Disponible')).toBeVisible()
+    await expect(page.getByText('Disponible', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Abrir turno' }).click()
     await expect(page.getByRole('heading', { name: 'Abrir Caja Demo' })).toBeVisible()
     await page.getByLabel('Fondo inicial Efectivo').fill('500')

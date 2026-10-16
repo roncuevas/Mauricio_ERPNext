@@ -1,23 +1,29 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spinner } from './components/ui'
 import { MobileNavigation, NavLink, PageLayout, ThemeModeToggle } from './components/layout'
 import { ConnectionScreen } from './components/connection-screen'
-import { ItemEditorPage, UomEditorPage, VariantEditorPage } from './pages/editors'
 import { DocTypesPage, ItemsPage, VariantsPage } from './pages/catalog-pages'
-import { PriceManagementPage, PricesPage } from './pages/prices-page'
-import { SuppliersPage } from './pages/suppliers-page'
-import { StockPage, StockReconciliationPage } from './pages/stock-page'
 import { SettingsPage } from './pages/settings-page'
-import { PosPage } from './pages/pos-page'
-import { PosShiftsPage } from './pages/pos-shifts-page'
-import { QuotationEditorPage, QuotationsPage } from './pages/quotations-page'
 import { createErpNextClient } from './lib/erpnext'
 import { featureFlags } from './lib/feature-flags'
 import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles } from './lib/storage'
 import { readSharedConnection } from './lib/share-link'
 import type { ConnectionProfile } from './lib/types'
+
+const ItemEditorPage = lazy(() => import('./pages/editors').then(({ ItemEditorPage }) => ({ default: ItemEditorPage })))
+const UomEditorPage = lazy(() => import('./pages/editors').then(({ UomEditorPage }) => ({ default: UomEditorPage })))
+const VariantEditorPage = lazy(() => import('./pages/editors').then(({ VariantEditorPage }) => ({ default: VariantEditorPage })))
+const PricesPage = lazy(() => import('./pages/prices-page').then(({ PricesPage }) => ({ default: PricesPage })))
+const PriceManagementPage = lazy(() => import('./pages/prices-page').then(({ PriceManagementPage }) => ({ default: PriceManagementPage })))
+const SuppliersPage = lazy(() => import('./pages/suppliers-page').then(({ SuppliersPage }) => ({ default: SuppliersPage })))
+const StockPage = lazy(() => import('./pages/stock-page').then(({ StockPage }) => ({ default: StockPage })))
+const StockReconciliationPage = lazy(() => import('./pages/stock-page').then(({ StockReconciliationPage }) => ({ default: StockReconciliationPage })))
+const PosPage = lazy(() => import('./pages/pos-page').then(({ PosPage }) => ({ default: PosPage })))
+const PosShiftsPage = lazy(() => import('./pages/pos-shifts-page').then(({ PosShiftsPage }) => ({ default: PosShiftsPage })))
+const QuotationsPage = lazy(() => import('./pages/quotations-page').then(({ QuotationsPage }) => ({ default: QuotationsPage })))
+const QuotationEditorPage = lazy(() => import('./pages/quotations-page').then(({ QuotationEditorPage }) => ({ default: QuotationEditorPage })))
 
 function App() {
   const [profiles, setProfiles] = useState(readProfiles)
@@ -61,7 +67,7 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
       <nav className="app-sidebar-nav"><NavLink to="/pos">POS</NavLink>{featureFlags.quotationsView && <NavLink to="/pos/cotizaciones">Cotizaciones</NavLink>}<NavLink to="/pos/turnos">Turnos</NavLink><NavLink to="/items">Productos</NavLink><NavLink to="/variants">Variantes</NavLink><NavLink to="/prices">Precios</NavLink><NavLink to="/stock">Inventario</NavLink><NavLink to="/suppliers">Proveedores</NavLink><NavLink to="/doctypes">DocTypes</NavLink></nav>
       <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings">Configuración</NavLink><ThemeModeToggle /></div><button className="app-sidebar-lock" type="button" onClick={onLock}><span>Bloquear sesión</span><span aria-hidden="true">↗</span></button></div>
     </aside>
-    <main className="min-w-0 flex-1"><Routes><Route element={<PageLayout client={client} />}><Route path="/" element={<Navigate to="/items" replace />} /><Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones" element={<QuotationsPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/nueva" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/:name/editar" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/turnos" element={<PosShiftsPage client={client} />} /><Route path="/items" element={<ItemsPage client={client} profileId={connection.id} />} /><Route path="/items/new" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name/uoms" element={<UomEditorPage client={client} profileId={connection.id} />} /><Route path="/variants" element={<VariantsPage client={client} profileId={connection.id} />} /><Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/prices" element={<PricesPage client={client} profileId={connection.id} />} /><Route path="/prices/manage/:itemName" element={<PriceManagementPage client={client} profileId={connection.id} />} /><Route path="/stock" element={<StockPage client={client} profileId={connection.id} />} /><Route path="/stock/reconciliation" element={<StockReconciliationPage client={client} profileId={connection.id} />} /><Route path="/suppliers" element={<SuppliersPage client={client} profileId={connection.id} />} /><Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} /><Route path="/settings" element={<SettingsPage connection={connection} onLock={onLock} />} /></Route></Routes></main>
+    <main className="min-w-0 flex-1"><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> Cargando módulo...</div></main>}><Routes><Route element={<PageLayout client={client} />}><Route path="/" element={<Navigate to="/items" replace />} /><Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones" element={<QuotationsPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/nueva" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/:name/editar" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/turnos" element={<PosShiftsPage client={client} />} /><Route path="/items" element={<ItemsPage client={client} profileId={connection.id} />} /><Route path="/items/new" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name/uoms" element={<UomEditorPage client={client} profileId={connection.id} />} /><Route path="/variants" element={<VariantsPage client={client} profileId={connection.id} />} /><Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/prices" element={<PricesPage client={client} profileId={connection.id} />} /><Route path="/prices/manage/:itemName" element={<PriceManagementPage client={client} profileId={connection.id} />} /><Route path="/stock" element={<StockPage client={client} profileId={connection.id} />} /><Route path="/stock/reconciliation" element={<StockReconciliationPage client={client} profileId={connection.id} />} /><Route path="/suppliers" element={<SuppliersPage client={client} profileId={connection.id} />} /><Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} /><Route path="/settings" element={<SettingsPage connection={connection} onLock={onLock} />} /></Route></Routes></Suspense></main>
   </div>
 }
 
