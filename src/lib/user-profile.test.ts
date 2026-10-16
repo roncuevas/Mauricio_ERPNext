@@ -9,4 +9,8 @@ describe('user profile helpers', () => {
   it('prefers full name and omits blank optional values', () => {
     expect(normalizeUserProfile({ name: 'Administrator', full_name: 'Admin Principal', phone: ' ', language: ' es ', roles: [{ role: ' ' }] })).toEqual({ name: 'Administrator', displayName: 'Admin Principal', email: undefined, username: undefined, userType: undefined, enabled: undefined, mobile: undefined, phone: undefined, language: 'es', timeZone: undefined, lastLogin: undefined, creation: undefined, roles: [] })
   })
+
+  it('uses last active as a fallback when token access has no last login', () => {
+    expect(normalizeUserProfile({ name: 'cashier', last_active: '2026-10-16 14:40:00' }).lastLogin).toBe('2026-10-16 14:40:00')
+  })
 })

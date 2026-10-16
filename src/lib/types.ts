@@ -24,6 +24,7 @@ export type ErpNextUserProfile = {
   language?: string
   time_zone?: string
   last_login?: string
+  last_active?: string
   creation?: string
   roles?: ErpNextUserRole[]
 }

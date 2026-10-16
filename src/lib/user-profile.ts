@@ -32,7 +32,7 @@ export function normalizeUserProfile(profile: ErpNextUserProfile, fallbackName =
     phone: profile.phone?.trim() || undefined,
     language: profile.language?.trim() || undefined,
     timeZone: profile.time_zone?.trim() || undefined,
-    lastLogin: profile.last_login,
+    lastLogin: profile.last_login || profile.last_active,
     creation: profile.creation,
     roles,
   }
