@@ -9,6 +9,7 @@ import { buildVariantTree, readVariantCatalog } from '../lib/variant-cache'
 import { variantSearchScore } from '../components/variant-tree'
 import { calculateGrossMargin, findComparablePurchases } from '../lib/pricing'
 import { PriceFilterSheet } from '../components/price-filter-sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import type { ItemPrice, ItemPriceCatalogCache, PriceList, VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -121,8 +122,8 @@ function PriceEditor({ client, item, price, priceLists, defaultPriceList, defaul
     <div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold">{price ? 'Editar precio' : 'Agregar precio'}</h2><p className="muted">{item.item_name || item.name} · {item.name}</p></div><Button type="button" variant="secondary" onClick={onClose}>Cerrar</Button></div>
     {error && <div className="mb-4"><Notice>{error}</Notice></div>}
     <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>
-      <Field label="Tipo"><select className="control" value={kind} onChange={(event) => setKind(event.target.value as 'buying' | 'selling')}><option value="buying">Compra</option><option value="selling">Venta</option></select></Field>
-      <Field label="Lista de precios *"><select className="control" value={priceList} onChange={(event) => setPriceList(event.target.value)} required><option value="" disabled>Selecciona una lista</option>{!selectedPriceListIsAvailable && priceList && <option value={priceList}>{priceList} (actual)</option>}{availablePriceLists.map((candidate) => <option key={candidate.name} value={candidate.name}>{candidate.name}</option>)}</select></Field>
+      <Field label="Tipo"><Select value={kind} onValueChange={(value) => setKind(value as 'buying' | 'selling')}><SelectTrigger aria-label="Tipo"><SelectValue /></SelectTrigger><SelectContent align="start"><SelectItem value="buying">Compra</SelectItem><SelectItem value="selling">Venta</SelectItem></SelectContent></Select></Field>
+      <Field label="Lista de precios *"><Select value={priceList || undefined} onValueChange={setPriceList} required><SelectTrigger aria-label="Lista de precios"><SelectValue placeholder="Selecciona una lista" /></SelectTrigger><SelectContent align="start">{!selectedPriceListIsAvailable && priceList && <SelectItem value={priceList}>{priceList} (actual)</SelectItem>}{availablePriceLists.map((candidate) => <SelectItem key={candidate.name} value={candidate.name}>{candidate.name}</SelectItem>)}</SelectContent></Select></Field>
       <Field label="Precio *"><Input type="number" min="0" step="any" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="0.00" required /></Field>
       <Field label="Moneda"><Input value={currency} onChange={(event) => setCurrency(event.target.value)} placeholder="MXN" /></Field>
       <Field label="UOM"><Input value={uom} onChange={(event) => setUom(event.target.value)} placeholder={item.stock_uom || 'UOM de stock'} /></Field>

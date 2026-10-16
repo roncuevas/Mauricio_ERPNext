@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Field, Input, Notice, Select, Spinner } from './ui'
+import { Button, Field, Input, Notice, Spinner } from './ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import type { ErpNextClient } from '../lib/erpnext'
 import type { DocTypeField } from '../lib/types'
 
@@ -45,7 +46,7 @@ function MetadataField({ field, value, disabled, onChange }: { field: DocTypeFie
   const label = `${field.label ?? field.fieldname}${field.reqd && !disabled ? ' *' : ''}`
   if (layoutFields.has(field.fieldtype ?? '')) return field.fieldtype === 'Column Break' ? null : <div className="sm:col-span-2 border-b border-slate-200 pb-2 pt-3 text-sm font-bold text-slate-700">{field.label ?? field.fieldname}</div>
   if (field.fieldtype === 'Check') return <label className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-60' : ''}`}><input type="checkbox" checked={Boolean(value)} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />{label}{field.hidden ? ' (oculto)' : ''}</label>
-  if (field.fieldtype === 'Select') return <Field label={label}><Select value={String(value)} disabled={disabled} required={Boolean(field.reqd && !disabled)} onChange={(event) => onChange(event.target.value)}><option value="">Selecciona…</option>{(field.options ?? '').split('\n').filter(Boolean).map((option) => <option key={option} value={option}>{option}</option>)}</Select></Field>
+  if (field.fieldtype === 'Select') return <Field label={label}><Select value={String(value) || undefined} disabled={disabled} required={Boolean(field.reqd && !disabled)} onValueChange={onChange}><SelectTrigger aria-label={label}><SelectValue placeholder="Selecciona…" /></SelectTrigger><SelectContent align="start">{(field.options ?? '').split('\n').filter(Boolean).map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select></Field>
   if (structuredFields.has(field.fieldtype ?? '') || isLongText(field.fieldtype)) return <label className={`field sm:col-span-2 ${disabled ? 'opacity-60' : ''}`}><span className="field-label">{label}{field.hidden ? ' (oculto)' : ''}</span><textarea className="control min-h-24 py-2 font-mono text-xs" value={String(value)} disabled={disabled} required={Boolean(field.reqd && !disabled)} onChange={(event) => onChange(event.target.value)} />{field.options && <span className="text-xs text-slate-500">{field.options}</span>}</label>
   const inputType = field.fieldtype === 'Date' ? 'date' : field.fieldtype === 'Datetime' ? 'datetime-local' : field.fieldtype === 'Time' ? 'time' : field.fieldtype === 'Check' ? 'checkbox' : field.fieldtype === 'Email' ? 'email' : field.fieldtype === 'Phone' ? 'tel' : isNumeric(field.fieldtype) ? 'number' : 'text'
   return <Field label={`${label}${field.hidden ? ' (oculto)' : ''}`}><Input type={inputType} step={isNumeric(field.fieldtype) ? 'any' : undefined} value={String(value)} disabled={disabled} required={Boolean(field.reqd && !disabled)} onChange={(event) => onChange(isNumeric(field.fieldtype) ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value)} /></Field>

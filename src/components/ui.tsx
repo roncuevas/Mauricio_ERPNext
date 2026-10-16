@@ -1,5 +1,5 @@
 import { Link, type LinkProps } from 'react-router-dom'
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 
 type ButtonVariant = 'primary' | 'secondary' | 'action' | 'danger'
 type ButtonSize = 'default' | 'compact' | 'icon'
@@ -45,10 +45,6 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input className="control w-full" {...props} />
-}
-
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className="control w-full" {...props} />
 }
 
 export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
