@@ -346,6 +346,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .page-header-toolbar > form { display: flex; min-width: min(100%, 24rem); flex: 1 1 24rem; gap: .5rem; }
 .page-header-toolbar > form > .control { min-width: 0; }
 .page-header-status { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; color: var(--color-muted); font-size: .75rem; }
+.variants-status-row { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: space-between; gap: 1rem; }
+.variants-status-items { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; }
 .prices-workspace .page-header-actions a[href="/suppliers"], .prices-workspace .mobile-actions-content a[href="/suppliers"] { display: none; }
 .mobile-actions { display: none; }
 .settings-grid { display: grid; gap: 1rem; }
@@ -596,6 +598,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .page-header-toolbar { align-items: stretch; }
   .page-header-toolbar > form { flex-basis: 100%; }
   .page-header-status { font-size: .68rem; }
+  .variants-status-row { align-items: flex-start; flex-direction: column; gap: .55rem; }
+  .variants-status-row .segmented-control { align-self: flex-end; }
   .page-header h1 { font-size: 1.5rem; line-height: 1.2; }
   .page-header > div:first-child p { max-width: 34rem; font-size: .8rem; line-height: 1.45; }
   .desktop-actions { display: none; }
