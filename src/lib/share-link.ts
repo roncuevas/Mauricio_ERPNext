@@ -46,6 +46,15 @@ export function readSharedConnection(search: string, hash = ''): SharedConnectio
   }
 }
 
+export function readSharedConnectionFromLink(link: string): SharedConnection | null {
+  try {
+    const url = new URL(link.trim())
+    return readSharedConnection(url.search, url.hash)
+  } catch {
+    return null
+  }
+}
+
 export function buildShareUrl(profile: ConnectionProfile, currentUrl: string): string {
   const url = new URL(currentUrl)
   url.search = ''

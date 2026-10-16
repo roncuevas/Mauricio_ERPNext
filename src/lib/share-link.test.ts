@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildShareUrl, clearSharedConnectionParams, readSharedConnection } from './share-link'
+import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from './share-link'
 
 describe('credential share links', () => {
   const profile = { id: 'profile-1', label: 'Mi ERP', baseUrl: 'https://erp.example.com', apiKey: 'key/one', apiSecret: 'secret+two' }
@@ -17,6 +17,15 @@ describe('credential share links', () => {
 
   it('still reads the previous query-string format', () => {
     expect(readSharedConnection('?base_url=https%3A%2F%2Ferp.example.com&api_key=key&api_secret=secret')).toEqual({ baseUrl: 'https://erp.example.com', label: '', apiKey: 'key', apiSecret: 'secret' })
+  })
+
+  it('reads credentials pasted as a complete share link', () => {
+    const url = buildShareUrl(profile, 'https://mauricio.roncuevas.com/')
+    expect(readSharedConnectionFromLink(url)).toEqual({ baseUrl: profile.baseUrl, label: profile.label, apiKey: profile.apiKey, apiSecret: profile.apiSecret })
+  })
+
+  it('rejects an invalid pasted link', () => {
+    expect(readSharedConnectionFromLink('no es un link')).toBeNull()
   })
 
   it('removes credential parameters before the app continues', () => {
