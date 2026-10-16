@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, validateMappedSalesOrder, validateQuotationForSalesOrder } from './quotations'
+import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, minimumDeliveryDate, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, validateMappedSalesOrder, validateQuotationForSalesOrder } from './quotations'
 
 const quotations = [
   { name: 'SAL-QTN-0001', customer_name: 'Cliente Uno', company: 'Empresa MX', status: 'Open' },
@@ -32,16 +32,18 @@ describe('quotation helpers', () => {
   })
 
   it('defaults delivery date to today or the later transaction date', () => {
-    expect(defaultDeliveryDate(undefined, new Date('2026-10-16T12:00:00'))).toBe('2026-10-16')
-    expect(defaultDeliveryDate('2026-10-20', new Date('2026-10-16T12:00:00'))).toBe('2026-10-20')
+    expect(defaultDeliveryDate(undefined, new Date('2026-10-16T12:00:00'))).toBe('2026-10-17')
+    expect(defaultDeliveryDate('2026-10-20', new Date('2026-10-16T12:00:00'))).toBe('2026-10-21')
+    expect(minimumDeliveryDate('2026-10-15', new Date('2026-10-16T12:00:00'))).toBe('2026-10-17')
   })
 
   it('validates required conversion data and date order', () => {
     const quotation = { party_name: 'Cliente', company: 'Empresa', transaction_date: '2026-10-20', items: [{ item_code: 'ITEM-1', qty: 1, rate: 10 }] }
-    expect(validateQuotationForSalesOrder(quotation, '2026-10-19')).toContain('anterior')
-    expect(validateQuotationForSalesOrder({ ...quotation, party_name: '' }, '2026-10-20')).toContain('cliente')
-    expect(validateQuotationForSalesOrder({ ...quotation, company: '' }, '2026-10-20')).toContain('compañía')
-    expect(validateQuotationForSalesOrder({ ...quotation, items: [] }, '2026-10-20')).toContain('partidas')
+    expect(validateQuotationForSalesOrder(quotation, '2026-10-20')).toContain('posterior')
+    expect(validateQuotationForSalesOrder(quotation, '2026-10-19')).toContain('posterior')
+    expect(validateQuotationForSalesOrder({ ...quotation, party_name: '' }, '2026-10-21')).toContain('cliente')
+    expect(validateQuotationForSalesOrder({ ...quotation, company: '' }, '2026-10-21')).toContain('compañía')
+    expect(validateQuotationForSalesOrder({ ...quotation, items: [] }, '2026-10-21')).toContain('partidas')
   })
 
   it('normalizes the header and every mapped row without metadata', () => {

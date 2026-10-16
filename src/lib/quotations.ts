@@ -28,25 +28,38 @@ function localDate(value: Date) {
   return `${year}-${month}-${day}`
 }
 
+function addDays(value: string, days: number) {
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(year, month - 1, day + days)
+  return localDate(date)
+}
+
+export function minimumDeliveryDate(transactionDate?: string, today = new Date()) {
+  const tomorrow = localDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1))
+  if (!transactionDate || !/^\d{4}-\d{2}-\d{2}$/.test(transactionDate)) return tomorrow
+  const afterTransaction = addDays(transactionDate, 1)
+  return afterTransaction > tomorrow ? afterTransaction : tomorrow
+}
+
 export function defaultDeliveryDate(transactionDate?: string, today = new Date()) {
-  const todayValue = localDate(today)
-  return transactionDate && /^\d{4}-\d{2}-\d{2}$/.test(transactionDate) && transactionDate > todayValue ? transactionDate : todayValue
+  return minimumDeliveryDate(transactionDate, today)
 }
 
 export function validateQuotationForSalesOrder(quotation: Pick<QuotationDocument, 'party_name' | 'customer_name' | 'company' | 'items' | 'transaction_date'>, deliveryDate?: string) {
   if (!deliveryDate) return 'Selecciona una fecha de entrega.'
   if (!/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) return 'La fecha de entrega no es válida.'
-  if (quotation.transaction_date && deliveryDate < quotation.transaction_date) return 'La fecha de entrega no puede ser anterior a la fecha de transacción.'
+  if (quotation.transaction_date && deliveryDate <= quotation.transaction_date) return 'La fecha de entrega debe ser posterior a la fecha de transacción.'
   if (!quotation.party_name && !quotation.customer_name) return 'La cotización no tiene cliente.'
   if (!quotation.company) return 'La cotización no tiene compañía.'
   if (!quotation.items?.length) return 'La cotización no tiene partidas.'
   return null
 }
 
-export function validateMappedSalesOrder(payload: Record<string, unknown>) {
+export function validateMappedSalesOrder(payload: Record<string, unknown>, deliveryDate?: string) {
   if (!payload.customer) return 'ERPNext no devolvió un cliente para el Sales Order.'
   if (!payload.company) return 'ERPNext no devolvió una compañía para el Sales Order.'
   if (!Array.isArray(payload.items) || payload.items.length === 0) return 'ERPNext no devolvió partidas para el Sales Order.'
+  if (deliveryDate && typeof payload.transaction_date === 'string' && deliveryDate <= payload.transaction_date) return 'La fecha de entrega debe ser posterior a la fecha del Sales Order.'
   return null
 }
 
