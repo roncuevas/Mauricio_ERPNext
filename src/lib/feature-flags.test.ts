@@ -7,7 +7,7 @@ describe('feature flags', () => {
   })
 
   it('parses common environment boolean values', () => {
-    expect(readFeatureFlags({ VITE_FF_QUOTATION_AUTOMATIC_TAXES: 'off', VITE_FF_QUOTATION_EDITOR: '1' })).toMatchObject({ quotationAutomaticTaxes: false, quotationEditor: true })
+    expect(readFeatureFlags({ VITE_FF_QUOTATION_AUTOMATIC_TAXES: 'off', VITE_FF_QUOTATIONS_VIEW: '1' })).toMatchObject({ quotationAutomaticTaxes: false, quotationsView: true })
   })
 
   it('supports an explicit provider override for future remote services', () => {

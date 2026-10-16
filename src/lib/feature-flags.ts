@@ -1,5 +1,5 @@
 export type FeatureFlagKey =
-  | 'quotationEditor'
+  | 'quotationsView'
   | 'quotationAutomaticTaxes'
   | 'quotationSubmittedRevision'
 
@@ -12,13 +12,13 @@ export interface FeatureFlagProvider {
 }
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
-  quotationEditor: true,
+  quotationsView: true,
   quotationAutomaticTaxes: true,
   quotationSubmittedRevision: true,
 }
 
 const environmentKeys: Record<FeatureFlagKey, string> = {
-  quotationEditor: 'VITE_FF_QUOTATION_EDITOR',
+  quotationsView: 'VITE_FF_QUOTATIONS_VIEW',
   quotationAutomaticTaxes: 'VITE_FF_QUOTATION_AUTOMATIC_TAXES',
   quotationSubmittedRevision: 'VITE_FF_QUOTATION_SUBMITTED_REVISION',
 }

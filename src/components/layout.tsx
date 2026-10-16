@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { IconButton } from './ui'
 import { useTheme } from './theme-provider'
+import { featureFlags } from '../lib/feature-flags'
 
 const navigation = [
   ['/pos', 'POS'],
@@ -52,7 +53,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
     </div>
     {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label="Navegación principal">
       <div className="mobile-navigation-menu-heading"><span>Ir a</span><small>Sección actual: {currentPage}</small></div>
-      {navigation.map(([to, label]) => <NavLink key={to} to={to}>{label}</NavLink>)}
+      {navigation.filter(([to]) => to !== '/pos/cotizaciones' || featureFlags.quotationsView).map(([to, label]) => <NavLink key={to} to={to}>{label}</NavLink>)}
     </nav>}
   </div>
 }
