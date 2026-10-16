@@ -920,6 +920,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 640px) {
+  .pos-workspace:has(> .pos-mobile-tabs) > .page-header,
+  .pos-workspace:has(> .pos-mobile-tabs) > .pos-toolbar { display: none; }
+  .pos-workspace:has(> .pos-mobile-tabs) > .pos-mobile-tabs { order: 1; }
+  .pos-workspace:has(> .pos-mobile-tabs[data-context-open="true"]) > .page-header { display: grid; order: 2; margin: .35rem 0 .5rem !important; }
+  .pos-workspace:has(> .pos-mobile-tabs[data-context-open="true"]) > .pos-toolbar { display: flex; order: 3; }
+  .pos-workspace:has(> .pos-mobile-tabs) > .notice,
+  .pos-workspace:has(> .pos-mobile-tabs) > .pos-cart-feedback { order: 4; }
+  .pos-workspace:has(> .pos-mobile-tabs) > .pos-layout,
+  .pos-workspace:has(> .pos-mobile-tabs) > .pos-history { order: 5; }
   .pos-workspace > .page-header { gap: .35rem; margin-bottom: .5rem !important; }
   .pos-workspace > .page-header h1 { font-size: 1.35rem; }
   .pos-workspace > .page-header .muted { display: none; }
