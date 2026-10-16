@@ -433,7 +433,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .prices-search { position: relative; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; min-width: 0; }
 .prices-summary { color: #64748b; font-size: .72rem; line-height: 1.35; }
 .prices-filter-menu { position: relative; display: grid; min-width: 0; gap: .55rem; }
-.prices-filter-menu button.button-secondary { position: relative; width: fit-content; }
+.prices-search .button-icon, .prices-filter-menu .button-icon { width: var(--control-height-compact); min-width: var(--control-height-compact); min-height: var(--control-height-compact); height: var(--control-height-compact); padding: .25rem; }
+.prices-filter-menu button.button-secondary { position: relative; }
 .prices-filter-toggle { display: inline-flex; width: fit-content; align-items: center; gap: .45rem; min-height: 2.35rem; padding: .4rem .7rem; font-size: .75rem; font-weight: 700; }
 .prices-filter-count { display: inline-flex; min-width: 1.2rem; height: 1.2rem; align-items: center; justify-content: center; border-radius: 999px; background: #2563eb; color: #fff; font-size: .65rem; }
 .filter-button-count { position: absolute; top: -.35rem; right: -.35rem; display: inline-flex; min-width: 1.1rem; height: 1.1rem; align-items: center; justify-content: center; border-radius: 999px; background: #2563eb; color: #fff; font-size: .6rem; font-weight: 800; }
@@ -675,7 +676,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .product-pagination-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .prices-toolbar { gap: .35rem; margin-bottom: .75rem; }
   .prices-toolbar-main { grid-template-columns: minmax(0, 1fr) auto; gap: .35rem; }
-  .prices-search .button { min-width: 5.5rem; }
+  .prices-search .button:not(.button-icon) { min-width: 5.5rem; }
   .prices-summary { padding: 0 .15rem; }
   .prices-filter-menu { gap: .45rem; }
   .prices-filter-toggle.button-icon { width: var(--control-height-compact); justify-content: center; min-height: var(--control-height-compact); padding: .25rem; }
