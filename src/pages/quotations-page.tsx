@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderNames, RelatedSalesOrderError, validateMappedSalesOrder, validateQuotationForSalesOrder } from '../lib/quotations'
-import { createErpNextClient } from '../lib/erpnext'
+import { createErpNextClient, ErpNextError } from '../lib/erpnext'
 import type { PosProfile, QuotationDocument, QuotationSummary } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -29,7 +29,14 @@ export function QuotationsPage({ client, profileId }: { client: Client; profileI
   const convert = useMutation({
     mutationFn: async ({ quotation, deliveryDate }: { quotation: QuotationDocument; deliveryDate: string }) => {
       const sourceError = validateQuotationForSalesOrder(quotation, deliveryDate); if (sourceError) throw new Error(sourceError)
-      const related = await client.listDocuments<{ name?: string; parent?: string; docstatus?: number }>('Sales Order Item', { fields: ['name', 'parent', 'docstatus'], filters: [['prevdoc_docname', '=', quotation.name], ['docstatus', '<', 2]], pageLength: 100, orderBy: 'modified desc' }); const existing = relatedSalesOrderNames(related.data); if (existing.length) throw new RelatedSalesOrderError(existing)
+      let related
+      try {
+        related = await client.listDocuments<{ name?: string; parent?: string; docstatus?: number }>('Sales Order Item', { fields: ['name', 'parent', 'docstatus'], filters: [['prevdoc_docname', '=', quotation.name], ['docstatus', '<', 2]], pageLength: 100, orderBy: 'modified desc' })
+      } catch (error) {
+        if (error instanceof ErpNextError && error.status === 403) throw new Error('No tienes permiso para consultar Sales Order Item. Solicita permiso de lectura a tu administrador de ERPNext para verificar pedidos duplicados.', { cause: error })
+        throw error
+      }
+      const existing = relatedSalesOrderNames(related.data); if (existing.length) throw new RelatedSalesOrderError(existing)
       const mapped = await client.callMethod<unknown>('frappe.model.mapper.make_mapped_doc', { method: 'erpnext.selling.doctype.quotation.quotation.make_sales_order', source_name: quotation.name, args: JSON.stringify({}), selected_children: JSON.stringify({}) }); const extracted = extractMappedSalesOrder(mapped); if (!extracted) throw new Error('ERPNext no devolvió un Sales Order mapeado para esta cotización.'); const mappedError = validateMappedSalesOrder(extracted); if (mappedError) throw new Error(mappedError)
       return client.createDocument<{ name: string }>('Sales Order', normalizeMappedSalesOrder(extracted, deliveryDate))
     },
