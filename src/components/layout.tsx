@@ -12,7 +12,7 @@ const navigation = [
   ['/stock', 'Inventario'],
   ['/suppliers', 'Proveedores'],
   ['/doctypes', 'DocTypes'],
-  ['/settings', 'Conexión'],
+  ['/settings', 'Configuración'],
 ] as const
 
 export function NavLink({ to, children }: { to: string; children: ReactNode }) {
