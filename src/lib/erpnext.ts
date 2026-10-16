@@ -1,4 +1,4 @@
-import type { ConnectionProfile, DocTypeMeta, ListOptions, ListResult } from './types'
+import type { ConnectionProfile, DocTypeMeta, ErpNextUserProfile, ListOptions, ListResult } from './types'
 
 export class ErpNextError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message) }
@@ -37,6 +37,7 @@ export function createErpNextClient(connection: ConnectionProfile) {
 
   return {
     async getCurrentUser() { return request<string>('/api/method/frappe.auth.get_logged_user') },
+    async getUserProfile(user: string) { return request<ErpNextUserProfile>(`/api/resource/User/${encodeURIComponent(user)}`) },
     async callMethod<T>(method: string, args: Record<string, unknown> = {}) { return request<T>(`/api/method/${method}`, { method: 'POST', body: JSON.stringify(args) }) },
     async listDocuments<T>(doctype: string, options: ListOptions = {}): Promise<ListResult<T>> {
       const params = new URLSearchParams({ fields: JSON.stringify(options.fields ?? ['name']), limit_start: String(options.start ?? 0), limit_page_length: String(options.pageLength ?? 25) })

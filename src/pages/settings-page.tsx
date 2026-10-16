@@ -1,17 +1,40 @@
-import { useMemo, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { Button, Notice, PageHeader, Spinner } from '../components/ui'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Button, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
 import { useTheme } from '../components/theme-provider'
-import { createErpNextClient } from '../lib/erpnext'
+import { ErpNextError, createErpNextClient } from '../lib/erpnext'
+import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
 import type { ConnectionProfile } from '../lib/types'
 
+function formatProfileDate(value?: string) {
+  if (!value) return '—'
+  const date = new Date(value.replace(' ', 'T'))
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('es-MX')
+}
+
+async function loadUserProfile(client: ReturnType<typeof createErpNextClient>): Promise<{ profile: UserProfileSummary; warning?: string }> {
+  const currentUser = await client.getCurrentUser()
+  try {
+    return { profile: normalizeUserProfile(await client.getUserProfile(currentUser), currentUser) }
+  } catch (error) {
+    if (error instanceof ErpNextError && error.status === 403) {
+      return { profile: normalizeUserProfile({ name: currentUser }, currentUser), warning: 'ERPNext no permite leer el perfil completo del usuario. Solicita permiso de lectura sobre User para mostrar más datos.' }
+    }
+    throw error
+  }
+}
+
+function UserDetail({ label, value }: { label: string; value?: string }) {
+  if (!value) return null
+  return <div><dt className="field-label">{label}</dt><dd>{value}</dd></div>
+}
+
 export function SettingsPage({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
-  const [user, setUser] = useState('')
-  const [error, setError] = useState('')
   const client = useMemo(() => createErpNextClient(connection), [connection])
-  const test = useMutation({ mutationFn: client.getCurrentUser, onSuccess: setUser, onError: (reason) => setError(reason.message) })
+  const userQuery = useQuery({ queryKey: ['settings-user-profile', connection.id], queryFn: () => loadUserProfile(client) })
   const { theme, setTheme, themes } = useTheme()
   const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
+  const user = userQuery.data?.profile
 
   return <section>
     <PageHeader title="Configuración" description="Administra tu conexión y personaliza la apariencia de esta aplicación." />
@@ -19,8 +42,13 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
       <div className="card settings-connection-card">
         <div className="settings-section-heading"><div><p className="settings-eyebrow">Conexión</p><h2>Instancia ERPNext</h2></div><span className="settings-section-icon" aria-hidden="true">↗</span></div>
         <dl className="settings-connection-details"><div><dt className="field-label">Perfil</dt><dd>{connection.label}</dd></div><div><dt className="field-label">Instancia</dt><dd className="break-all">{connection.baseUrl}</dd></div></dl>
-        <div className="settings-actions"><Button onClick={() => { setError(''); test.mutate() }} disabled={test.isPending}>{test.isPending ? <><Spinner /> Probando</> : 'Probar conexión'}</Button><Button variant="secondary" onClick={onLock}>Bloquear sesión</Button></div>
-        {user && <Notice tone="info">Conectado como {user}</Notice>}{error && <div className="mt-4"><Notice>{error}</Notice></div>}
+        <div className="settings-actions"><Button onClick={() => { void userQuery.refetch() }} disabled={userQuery.isFetching}>{userQuery.isFetching ? <><Spinner /> Probando</> : 'Probar conexión'}</Button><Button variant="secondary" onClick={onLock}>Bloquear sesión</Button></div>
+        {user && <Notice tone="info">Conectado como {user.email || user.name}</Notice>}{userQuery.isError && <div className="mt-4"><Notice>{userQuery.error instanceof Error ? userQuery.error.message : 'No se pudo cargar el usuario actual.'}</Notice></div>}
+      </div>
+
+      <div className="card settings-user-card">
+        <div className="settings-section-heading"><div><p className="settings-eyebrow">Usuario ERPNext</p><h2>Perfil de usuario</h2><p className="muted">Datos informativos obtenidos de la instancia activa. No se modifican desde aquí.</p></div><span className="settings-section-icon" aria-hidden="true">◎</span></div>
+        {userQuery.isPending ? <div className="settings-user-loading"><Spinner /> Cargando perfil…</div> : user ? <><dl className="settings-user-details"><UserDetail label="Nombre" value={user.displayName} /><UserDetail label="Correo" value={user.email} /><UserDetail label="Usuario" value={user.username || user.name} /><UserDetail label="Tipo de usuario" value={user.userType} /><UserDetail label="Estado" value={user.enabled === undefined ? undefined : user.enabled ? 'Activo' : 'Desactivado'} /><UserDetail label="Móvil" value={user.mobile} /><UserDetail label="Teléfono" value={user.phone} /><UserDetail label="Idioma" value={user.language} /><UserDetail label="Zona horaria" value={user.timeZone} /><UserDetail label="Creado" value={formatProfileDate(user.creation)} /><UserDetail label="Último acceso" value={formatProfileDate(user.lastLogin)} /></dl><div className="settings-user-roles"><span className="field-label">Roles</span>{user.roles.length ? <div className="settings-role-list">{user.roles.map((role) => <span key={role}>{role}</span>)}</div> : <p className="muted">No se devolvieron roles.</p>}</div>{userQuery.data?.warning && <Notice tone="warning">{userQuery.data.warning}</Notice>}<RefreshButton className="settings-user-refresh" label="Actualizar perfil" loading={userQuery.isFetching} onClick={() => { void userQuery.refetch() }} /></> : null}
       </div>
 
       <div className="card settings-theme-card">

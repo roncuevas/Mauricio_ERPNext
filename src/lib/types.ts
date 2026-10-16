@@ -6,6 +6,28 @@ export type ConnectionProfile = {
   apiSecret: string
 }
 
+export type ErpNextUserRole = {
+  role?: string
+}
+
+export type ErpNextUserProfile = {
+  name: string
+  full_name?: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  username?: string
+  user_type?: string
+  enabled?: number | boolean
+  mobile_no?: string
+  phone?: string
+  language?: string
+  time_zone?: string
+  last_login?: string
+  creation?: string
+  roles?: ErpNextUserRole[]
+}
+
 export type StoredProfile = {
   version: 1
   id: string
