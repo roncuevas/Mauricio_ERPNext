@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles.css'
 import { ThemeProvider, initializeTheme } from './components/theme-provider'
+import { RouteErrorBoundary } from './components/route-error-boundary'
 
 initializeTheme()
 
@@ -20,7 +21,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
-          <App />
+          <RouteErrorBoundary><App /></RouteErrorBoundary>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

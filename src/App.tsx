@@ -1,15 +1,20 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spinner } from './components/ui'
 import { MobileNavigation, NavLink, PageLayout, ThemeModeToggle } from './components/layout'
 import { ConnectionScreen } from './components/connection-screen'
-import { DocTypesPage, ItemsPage, VariantsPage } from './pages/catalog-pages'
-import { SettingsPage } from './pages/settings-page'
+import { RouteErrorBoundary } from './components/route-error-boundary'
 import { createErpNextClient } from './lib/erpnext'
 import { featureFlags } from './lib/feature-flags'
 import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles } from './lib/storage'
 import { readSharedConnection } from './lib/share-link'
+import { readItemCatalog } from './lib/item-cache'
+import { readItemPriceCatalog } from './lib/price-cache'
+import { readVariantCatalog } from './lib/variant-cache'
+import { queryKeys } from './lib/query-keys'
+import { markPerformance } from './lib/performance'
 import type { ConnectionProfile } from './lib/types'
 
 const ItemEditorPage = lazy(() => import('./pages/editors').then(({ ItemEditorPage }) => ({ default: ItemEditorPage })))
@@ -24,6 +29,10 @@ const PosPage = lazy(() => import('./pages/pos-page').then(({ PosPage }) => ({ d
 const PosShiftsPage = lazy(() => import('./pages/pos-shifts-page').then(({ PosShiftsPage }) => ({ default: PosShiftsPage })))
 const QuotationsPage = lazy(() => import('./pages/quotations-page').then(({ QuotationsPage }) => ({ default: QuotationsPage })))
 const QuotationEditorPage = lazy(() => import('./pages/quotations-page').then(({ QuotationEditorPage }) => ({ default: QuotationEditorPage })))
+const ItemsPage = lazy(() => import('./pages/catalog-pages').then(({ ItemsPage }) => ({ default: ItemsPage })))
+const VariantsPage = lazy(() => import('./pages/catalog-pages').then(({ VariantsPage }) => ({ default: VariantsPage })))
+const DocTypesPage = lazy(() => import('./pages/catalog-pages').then(({ DocTypesPage }) => ({ default: DocTypesPage })))
+const SettingsPage = lazy(() => import('./pages/settings-page').then(({ SettingsPage }) => ({ default: SettingsPage })))
 
 function App() {
   const [profiles, setProfiles] = useState(readProfiles)
@@ -59,7 +68,9 @@ function App() {
 
 function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
   const client = useMemo(() => createErpNextClient(connection), [connection])
+  useEffect(() => { markPerformance('app-shell-ready') }, [])
   return <div className="min-h-screen lg:flex">
+    <LocalCachePrefetch profileId={connection.id} />
     <MobileNavigation onLock={onLock} />
     <aside className="app-sidebar border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
       <div className="app-sidebar-brand"><img className="app-brand-logo" src="/mauricio-logo-cropped.png" alt="Mauricio" /><div><p className="app-brand-name">Mauricio</p><p className="app-brand-caption">ERPNext local</p></div></div>
@@ -67,8 +78,20 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
       <nav className="app-sidebar-nav"><NavLink to="/pos">POS</NavLink>{featureFlags.quotationsView && <NavLink to="/pos/cotizaciones">Cotizaciones</NavLink>}<NavLink to="/pos/turnos">Turnos</NavLink><NavLink to="/items">Productos</NavLink><NavLink to="/variants">Variantes</NavLink><NavLink to="/prices">Precios</NavLink><NavLink to="/stock">Inventario</NavLink><NavLink to="/suppliers">Proveedores</NavLink><NavLink to="/doctypes">DocTypes</NavLink></nav>
       <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings">Configuración</NavLink><ThemeModeToggle /></div><button className="app-sidebar-lock" type="button" onClick={onLock}><span>Bloquear sesión</span><span aria-hidden="true">↗</span></button></div>
     </aside>
-    <main className="min-w-0 flex-1"><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> Cargando módulo...</div></main>}><Routes><Route element={<PageLayout client={client} />}><Route path="/" element={<Navigate to="/items" replace />} /><Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones" element={<QuotationsPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/nueva" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/:name/editar" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/turnos" element={<PosShiftsPage client={client} />} /><Route path="/items" element={<ItemsPage client={client} profileId={connection.id} />} /><Route path="/items/new" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name/uoms" element={<UomEditorPage client={client} profileId={connection.id} />} /><Route path="/variants" element={<VariantsPage client={client} profileId={connection.id} />} /><Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/prices" element={<PricesPage client={client} profileId={connection.id} />} /><Route path="/prices/manage/:itemName" element={<PriceManagementPage client={client} profileId={connection.id} />} /><Route path="/stock" element={<StockPage client={client} profileId={connection.id} />} /><Route path="/stock/reconciliation" element={<StockReconciliationPage client={client} profileId={connection.id} />} /><Route path="/suppliers" element={<SuppliersPage client={client} profileId={connection.id} />} /><Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} /><Route path="/settings" element={<SettingsPage connection={connection} onLock={onLock} />} /></Route></Routes></Suspense></main>
+    <main className="min-w-0 flex-1"><RouteErrorBoundary onLock={onLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> Cargando módulo...</div></main>}><Routes><Route element={<PageLayout client={client} />}><Route path="/" element={<Navigate to="/items" replace />} /><Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones" element={<QuotationsPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/nueva" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/cotizaciones/:name/editar" element={<QuotationEditorPage client={client} profileId={connection.id} />} /><Route path="/pos/turnos" element={<PosShiftsPage client={client} />} /><Route path="/items" element={<ItemsPage client={client} profileId={connection.id} />} /><Route path="/items/new" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name" element={<ItemEditorPage client={client} profileId={connection.id} />} /><Route path="/items/:name/uoms" element={<UomEditorPage client={client} profileId={connection.id} />} /><Route path="/variants" element={<VariantsPage client={client} profileId={connection.id} />} /><Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} /><Route path="/prices" element={<PricesPage client={client} profileId={connection.id} />} /><Route path="/prices/manage/:itemName" element={<PriceManagementPage client={client} profileId={connection.id} />} /><Route path="/stock" element={<StockPage client={client} profileId={connection.id} />} /><Route path="/stock/reconciliation" element={<StockReconciliationPage client={client} profileId={connection.id} />} /><Route path="/suppliers" element={<SuppliersPage client={client} profileId={connection.id} />} /><Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} /><Route path="/settings" element={<SettingsPage connection={connection} onLock={onLock} />} /></Route></Routes></Suspense></RouteErrorBoundary></main>
   </div>
+}
+
+function LocalCachePrefetch({ profileId }: { profileId: string }) {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    void Promise.all([
+      queryClient.prefetchQuery({ queryKey: queryKeys.catalog.item(profileId), queryFn: () => readItemCatalog(profileId), staleTime: Infinity }),
+      queryClient.prefetchQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity }),
+      queryClient.prefetchQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity }),
+    ]).then(() => markPerformance('local-cache-ready'))
+  }, [profileId, queryClient])
+  return null
 }
 
 export default App
