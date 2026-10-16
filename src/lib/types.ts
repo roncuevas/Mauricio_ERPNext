@@ -357,6 +357,15 @@ export type QuotationSummary = {
   currency?: string
   grand_total?: number
   modified?: string
+  amended_from?: string
+  total_qty?: number
+  total?: number
+  net_total?: number
+  total_taxes_and_charges?: number
+  discount_amount?: number
+  additional_discount_percentage?: number
+  additional_discount_amount?: number
+  apply_discount_on?: string
 }
 
 export type QuotationItem = {
@@ -374,6 +383,14 @@ export type QuotationItem = {
   prevdoc_docname?: string
   prevdoc_detail_docname?: string
   delivery_date?: string
+  discount_percentage?: number
+  discount_amount?: number
+  margin_type?: string
+  margin_rate_or_amount?: number
+  item_tax_template?: string
+  is_free_item?: number | boolean
+  is_alternative?: number | boolean
+  [key: string]: unknown
 }
 
 export type QuotationDocument = QuotationSummary & {
@@ -384,4 +401,24 @@ export type QuotationDocument = QuotationSummary & {
   taxes_and_charges?: string
   order_type?: string
   items: QuotationItem[]
+  taxes?: QuotationTax[]
+  payment_schedule?: QuotationPayment[]
+  terms?: string
+  shipping_address?: string
+  shipping_address_name?: string
+  shipping_rule?: string
+  incoterm?: string
+  named_place?: string
+  tc_name?: string
+  select_print_heading?: string
+  letter_head?: string
+  conversion_rate?: number
+  price_list_currency?: string
+  apply_discount_on?: string
+  additional_discount_percentage?: number
+  additional_discount_amount?: number
+  [key: string]: unknown
 }
+
+export type QuotationTax = { name?: string; charge_type?: string; account_head?: string; description?: string; rate?: number; tax_amount?: number; row_id?: string; included_in_print_rate?: number | boolean; [key: string]: unknown }
+export type QuotationPayment = { name?: string; due_date?: string; invoice_portion?: number; payment_amount?: number; [key: string]: unknown }

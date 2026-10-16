@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, minimumDeliveryDate, normalizeMappedSalesOrder, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, validateMappedSalesOrder, validateQuotationForSalesOrder } from './quotations'
+import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, minimumDeliveryDate, normalizeMappedSalesOrder, quotationPayload, quotationRevision, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, validateMappedSalesOrder, validateQuotationForSalesOrder, validateQuotationForm } from './quotations'
 
 const quotations = [
   { name: 'SAL-QTN-0001', customer_name: 'Cliente Uno', company: 'Empresa MX', status: 'Open' },
@@ -55,5 +55,24 @@ describe('quotation helpers', () => {
     expect(validateMappedSalesOrder({ customer: 'Cliente', items: [{}] })).toContain('compañía')
     expect(relatedSalesOrderFilters('SAL-QTN-0001')).toEqual([['items.prevdoc_docname', '=', 'SAL-QTN-0001'], ['docstatus', '<', 2]])
     expect(relatedSalesOrderNames([{ parent: 'SO-1', docstatus: 0 }, { parent: 'SO-2', docstatus: 1 }, { parent: 'SO-3', docstatus: 2 }])).toEqual(['SO-1', 'SO-2'])
+  })
+
+  it('builds a clean quotation payload with complete child tables', () => {
+    const form = { quotation_to: 'Customer', party_name: 'C-1', company: 'Company', transaction_date: '2026-10-16', valid_till: '2026-10-20', items: [{ name: 'old-row', item_code: 'ITEM-1', qty: 2, rate: 10, parent: 'old', prevdoc_docname: 'SO-1' }], taxes: [{ name: 'old-tax', charge_type: 'On Net Total', rate: 16 }], payment_schedule: [{ name: 'old-pay', due_date: '2026-10-20', invoice_portion: 100 }], custom: { custom_channel: 'POS' }, grand_total: 20, modified: 'server' }
+    expect(quotationPayload(form, true)).toEqual({ quotation_to: 'Customer', party_name: 'C-1', company: 'Company', transaction_date: '2026-10-16', valid_till: '2026-10-20', items: [{ item_code: 'ITEM-1', qty: 2, rate: 10, prevdoc_docname: 'SO-1' }], taxes: [{ charge_type: 'On Net Total', rate: 16 }], payment_schedule: [{ due_date: '2026-10-20', invoice_portion: 100 }], custom_channel: 'POS', docstatus: 0 })
+  })
+
+  it('validates dates, quantities and payment percentages before REST writes', () => {
+    const form = { quotation_to: 'Customer', party_name: 'C-1', company: 'Company', transaction_date: '2026-10-20', valid_till: '2026-10-19', items: [{ item_code: 'ITEM-1', qty: 0, rate: 10 }], taxes: [], payment_schedule: [] }
+    expect(validateQuotationForm(form)).toContain('vigencia')
+    expect(validateQuotationForm({ ...form, valid_till: '2026-10-20' })).toContain('cantidad')
+    expect(validateQuotationForm({ ...form, valid_till: '2026-10-20', items: [{ item_code: 'ITEM-1', qty: 1, rate: 10 }], payment_schedule: [{ invoice_portion: 50 }] })).toContain('sumar 100')
+  })
+
+  it('creates a revision payload with amended_from and no server identity', () => {
+    const revision = quotationRevision({ quotation_to: 'Customer', party_name: 'C-1', company: 'Company', transaction_date: '2026-10-16', items: [{ item_code: 'ITEM-1', qty: 1, rate: 10, name: 'old-row' }], taxes: [], payment_schedule: [] }, 'QTN-1')
+    expect(revision).toMatchObject({ amended_from: 'QTN-1', docstatus: 0 })
+    expect(revision.name).toBeUndefined()
+    expect((revision.items as Array<Record<string, unknown>>)[0].name).toBeUndefined()
   })
 })

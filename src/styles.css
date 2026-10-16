@@ -295,6 +295,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .quotation-detail-item div { min-width: 0; }
 .quotation-detail-item strong, .quotation-detail-item small { display: block; overflow-wrap: anywhere; }
 .quotation-detail-item small { margin-top: .15rem; color: var(--color-muted); font-size: .68rem; }
+.quotation-details-inline { margin-top: 1rem; padding: 1rem; }
+.quotation-editor { min-width: 0; }
+.quotation-editor-grid { display: grid; gap: 1rem; }
+.quotation-editor-grid > .card { min-width: 0; }
+.quotation-editor-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.quotation-editor table th, .quotation-editor table td { padding: .5rem; vertical-align: top; }
+.quotation-editor table th { color: var(--color-muted); font-size: .68rem; text-transform: uppercase; }
 @media (max-width: 640px) {
   .quotation-context, .quotation-toolbar { align-items: stretch; flex-direction: column; }
   .quotation-context .field, .quotation-status-select { width: 100%; max-width: none; }

@@ -53,6 +53,9 @@ export function createErpNextClient(connection: ConnectionProfile) {
       const latest = await request<Record<string, unknown>>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`)
       return request<T>('/api/method/frappe.client.submit', { method: 'POST', body: JSON.stringify({ doc: JSON.stringify({ ...latest, doctype, name }) }) })
     },
+    async cancelDocument<T>(doctype: string, name: string) {
+      return request<T>('/api/method/frappe.client.cancel', { method: 'POST', body: JSON.stringify({ doctype, name }) })
+    },
     async deleteDocument(doctype: string, name: string) { await request(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, { method: 'DELETE' }) },
     async getDocTypeMeta(doctype: string): Promise<DocTypeMeta> {
       return request<DocTypeMeta>(`/api/v2/doctype/${encodeURIComponent(doctype)}/meta`)
