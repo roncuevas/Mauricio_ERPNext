@@ -4,6 +4,7 @@ import { DEFAULT_FEATURE_FLAGS, createEnvironmentFeatureFlagProvider, readFeatur
 describe('feature flags', () => {
   it('uses safe defaults when the environment has no overrides', () => {
     expect(readFeatureFlags({})).toEqual(DEFAULT_FEATURE_FLAGS)
+    expect(DEFAULT_FEATURE_FLAGS.quotationsView).toBe(false)
   })
 
   it('parses common environment boolean values', () => {

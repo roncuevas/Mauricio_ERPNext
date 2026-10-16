@@ -12,7 +12,7 @@ export interface FeatureFlagProvider {
 }
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
-  quotationsView: true,
+  quotationsView: false,
   quotationAutomaticTaxes: true,
   quotationSubmittedRevision: true,
 }
