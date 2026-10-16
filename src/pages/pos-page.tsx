@@ -42,9 +42,13 @@ function ProductPicker({ items, prices, priceList, currency, lines, variantsByTe
   const [input, setInput] = useState('')
   const [search, setSearch] = useState('')
   const filtered = useMemo(() => {
-    const names = new Set(items.map((item) => item.name))
-    return filterItems(items.filter((item) => !item.disabled && (!item.variant_of || !names.has(item.variant_of))), search).slice(0, 80)
-  }, [items, search])
+    const roots = items.filter((item) => !item.disabled && !item.variant_of)
+    const matchingRoots = filterItems(roots, search)
+    if (!search) return matchingRoots.slice(0, 80)
+    const matchingVariantParents = new Set(filterItems(Array.from(variantsByTemplate.values()).flat(), search).map((item) => item.variant_of).filter(Boolean))
+    const included = new Set(matchingRoots.map((item) => item.name))
+    return [...matchingRoots, ...roots.filter((item) => matchingVariantParents.has(item.name) && !included.has(item.name))].slice(0, 80)
+  }, [items, search, variantsByTemplate])
   return <section className="pos-products card"><div className="pos-section-heading"><div><h2>Productos</h2><span>{filtered.length} disponibles · {items.length} en caché</span></div><span className="pos-hint">Selecciona una tarjeta</span></div><form className="pos-search" onSubmit={(event) => { event.preventDefault(); setSearch(input.trim()) }}><Input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Buscar nombre, SKU o barcode" aria-label="Buscar productos POS" autoFocus /><SearchButton label="Buscar productos POS" /></form><div className="pos-product-grid">{filtered.map((item) => { const variants = variantsByTemplate.get(item.name) ?? []; const isTemplate = Boolean(item.has_variants) || variants.length > 0; const itemUom = defaultUom(item); const quantity = lines.find((line) => line.itemCode === item.name && line.uom === itemUom.uom)?.qty ?? 0; const inCart = isTemplate ? variants.some((variant) => lines.some((line) => line.itemCode === variant.name && line.qty > 0)) : quantity > 0; return <PosProductCard key={item.name} item={item} price={isTemplate ? null : defaultPrice(item, prices, priceList)} currency={currency} quantity={quantity} inCart={inCart} isTemplate={isTemplate} variantCount={variants.length} uomCount={item.uoms?.length ?? 0} onAdd={() => onAdd(item)} onDecrease={() => onDecrease(item)} onOpenTemplate={() => onOpenTemplate(item)} /> })}{!filtered.length && <p className="muted p-4">No hay coincidencias. Carga o refresca el catálogo en Productos.</p>}</div></section>
 }
 
@@ -119,11 +123,14 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const preparedSummary = preparedClosing ? closingSummary({ openingBalances: preparedClosing.openingBalances, balances: closingBalances, payments: preparedClosing.payments, invoices: preparedClosing.invoices, taxes: preparedClosing.taxes }) : undefined
   const cartCount = lines.reduce((sum, line) => sum + line.qty, 0)
   const posItems = useMemo(() => {
-    const variantDetails = new Map((variantCatalog.data?.items ?? []).map((item) => [item.name, item]))
-    return (catalog.data?.items ?? []).map((item) => {
-      const detailed = variantDetails.get(item.name)
-      return detailed?.uoms?.length ? { ...item, uoms: detailed.uoms, sales_uom: detailed.sales_uom ?? item.sales_uom } : item
-    })
+    const merged = new Map<string, CachedItem>()
+    for (const item of catalog.data?.items ?? []) merged.set(item.name, item)
+    for (const item of variantCatalog.data?.items ?? []) merged.set(item.name, { ...merged.get(item.name), ...item })
+    for (const item of merged.values()) {
+      if (item.disabled || !item.variant_of || merged.has(item.variant_of)) continue
+      merged.set(item.variant_of, { name: item.variant_of, item_name: item.variant_of, has_variants: true, stock_uom: item.stock_uom, sales_uom: item.sales_uom })
+    }
+    return Array.from(merged.values())
   }, [catalog.data?.items, variantCatalog.data?.items])
   const variantsByTemplate = useMemo(() => {
     const map = new Map<string, CachedItem[]>()
