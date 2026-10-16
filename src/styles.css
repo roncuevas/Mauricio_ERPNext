@@ -271,8 +271,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .quotation-context { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; padding: 1rem; }
 .quotation-context .field { min-width: min(100%, 24rem); }
 .quotation-toolbar { display: flex; align-items: end; gap: .75rem; margin-bottom: 1rem; padding: 1rem; }
-.quotation-search { display: flex; min-width: 0; flex: 1; gap: .5rem; }
-.quotation-status-select { min-width: 10rem; }
+.quotation-search { display: flex; min-width: 0; flex: 1 1 auto; gap: .5rem; }
+.quotation-search > .control { min-width: 0; flex: 1 1 auto; }
+.quotation-status-select { width: 10rem; min-width: 10rem; max-width: 10rem; flex: 0 0 10rem; }
 .quotation-list { overflow: hidden; }
 .quotation-list table { border-collapse: collapse; }
 .quotation-list th { background: var(--color-surface-muted); color: var(--color-muted); font-size: .68rem; letter-spacing: .04em; text-transform: uppercase; }
@@ -296,7 +297,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .quotation-detail-item small { margin-top: .15rem; color: var(--color-muted); font-size: .68rem; }
 @media (max-width: 640px) {
   .quotation-context, .quotation-toolbar { align-items: stretch; flex-direction: column; }
-  .quotation-context .field, .quotation-status-select { width: 100%; }
+  .quotation-context .field, .quotation-status-select { width: 100%; max-width: none; }
+  .quotation-status-select { flex-basis: auto; }
   .quotation-search { width: 100%; }
   .quotation-details-body { padding-inline: .1rem; }
 }
