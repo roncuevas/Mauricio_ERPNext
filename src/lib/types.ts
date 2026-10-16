@@ -317,3 +317,45 @@ export type PosDraftDocument = PosDraftSummary & {
   pos_profile?: string
   items: PosDraftItem[]
 }
+
+export type QuotationStatus = 'Draft' | 'Open' | 'Replied' | 'Partially Ordered' | 'Ordered' | 'Lost' | 'Cancelled' | 'Expired'
+
+export type QuotationSummary = {
+  name: string
+  quotation_to?: string
+  party_name?: string
+  customer_name?: string
+  company?: string
+  transaction_date?: string
+  valid_till?: string
+  status?: QuotationStatus | string
+  currency?: string
+  grand_total?: number
+  modified?: string
+}
+
+export type QuotationItem = {
+  name?: string
+  item_code: string
+  item_name?: string
+  description?: string
+  qty: number
+  uom?: string
+  stock_uom?: string
+  conversion_factor?: number
+  rate: number
+  amount?: number
+  warehouse?: string
+  prevdoc_docname?: string
+  prevdoc_detail_docname?: string
+}
+
+export type QuotationDocument = QuotationSummary & {
+  quotation_to: string
+  party_name: string
+  company: string
+  selling_price_list?: string
+  taxes_and_charges?: string
+  order_type?: string
+  items: QuotationItem[]
+}

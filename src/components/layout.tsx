@@ -5,6 +5,7 @@ import { useTheme } from './theme-provider'
 
 const navigation = [
   ['/pos', 'POS'],
+  ['/pos/cotizaciones', 'Cotizaciones'],
   ['/pos/turnos', 'Turnos'],
   ['/items', 'Productos'],
   ['/variants', 'Variantes'],
