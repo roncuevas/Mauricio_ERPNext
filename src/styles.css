@@ -167,6 +167,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .product-table-actions-head { background: var(--color-surface-muted); }
 .product-table-actions { display: flex; flex-wrap: wrap; gap: .35rem; white-space: normal; }
 .product-table-mobile { display: none; }
+.virtualized-collection-content { position: relative; min-height: 100%; }
+.virtualized-collection-item { position: absolute; top: 0; left: 0; width: 100%; }
 
 @media (max-width: 700px) {
   .product-table-toolbar { align-items: flex-start; flex-wrap: wrap; }

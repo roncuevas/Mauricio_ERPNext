@@ -12,6 +12,7 @@ import { readItemSearchDetails } from '../lib/catalog-sync'
 import { syncProductCardDetails } from '../lib/product-details-sync'
 import type { CachedItem, ItemCatalogCache } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
+import { cacheStatusLabel, getCacheStatus } from '../lib/cache-policy'
 import type { createErpNextClient } from '../lib/erpnext'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -59,7 +60,8 @@ export function ProductWorkspacePage({ client, profileId }: { client: Client; pr
   const filtered = useMemo(() => filterItems(catalog.data?.items ?? [], search), [catalog.data?.items, search])
   const rows = filtered.slice(page * pageLength, (page + 1) * pageLength)
   const hasCache = Boolean(catalog.data)
-  const updated = catalog.data ? new Date(catalog.data.updatedAt).toLocaleString() : ''
+  const catalogStatus = cacheStatusLabel(getCacheStatus('catalog', catalog.data))
+  const updated = catalog.data ? `${new Date(catalog.data.updatedAt).toLocaleString()} · ${catalogStatus}` : ''
 
   function changeView(next: ProductView) {
     setView(next)

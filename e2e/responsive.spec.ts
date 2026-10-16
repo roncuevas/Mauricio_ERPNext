@@ -39,8 +39,12 @@ async function createConnection(page: Page) {
 }
 
 async function refreshCatalog(page: Page) {
+  await expect(page.getByRole('heading', { name: 'Productos' })).toBeVisible()
   const actions = page.locator('details.mobile-actions')
-  if (await actions.isVisible()) await actions.locator('summary').click()
+  if (await actions.isVisible()) {
+    await actions.locator('summary').click()
+    await expect(page.getByRole('button', { name: 'Refrescar catálogo' })).toBeVisible()
+  }
   await page.getByRole('button', { name: 'Refrescar catálogo' }).click()
 }
 

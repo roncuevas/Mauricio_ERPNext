@@ -9,6 +9,7 @@ import { PosClosingPanel as BasePosClosingPanel, PosCustomerPicker, PosMobileTab
 import { PosDraftsSheet } from '../components/pos-drafts-sheet'
 import { PosMissingPriceDialog } from '../components/pos-missing-price-dialog'
 import { PosPriceSheet } from '../components/pos-price-sheet'
+import { VirtualizedCollection } from '../components/virtualized-collection'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { filterItems, readItemCatalog } from '../lib/item-cache'
 import { readItemPriceCatalog } from '../lib/price-cache'
@@ -17,6 +18,7 @@ import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftT
 import type { CachedItem, ItemPrice, ItemUom, PosCartLine, PosDraftDocument, PosDraftSummary, PosPaymentLine, PosPaymentMethod, PosProfile, PosSaleSummary, PosTaxRow, PosTaxTemplate } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
 import { queryKeys } from '../lib/query-keys'
+import { defaultPrice, defaultUom, priceForUom, variantPriceRange } from '../lib/pos-catalog'
 
 type Client = ReturnType<typeof createErpNextClient>
 type ActiveShift = { name: string; profileName: string; user: string }
@@ -28,38 +30,18 @@ function currentDateTime() { const date = new Date(); return { date: date.toISOS
 function storageKey(profileId: string) { return `mauricio-erpnext:pos-shift:${profileId}` }
 function pendingPriceKey(profileId: string) { return `mauricio-erpnext:pos-price-return:${profileId}` }
 function money(value: number, currency = 'MXN') { return formatMoney(value, currency) }
-function defaultUom(item: CachedItem): ItemUom { return item.uoms?.find((uom) => uom.uom === item.sales_uom) ?? item.uoms?.find((uom) => uom.uom === item.stock_uom) ?? { uom: item.stock_uom || item.sales_uom || '', conversion_factor: 1 } }
-function priceForUom(item: CachedItem, uom: string, prices: ItemPrice[], priceList?: string) {
-  const matches = prices.filter((price) => [item.name, item.item_code].includes(price.item_code) && price.selling && (!priceList || price.price_list === priceList))
-  const exact = matches.find((price) => (price.uom || item.stock_uom) === uom)
-  if (exact) return Number(exact.price_list_rate ?? 0)
-  if (uom === item.stock_uom) return Number(matches.find((price) => !price.uom)?.price_list_rate ?? matches[0]?.price_list_rate ?? 0)
-  return 0
-}
-function defaultPrice(item: CachedItem, prices: ItemPrice[], priceList?: string) {
-  return priceForUom(item, defaultUom(item).uom, prices, priceList)
-}
-function variantPriceRange(variants: CachedItem[], prices: ItemPrice[], priceList: string | undefined, currency: string) {
-  const codes = new Set(variants.flatMap((variant) => [variant.name, variant.item_code].filter(Boolean)))
-  const rates = prices.filter((price) => price.selling && codes.has(price.item_code || '') && (!priceList || price.price_list === priceList)).map((price) => Number(price.price_list_rate ?? 0)).filter((rate) => Number.isFinite(rate) && rate > 0)
-  if (!rates.length) return undefined
-  const minimum = Math.min(...rates)
-  const maximum = Math.max(...rates)
-  return minimum === maximum ? money(minimum, currency) : `${money(minimum, currency)} – ${money(maximum, currency)}`
-}
-
 function ProductPicker({ items, prices, priceList, currency, lines, variantsByTemplate, onAdd, onDecrease, onOpenTemplate }: { items: CachedItem[]; prices: ItemPrice[]; priceList?: string; currency: string; lines: PosCartLine[]; variantsByTemplate: Map<string, CachedItem[]>; onAdd: (item: CachedItem) => void; onDecrease: (item: CachedItem) => void; onOpenTemplate: (item: CachedItem) => void }) {
   const [input, setInput] = useState('')
   const [search, setSearch] = useState('')
   const filtered = useMemo(() => {
     const roots = items.filter((item) => !item.disabled && !item.variant_of)
     const matchingRoots = filterItems(roots, search)
-    if (!search) return matchingRoots.slice(0, 80)
+    if (!search) return matchingRoots
     const matchingVariantParents = new Set(filterItems(Array.from(variantsByTemplate.values()).flat(), search).map((item) => item.variant_of).filter(Boolean))
     const included = new Set(matchingRoots.map((item) => item.name))
-    return [...matchingRoots, ...roots.filter((item) => matchingVariantParents.has(item.name) && !included.has(item.name))].slice(0, 80)
+    return [...matchingRoots, ...roots.filter((item) => matchingVariantParents.has(item.name) && !included.has(item.name))]
   }, [items, search, variantsByTemplate])
-  return <section className="pos-products card"><div className="pos-section-heading"><div><h2>Productos</h2><span>{filtered.length} disponibles · {items.length} en caché</span></div><span className="pos-hint">Selecciona una tarjeta</span></div><form className="pos-search" onSubmit={(event) => { event.preventDefault(); setSearch(input.trim()) }}><Input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Buscar nombre, SKU o barcode" aria-label="Buscar productos POS" autoFocus /><SearchButton label="Buscar productos POS" /></form><div className="pos-product-grid">{filtered.map((item) => { const variants = variantsByTemplate.get(item.name) ?? []; const isTemplate = Boolean(item.has_variants) || variants.length > 0; const itemUom = defaultUom(item); const quantity = lines.find((line) => line.itemCode === item.name && line.uom === itemUom.uom)?.qty ?? 0; const inCart = isTemplate ? variants.some((variant) => lines.some((line) => line.itemCode === variant.name && line.qty > 0)) : quantity > 0; const priceHref = isTemplate ? `/prices?search=${encodeURIComponent(item.name)}` : `/prices/manage/${encodeURIComponent(item.name)}?returnTo=/pos`; return <PosProductCard key={item.name} item={item} price={isTemplate ? null : defaultPrice(item, prices, priceList)} priceLabel={isTemplate ? variantPriceRange(variants, prices, priceList, currency) : undefined} priceHref={priceHref} currency={currency} quantity={quantity} inCart={inCart} isTemplate={isTemplate} variantCount={variants.length} uomCount={item.uoms?.length ?? 0} onAdd={() => onAdd(item)} onDecrease={() => onDecrease(item)} onOpenTemplate={() => onOpenTemplate(item)} /> })}{!filtered.length && <p className="muted p-4">No hay coincidencias. Carga o refresca el catálogo en Productos.</p>}</div></section>
+  return <section className="pos-products card"><div className="pos-section-heading"><div><h2>Productos</h2><span>{filtered.length} disponibles · {items.length} en caché</span></div><span className="pos-hint">Selecciona una tarjeta</span></div><form className="pos-search" onSubmit={(event) => { event.preventDefault(); setSearch(input.trim()) }}><Input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Buscar nombre, SKU o barcode" aria-label="Buscar productos POS" autoFocus /><SearchButton label="Buscar productos POS" /></form><VirtualizedCollection className="pos-product-grid" items={filtered} getKey={(item) => item.name} estimateSize={128} renderItem={(item) => { const variants = variantsByTemplate.get(item.name) ?? []; const isTemplate = Boolean(item.has_variants) || variants.length > 0; const itemUom = defaultUom(item); const quantity = lines.find((line) => line.itemCode === item.name && line.uom === itemUom.uom)?.qty ?? 0; const inCart = isTemplate ? variants.some((variant) => lines.some((line) => line.itemCode === variant.name && line.qty > 0)) : quantity > 0; const priceHref = isTemplate ? `/prices?search=${encodeURIComponent(item.name)}` : `/prices/manage/${encodeURIComponent(item.name)}?returnTo=/pos`; return <PosProductCard item={item} price={isTemplate ? null : defaultPrice(item, prices, priceList)} priceLabel={isTemplate ? variantPriceRange(variants, prices, priceList, currency) : undefined} priceHref={priceHref} currency={currency} quantity={quantity} inCart={inCart} isTemplate={isTemplate} variantCount={variants.length} uomCount={item.uoms?.length ?? 0} onAdd={() => onAdd(item)} onDecrease={() => onDecrease(item)} onOpenTemplate={() => onOpenTemplate(item)} /> }}>{!filtered.length && <p className="muted p-4">No hay coincidencias. Carga o refresca el catálogo en Productos.</p>}</VirtualizedCollection></section>
 }
 
 export function PosPage({ client, profileId }: { client: Client; profileId: string }) {
