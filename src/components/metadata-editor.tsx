@@ -4,12 +4,14 @@ import { Button, Field, Input, Notice, Spinner } from './ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import type { ErpNextClient } from '../lib/erpnext'
 import type { DocTypeField } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 
 type EditorValue = string | number | boolean
 type EditorValues = Record<string, EditorValue>
 
 type MetadataDocEditorProps = {
   client: ErpNextClient
+  profileId?: string
   doctype: string
   name: string | null
   fields: DocTypeField[]
@@ -52,8 +54,8 @@ function MetadataField({ field, value, disabled, onChange }: { field: DocTypeFie
   return <Field label={`${label}${field.hidden ? ' (oculto)' : ''}`}><Input type={inputType} step={isNumeric(field.fieldtype) ? 'any' : undefined} value={String(value)} disabled={disabled} required={Boolean(field.reqd && !disabled)} onChange={(event) => onChange(isNumeric(field.fieldtype) ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value)} /></Field>
 }
 
-export function MetadataDocEditor({ client, doctype, name, fields, initialValues = {}, onClose, onSaved }: MetadataDocEditorProps) {
-  const query = useQuery({ queryKey: ['metadata-editor', doctype, name], queryFn: () => client.getDocument<Record<string, unknown>>(doctype, name!), enabled: Boolean(name) })
+export function MetadataDocEditor({ client, profileId = client.profileId, doctype, name, fields, initialValues = {}, onClose, onSaved }: MetadataDocEditorProps) {
+  const query = useQuery({ queryKey: queryKeys.metadata.document(profileId, doctype, name), queryFn: () => client.getDocument<Record<string, unknown>>(doctype, name!), enabled: Boolean(name) })
   const [form, setForm] = useState<EditorValues>({})
   const [initialized, setInitialized] = useState(false)
   const [busy, setBusy] = useState(false)

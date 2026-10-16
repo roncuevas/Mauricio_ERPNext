@@ -5,6 +5,7 @@ import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
 import type { ConnectionProfile } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 
 function formatProfileDate(value?: string) {
   if (!value) return '—'
@@ -31,7 +32,7 @@ function UserDetail({ label, value }: { label: string; value?: string }) {
 
 export function SettingsPage({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
   const client = useMemo(() => createErpNextClient(connection), [connection])
-  const userQuery = useQuery({ queryKey: ['settings-user-profile', connection.id], queryFn: () => loadUserProfile(client) })
+  const userQuery = useQuery({ queryKey: queryKeys.settings.userProfile(connection.id), queryFn: () => loadUserProfile(client) })
   const { theme, setTheme, themes } = useTheme()
   const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
   const user = userQuery.data?.profile

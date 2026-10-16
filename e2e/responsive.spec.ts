@@ -86,7 +86,7 @@ test.describe('responsive navigation and empty states', () => {
     test.skip(testInfo.project.name !== 'mobile', 'Este caso corresponde al proyecto móvil')
     await createConnection(page)
     await refreshCatalog(page)
-    await expect(page.getByText('Croquetas Adulto Premium')).toBeVisible()
+    await expect(page.getByText('Croquetas Adulto Premium', { exact: true }).first()).toBeVisible()
     await page.getByRole('button', { name: 'Cards' }).click()
     await expect(page.getByRole('alert')).toContainText('La vista Cards carga información enriquecida')
     await page.getByRole('button', { name: 'Cargar y guardar en caché' }).click()
@@ -102,11 +102,12 @@ test.describe('responsive navigation and empty states', () => {
     await page.getByRole('textbox', { name: 'Buscar precios por producto' }).fill('Croquetas')
     await page.getByRole('button', { name: 'Buscar precios por producto' }).click()
     await expect(page.getByText('Croquetas Adulto Premium')).toBeVisible()
-    await expect(page.locator('.prices-filter-toggle')).toHaveAttribute('aria-expanded', 'false')
-    await page.locator('.prices-filter-toggle').click()
-    await expect(page.locator('.prices-filter-toggle')).toHaveAttribute('aria-expanded', 'true')
+    const pricesFilter = page.getByRole('button', { name: 'Filtros de precios' })
+    await expect(pricesFilter).toHaveAttribute('aria-expanded', 'false')
+    await pricesFilter.click()
     await expect(page.getByRole('heading', { name: 'Filtros de Precios' })).toBeVisible()
-    await page.locator('select[aria-label="Filtrar por marca"]:visible').selectOption('Nupec')
+    await page.getByRole('combobox', { name: 'Marca' }).click()
+    await page.getByRole('option', { name: 'Nupec' }).click()
     await expect(page.getByText('Croquetas Adulto Premium')).toBeVisible()
     await page.locator('input[aria-label="Precio mínimo"]:visible').last().fill('151')
     await expect(page.getByText('No hay productos para la búsqueda actual.')).toBeVisible()
@@ -181,7 +182,7 @@ test.describe('responsive navigation and empty states', () => {
       await expect(page.getByRole('tab', { name: /Carrito/ })).toHaveAttribute('aria-selected', 'true')
       await page.getByRole('button', { name: 'Más acciones del POS' }).click()
       await expect(page.getByRole('menuitem', { name: 'Mostrar productos' })).toBeVisible()
-      await page.keyboard.press('Escape')
+      await page.getByRole('menuitem', { name: 'Mostrar contexto' }).click()
     }
     await page.getByLabel('Buscar cliente').fill('Cliente')
     await expect(page.getByRole('option', { name: 'Cliente Demo' })).toBeVisible()
@@ -191,12 +192,16 @@ test.describe('responsive navigation and empty states', () => {
     if (testInfo.project.name === 'desktop') await expect(page.locator('.pos-layout')).toBeVisible()
   })
 
-  test('POS prepares and submits an ERPNext closing entry after explicit confirmation', async ({ page }) => {
+  test('POS prepares and submits an ERPNext closing entry after explicit confirmation', async ({ page }, testInfo) => {
     await createConnection(page)
     await page.goto('/items')
     await refreshCatalog(page)
     await page.goto('/pos')
     await page.getByRole('button', { name: 'Abrir turno' }).click()
+    if (testInfo.project.name === 'mobile') {
+      await page.getByRole('button', { name: 'Más acciones del POS' }).click()
+      await page.getByRole('menuitem', { name: 'Mostrar contexto' }).click()
+    }
     await expect(page.getByText(/Turno abierto:/)).toBeVisible()
     await page.getByRole('button', { name: 'Preparar cierre' }).click()
     await expect(page.getByRole('heading', { name: 'Arqueo de cierre' })).toBeVisible()

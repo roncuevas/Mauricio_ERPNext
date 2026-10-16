@@ -168,7 +168,7 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
   const [searchParams] = useSearchParams()
   const pricesQuery = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
   const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
-  const priceListsQuery = useQuery({ queryKey: ['price-lists', profileId], queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
+  const priceListsQuery = useQuery({ queryKey: queryKeys.prices.lists(profileId), queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '')
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
   const [filters, setFilters] = useState<PriceFilters>(emptyPriceFilters)
@@ -208,7 +208,7 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
       uoms: Array.from(new Set(prices.map((price) => price.uom || '—'))).sort(),
     }
   }, [priceListsQuery.data, pricesQuery.data?.prices, variantsQuery.data?.items])
-  const refresh = useMutation({ mutationFn: async () => { const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => setSyncMessage(`Descargando precios: ${count}`)); const next: ItemPriceCatalogCache = { profileId, updatedAt: new Date().toISOString(), prices }; return writeItemPriceCatalog(next) }, onSuccess: (next) => { queryClient.setQueryData(['item-price-catalog', profileId], next); setSyncMessage(`Precios actualizados: ${next.prices.length}`) }, onError: (error) => setSyncMessage(error.message) })
+  const refresh = useMutation({ mutationFn: async () => { const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => setSyncMessage(`Descargando precios: ${count}`)); const next: ItemPriceCatalogCache = { profileId, updatedAt: new Date().toISOString(), prices }; return writeItemPriceCatalog(next) }, onSuccess: (next) => { queryClient.setQueryData(queryKeys.catalog.price(profileId), next); setSyncMessage(`Precios actualizados: ${next.prices.length}`) }, onError: (error) => setSyncMessage(error.message) })
   const searchResult = useMemo(() => collectVisibleNames(tree.roots, tree.children, pricesByItem, search, filters), [tree.children, tree.roots, pricesByItem, search, filters])
   const visibleNames = searchResult.visibleNames
   const effectiveExpanded = useMemo(() => {
@@ -251,7 +251,7 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   const queryClient = useQueryClient()
   const pricesQuery = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
   const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
-  const priceListsQuery = useQuery({ queryKey: ['price-lists', profileId], queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
+  const priceListsQuery = useQuery({ queryKey: queryKeys.prices.lists(profileId), queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [editingPriceName, setEditingPriceName] = useState(searchParams.get('price') ?? '')
   const [message, setMessage] = useState('')
   const returnToPrices = searchParams.get('returnTo') || '/prices'
@@ -262,7 +262,7 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   async function savePrice(price: ItemPrice) {
     const next = await patchItemPriceCatalog(profileId, price)
     if (!next) throw new Error('ERPNext guardó el precio, pero no se pudo actualizar la caché local.')
-    queryClient.setQueryData(['item-price-catalog', profileId], next)
+    queryClient.setQueryData(queryKeys.catalog.price(profileId), next)
     setEditingPriceName(price.name)
     setMessage(`Precio guardado para ${price.item_code}`)
     if (returnToPrices.startsWith('/pos')) navigate(returnToPrices)

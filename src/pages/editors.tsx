@@ -31,11 +31,11 @@ function VariantEditor({ client, profileId, name, initialTemplate, onClose }: { 
     if (!cache || !savedName) return
     const previous = cache.items.find((item) => item.name === savedName)
     const next = await patchVariantCatalog(profileId, { ...previous, ...saved, name: savedName } as VariantItem)
-    if (next) queryClient.setQueryData(['variant-catalog', profileId], next)
+    if (next) queryClient.setQueryData(queryKeys.catalog.variant(profileId), next)
   }
   if (meta.isError) return <Notice>{meta.error.message}</Notice>
   if (meta.isPending) return <Spinner />
-  return <MetadataDocEditor client={client} doctype="Item" name={name} initialValues={{ variant_of: initialTemplate, has_variants: 0 }} onClose={onClose} onSaved={updateVariantCache} fields={meta.data.fields} />
+  return <MetadataDocEditor client={client} profileId={profileId} doctype="Item" name={name} initialValues={{ variant_of: initialTemplate, has_variants: 0 }} onClose={onClose} onSaved={updateVariantCache} fields={meta.data.fields} />
 }
 
 export function ItemEditorPage({ client, profileId }: { client: Client; profileId: string }) {
@@ -44,7 +44,7 @@ export function ItemEditorPage({ client, profileId }: { client: Client; profileI
   const isNew = !name || name === 'new'
   const queryClient = useQueryClient()
   const meta = useQuery({ queryKey: queryKeys.metadata.doctype(profileId, 'Item'), queryFn: () => client.getDocTypeMeta('Item') })
-  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(['item-catalog', profileId], next) } await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] }) }} />}</section>
+  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} profileId={profileId} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(queryKeys.catalog.item(profileId), next) } await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) }) }} />}</section>
 }
 
 function readUomValues(document: Record<string, unknown>): UomEditorValues {
@@ -78,11 +78,11 @@ export function UomEditorPage({ client, profileId }: { client: Client; profileId
       const savedItem = { ...saved, name, stock_uom: next.stockUom, sales_uom: next.salesUom, purchase_uom: next.purchaseUom, uoms: next.conversions }
       const itemCache = await patchItemCatalog(profileId, savedItem as CachedItem)
       const variantCache = await patchVariantCatalog(profileId, savedItem as VariantItem)
-      if (itemCache) queryClient.setQueryData(['item-catalog', profileId], itemCache)
-      if (variantCache) queryClient.setQueryData(['variant-catalog', profileId], variantCache)
-      queryClient.setQueryData(['item-uoms', profileId, name], savedItem)
-      await queryClient.invalidateQueries({ queryKey: ['item-catalog', profileId] })
-      await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] })
+      if (itemCache) queryClient.setQueryData(queryKeys.catalog.item(profileId), itemCache)
+      if (variantCache) queryClient.setQueryData(queryKeys.catalog.variant(profileId), variantCache)
+      queryClient.setQueryData(queryKeys.item.detail(profileId, name ?? ''), savedItem)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.item(profileId) })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) })
       navigate(`/items/${encodeURIComponent(name)}`)
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudieron guardar las UOM.') } finally { setBusy(false) }
   }
