@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
+import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
 import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
@@ -55,7 +56,7 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
       <div className="card settings-theme-card">
         <div className="settings-section-heading"><div><p className="settings-eyebrow">Apariencia</p><h2>Paleta de colores</h2><p className="muted">El cambio se aplica a toda la aplicación y se guarda en este navegador.</p></div><span className="settings-theme-current" style={{ background: activeTheme.colors.primary }} aria-label={`Paleta activa: ${activeTheme.name}`} /></div>
         <div className="theme-preview" aria-label="Vista previa de la paleta activa"><div><span className="theme-preview-label">Vista previa</span><strong>{activeTheme.name}</strong></div><div className="theme-preview-actions"><span className="theme-preview-chip">Datos sincronizados</span><Button size="compact">Acción principal</Button><Button size="compact" variant="secondary">Secundaria</Button></div></div>
-        <div className="theme-grid" role="radiogroup" aria-label="Paletas disponibles">{themes.map((entry) => <button key={entry.id} type="button" role="radio" aria-checked={entry.id === theme} className={`theme-option${entry.id === theme ? ' theme-option-active' : ''}`} onClick={() => setTheme(entry.id)}><span className="theme-option-swatches" aria-hidden="true"><i style={{ background: entry.colors.primary }} /><i style={{ background: entry.colors.secondary }} /><i style={{ background: entry.colors.accent }} /><i style={{ background: entry.colors.page }} /></span><span className="theme-option-copy"><strong>{entry.name}</strong><small>{entry.description}</small></span><span className="theme-option-check" aria-hidden="true">{entry.id === theme ? '✓' : ''}</span></button>)}</div>
+        <RadioGroup className="theme-grid" value={theme} onValueChange={setTheme} aria-label="Paletas disponibles">{themes.map((entry) => <label key={entry.id} className={`theme-option${entry.id === theme ? ' theme-option-active' : ''}`} htmlFor={`theme-${entry.id}`}><RadioGroupItem id={`theme-${entry.id}`} value={entry.id} className="sr-only" /><span className="theme-option-swatches" aria-hidden="true"><i style={{ background: entry.colors.primary }} /><i style={{ background: entry.colors.secondary }} /><i style={{ background: entry.colors.accent }} /><i style={{ background: entry.colors.page }} /></span><span className="theme-option-copy"><strong>{entry.name}</strong><small>{entry.description}</small></span><span className="theme-option-check" aria-hidden="true">{entry.id === theme ? '✓' : ''}</span></label>)}</RadioGroup>
       </div>
     </div>
   </section>

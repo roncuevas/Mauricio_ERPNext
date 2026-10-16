@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MetadataDocEditor } from '../components/metadata-editor'
 import { Button, Input, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
+import { EmptyState, LoadingState } from '../components/ui/states'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { createErpNextClient } from '../lib/erpnext'
 import { listAllDocuments } from '../lib/pagination'
 import { readSupplierCatalog, writeSupplierCatalog } from '../lib/supplier-cache'
@@ -33,7 +35,7 @@ export function SuppliersPage({ client, profileId }: { client: Client; profileId
     <div className="card overflow-hidden">
       {query.isError && <div className="p-4"><Notice>{query.error.message}</Notice></div>}
       {refresh.isError && <div className="p-4"><Notice>{refresh.error.message}</Notice></div>}
-      {query.isPending ? <div className="flex justify-center p-12"><Spinner /></div> : !query.data ? <div className="p-12 text-center"><p className="font-medium text-slate-700">Aún no hay proveedores en la caché local.</p><p className="mt-1 muted">Pulsa “Refrescar proveedores” para descargarlos desde ERPNext.</p></div> : suppliers.length === 0 ? <div className="p-10 text-center muted">No hay coincidencias.</div> : <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Proveedor</th><th className="px-4 py-3">Grupo</th><th className="px-4 py-3">Tipo</th><th className="px-4 py-3">País</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100">{suppliers.map((supplier) => <tr key={supplier.name} className="hover:bg-slate-50"><td className="px-4 py-3 font-medium">{supplier.supplier_name || supplier.name}</td><td className="px-4 py-3">{supplier.supplier_group || '—'}</td><td className="px-4 py-3">{supplier.supplier_type || '—'}</td><td className="px-4 py-3">{supplier.country || '—'}</td><td className="px-4 py-3">{supplier.disabled ? 'Deshabilitado' : 'Activo'}</td></tr>)}</tbody></table></div>}
+      {query.isPending ? <LoadingState /> : !query.data ? <EmptyState title="Aún no hay proveedores en la caché local." description="Pulsa “Refrescar proveedores” para descargarlos desde ERPNext." /> : suppliers.length === 0 ? <EmptyState title="No hay coincidencias." /> : <div className="overflow-x-auto"><Table className="min-w-[720px] text-left"><TableHeader><TableRow><TableHead>Proveedor</TableHead><TableHead>Grupo</TableHead><TableHead>Tipo</TableHead><TableHead>País</TableHead><TableHead>Estado</TableHead></TableRow></TableHeader><TableBody>{suppliers.map((supplier) => <TableRow key={supplier.name}><TableCell className="font-medium">{supplier.supplier_name || supplier.name}</TableCell><TableCell>{supplier.supplier_group || '—'}</TableCell><TableCell>{supplier.supplier_type || '—'}</TableCell><TableCell>{supplier.country || '—'}</TableCell><TableCell>{supplier.disabled ? 'Deshabilitado' : 'Activo'}</TableCell></TableRow>)}</TableBody></Table></div>}
     </div>
   </section>
 }
