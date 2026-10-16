@@ -1,7 +1,8 @@
 import { formatMoney } from '../lib/pos'
 import type { CachedItem } from '../lib/types'
+import { Link } from 'react-router-dom'
 
-export function PosProductCard({ item, price, priceLabel, currency, quantity, isTemplate, inCart, variantCount = 0, uomCount = 0, onAdd, onDecrease, onOpenTemplate }: { item: CachedItem; price: number | null; priceLabel?: string; currency: string; quantity: number; isTemplate: boolean; inCart?: boolean; variantCount?: number; uomCount?: number; onAdd: () => void; onDecrease: () => void; onOpenTemplate: () => void }) {
+export function PosProductCard({ item, price, priceLabel, priceHref, currency, quantity, isTemplate, inCart, variantCount = 0, uomCount = 0, onAdd, onDecrease, onOpenTemplate }: { item: CachedItem; price: number | null; priceLabel?: string; priceHref: string; currency: string; quantity: number; isTemplate: boolean; inCart?: boolean; variantCount?: number; uomCount?: number; onAdd: () => void; onDecrease: () => void; onOpenTemplate: () => void }) {
   const title = item.item_name || item.name
   const weight = Number(item.weight_per_unit ?? 0) > 0 ? `${item.weight_per_unit} ${item.weight_uom || ''}`.trim() : ''
   const configurable = isTemplate || uomCount > 1
@@ -14,5 +15,6 @@ export function PosProductCard({ item, price, priceLabel, currency, quantity, is
       {!isTemplate && uomCount > 1 && <span className="pos-product-template-label">Varias UOM · configurar</span>}
     </button>
     {configurable ? <button type="button" className="button button-secondary button-compact pos-product-choose" onClick={onOpenTemplate}>{isTemplate ? 'Elegir variante' : 'Elegir UOM'}</button> : <div className="pos-product-stepper" aria-label={`Cantidad de ${title}`}><button type="button" onClick={onDecrease} disabled={quantity <= 0} aria-label={`Quitar ${title}`}>−</button><span aria-live="polite">{quantity}</span><button type="button" onClick={onAdd} aria-label={`Agregar ${title}`}>+</button></div>}
+    <Link className="pos-product-price-link" to={priceHref} onClick={(event) => event.stopPropagation()} aria-label={`Ver precios de ${title}`}>Ver precios</Link>
   </article>
 }

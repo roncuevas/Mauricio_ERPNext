@@ -807,6 +807,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-product-stepper button:disabled { border-color: var(--color-border-subtle); color: var(--color-muted); }
 .pos-product-stepper span { color: var(--color-heading); font-size: 1rem; font-weight: 700; text-align: center; }
 .pos-product-choose { width: 100%; }
+.pos-product-price-link { justify-self: start; color: var(--color-primary-hover); font-size: .68rem; font-weight: 750; text-decoration: underline; text-underline-offset: .15rem; }
+.pos-product-price-link:hover { color: var(--color-primary); }
 .pos-sheet-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; align-items: end; background: rgb(2 6 23 / 56%); padding: 1rem; }
 .pos-variant-sheet { width: min(100%, 42rem); max-height: min(88vh, 48rem); overflow-y: auto; margin: 0 auto; border: 1px solid var(--color-border); border-radius: 1rem 1rem .75rem .75rem; background: var(--color-surface); padding: 1rem; box-shadow: 0 24px 70px rgb(2 6 23 / 32%); }
 .pos-variant-sheet-body { display: grid; gap: 1rem; }
