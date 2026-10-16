@@ -195,7 +195,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 [data-theme] .app-brand-caption, [data-theme] .product-card-eyebrow, [data-theme] .price-management-label, [data-theme] .variant-children-label { color: var(--color-primary) !important; }
 [data-theme] .product-card::before { background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); }
 [data-theme] .product-card-title a:hover { color: var(--color-primary) !important; }
-[data-theme] .product-metric-margin, [data-theme] .price-template-badge, [data-theme] .variant-badge-template, [data-theme] .variant-badge-context { background: var(--color-primary-soft); color: var(--color-primary-hover); }
+[data-theme] .product-metric-margin, [data-theme] .price-template-badge, [data-theme] .variant-badge-template, [data-theme] .variant-badge-stock, [data-theme] .variant-badge-context { background: var(--color-primary-soft); color: var(--color-primary-hover); }
+[data-theme] .variant-badge-count { background: var(--color-surface-muted); color: var(--color-muted); }
 [data-theme] .variant-stock-badge, [data-theme] .variant-coverage { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); }
 [data-theme] .price-management-summary, [data-theme] .product-details-confirmation { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); }
 [data-theme] .price-management-entry-active { border-color: var(--color-primary); background: var(--color-primary-soft); }
@@ -534,6 +535,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .variant-node-meta { display: flex; flex-wrap: wrap; gap: .25rem .8rem; margin-top: .3rem; color: #64748b; font-size: .68rem; }
 .variant-badge { border-radius: .35rem; padding: .18rem .4rem; font-size: .62rem; font-weight: 800; }
 .variant-badge-template { background: #eff6ff; color: #1d4ed8; }
+.variant-badge-stock { background: #eff6ff; color: #1e40af; }
+.variant-badge-count { background: #f1f5f9; color: #475569; }
 .variant-badge-uom { background: #fffbeb; color: #b45309; }
 .variant-badge-context, .variant-badge-disabled { background: #f1f5f9; color: #64748b; }
 .variant-node-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; }
