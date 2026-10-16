@@ -15,6 +15,7 @@ import { readVariantCatalog } from '../lib/variant-cache'
 import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftToCartLines, formatMoney, lineTotal, normalizeClosingResponse, openingPayload, paymentLines, returnInvoicePayload, salesInvoicePayload, validateClosingInput } from '../lib/pos'
 import type { CachedItem, ItemPrice, ItemUom, PosCartLine, PosDraftDocument, PosDraftSummary, PosPaymentLine, PosPaymentMethod, PosProfile, PosSaleSummary, PosTaxRow, PosTaxTemplate } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
+import { queryKeys } from '../lib/query-keys'
 
 type Client = ReturnType<typeof createErpNextClient>
 type ActiveShift = { name: string; profileName: string; user: string }
@@ -109,7 +110,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const [priceLineIndex, setPriceLineIndex] = useState<number | null>(null)
   const [showPriceSheet, setShowPriceSheet] = useState(false)
 
-  const profiles = useQuery({ queryKey: ['pos-profiles', profileId], queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled'], pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
+  const profiles = useQuery({ queryKey: queryKeys.pos.profiles(profileId), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled'], pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
   const selectedProfile = profiles.data?.find((item) => item.name === profileName) ?? profiles.data?.[0]
   const canEditRate = selectedProfile?.allow_user_to_edit_rate === true || selectedProfile?.allow_user_to_edit_rate === 1
   const salesTaxTemplate = useQuery({ queryKey: ['pos-sales-tax-template', profileId, selectedProfile?.name, selectedProfile?.taxes_and_charges], enabled: Boolean(selectedProfile?.taxes_and_charges), queryFn: () => client.getDocument<PosTaxTemplate>('Sales Taxes and Charges Template', selectedProfile!.taxes_and_charges!) })
@@ -118,9 +119,9 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const posSettings = useQuery({ queryKey: ['pos-settings', profileId], queryFn: async () => client.getDocument<{ invoice_type?: 'Sales Invoice' | 'POS Invoice' }>('POS Settings', 'POS Settings') })
   const methods = useQuery({ queryKey: ['pos-payment-methods', profileId, selectedProfile?.name], enabled: Boolean(selectedProfile), queryFn: async () => { const profileName = selectedProfile!.name; const profile = await client.getDocument<PosProfile>('POS Profile', profileName); let configured: PosPaymentMethod[] = profile.payments ?? []; if (!configured.length) { try { configured = (await client.listDocuments<PosPaymentMethod>('POS Payment Method', { fields: ['name', 'parent', 'parenttype', 'parentfield', 'mode_of_payment', 'default', 'allow_in_returns'], filters: [['parent', '=', profileName], ['parenttype', '=', 'POS Profile'], ['parentfield', '=', 'payments']], pageLength: 100, orderBy: 'idx asc' })).data } catch { configured = [] } } return configured.map((item) => ({ mode_of_payment: item.mode_of_payment || (item as PosPaymentMethod & { name?: string }).name || '', default: item.default, allow_in_returns: item.allow_in_returns })).filter((payment) => payment.mode_of_payment) } })
   const customers = useQuery({ queryKey: ['pos-customers', profileId], queryFn: async () => (await client.listDocuments<{ name: string; customer_name?: string }>('Customer', { fields: ['name', 'customer_name'], filters: [['disabled', '=', 0]], pageLength: 500, orderBy: 'customer_name asc' })).data })
-  const catalog = useQuery({ queryKey: ['item-catalog', profileId], queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
-  const prices = useQuery({ queryKey: ['item-price-catalog', profileId], queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantCatalog = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const catalog = useQuery({ queryKey: queryKeys.catalog.item(profileId), queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
+  const prices = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
+  const variantCatalog = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
   const currency = selectedProfile?.currency || 'MXN'
   const paymentMethods = useMemo(() => methods.data ?? [], [methods.data])
   const closingPaymentMethods = useMemo(() => {

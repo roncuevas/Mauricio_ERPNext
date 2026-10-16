@@ -1,10 +1,11 @@
 import type { DocTypeCatalogCache } from './types'
-import { readCache, writeCache } from './indexed-db'
+import { createCacheStore } from './indexed-db'
 
 const databaseName = 'mauricio-erpnext-doctypes'
 const storeName = 'doctype-catalogs'
 const config = { databaseName, storeName }
+const store = createCacheStore<DocTypeCatalogCache>(config)
 
-export const readDocTypeCatalog = (profileId: string) => readCache<DocTypeCatalogCache>(config, profileId)
+export const readDocTypeCatalog = store.read
 
-export const writeDocTypeCatalog = (cache: DocTypeCatalogCache) => writeCache(config, cache)
+export const writeDocTypeCatalog = store.write

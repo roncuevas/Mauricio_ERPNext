@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { createErpNextClient } from '../lib/erpnext'
 import { isPosProfileAvailableForUser, openingAvailability, openingPayload, paymentLines, validateOpeningRequest } from '../lib/pos'
 import type { PosOpeningEntry, PosPaymentLine, PosPaymentMethod, PosProfile } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 
 type PosClient = ReturnType<typeof createErpNextClient>
 const profileFields = ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled']
@@ -27,15 +28,16 @@ function availabilityTone(status: ReturnType<typeof openingAvailability>) {
 }
 
 export function PosShiftsPage({ client }: { client: PosClient }) {
+  const profileId = client.profileId
   const [selectedProfileName, setSelectedProfileName] = useState('')
   const [profileFilter, setProfileFilter] = useState<'all' | 'available' | 'open'>('all')
   const [openingBalances, setOpeningBalances] = useState<PosPaymentLine[]>([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const currentUser = useQuery({ queryKey: ['pos-current-user'], queryFn: () => client.getCurrentUser() })
-  const profiles = useQuery({ queryKey: ['pos-shift-profiles'], queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: profileFields, pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
-  const openings = useQuery({ queryKey: ['pos-shift-openings'], queryFn: async () => (await client.listDocuments<PosOpeningEntry>('POS Opening Entry', { fields: openingFields, pageLength: 100, orderBy: 'creation desc' })).data.filter((entry) => entry.status === 'Open') })
+  const currentUser = useQuery({ queryKey: queryKeys.pos.currentUser(profileId), queryFn: () => client.getCurrentUser() })
+  const profiles = useQuery({ queryKey: queryKeys.pos.profiles(profileId), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: profileFields, pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
+  const openings = useQuery({ queryKey: queryKeys.pos.openings(profileId), queryFn: async () => (await client.listDocuments<PosOpeningEntry>('POS Opening Entry', { fields: openingFields, pageLength: 100, orderBy: 'creation desc' })).data.filter((entry) => entry.status === 'Open') })
   const profileDetails = useQuery({ queryKey: ['pos-shift-profile-details', profiles.data?.map((profile) => profile.name).join('|')], enabled: Boolean(profiles.data?.length), queryFn: async () => Promise.all((profiles.data ?? []).map(async (profile) => { try { return await client.getDocument<PosProfile>('POS Profile', profile.name) } catch { return profile } })) })
   const selectedProfile = useMemo(() => profileDetails.data?.find((profile) => profile.name === selectedProfileName), [profileDetails.data, selectedProfileName])
   const paymentMethods = useMemo(() => (selectedProfile?.payments ?? []).filter((method) => method.mode_of_payment), [selectedProfile])

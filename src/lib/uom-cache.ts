@@ -1,8 +1,9 @@
 import type { UomCatalogCache } from './types'
-import { readCache, writeCache } from './indexed-db'
+import { createCacheStore } from './indexed-db'
 
 const config = { databaseName: 'mauricio-erpnext-uoms', storeName: 'uom-catalogs' }
+const store = createCacheStore<UomCatalogCache>(config)
 
-export const readUomCatalog = (profileId: string) => readCache<UomCatalogCache>(config, profileId)
+export const readUomCatalog = store.read
 
-export const writeUomCatalog = (cache: UomCatalogCache) => writeCache(config, cache)
+export const writeUomCatalog = store.write

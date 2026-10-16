@@ -11,6 +11,7 @@ import { readVariantCatalog } from '../lib/variant-cache'
 import { readItemSearchDetails } from '../lib/catalog-sync'
 import { syncProductCardDetails } from '../lib/product-details-sync'
 import type { CachedItem, ItemCatalogCache } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 import type { createErpNextClient } from '../lib/erpnext'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -28,10 +29,10 @@ export function ProductWorkspacePage({ client, profileId }: { client: Client; pr
   const pageLength = 25
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const catalog = useQuery({ queryKey: ['item-catalog', profileId], queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
-  const prices = useQuery({ queryKey: ['item-price-catalog', profileId], queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variants = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
-  const detailsSync = useMutation({ mutationFn: () => syncProductCardDetails(client, profileId, setSyncMessage), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['item-price-catalog', profileId] }); await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] }); setDetailsPrompt(false); setSyncMessage('Precios, UOM y conversiones guardados en caché') }, onError: (error) => setSyncMessage(error.message) })
+  const catalog = useQuery({ queryKey: queryKeys.catalog.item(profileId), queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
+  const prices = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
+  const variants = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const detailsSync = useMutation({ mutationFn: () => syncProductCardDetails(client, profileId, setSyncMessage), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.price(profileId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) }); setDetailsPrompt(false); setSyncMessage('Precios, UOM y conversiones guardados en caché') }, onError: (error) => setSyncMessage(error.message) })
 
   useEffect(() => { localStorage.setItem(`mauricio-erpnext:products-view:${profileId}`, view) }, [profileId, view])
 
@@ -53,7 +54,7 @@ export function ProductWorkspacePage({ client, profileId }: { client: Client; pr
     const searchDetails = await readItemSearchDetails(client, items, setSyncMessage)
     const next: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) })) }
     return writeItemCatalog(next)
-  }, onSuccess: (next) => { queryClient.setQueryData(['item-catalog', profileId], next); setSyncMessage(`Catálogo actualizado: ${next.items.length} productos`) }, onError: (error) => setSyncMessage(error.message) })
+  }, onSuccess: (next) => { queryClient.setQueryData(queryKeys.catalog.item(profileId), next); setSyncMessage(`Catálogo actualizado: ${next.items.length} productos`) }, onError: (error) => setSyncMessage(error.message) })
 
   const filtered = useMemo(() => filterItems(catalog.data?.items ?? [], search), [catalog.data?.items, search])
   const rows = filtered.slice(page * pageLength, (page + 1) * pageLength)

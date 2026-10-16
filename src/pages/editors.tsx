@@ -10,6 +10,7 @@ import { patchVariantCatalog, readVariantCatalog } from '../lib/variant-cache'
 import { readUomCatalog, writeUomCatalog } from '../lib/uom-cache'
 import { syncUomCatalog, UOM_CACHE_TTL_MS } from '../lib/catalog-sync'
 import type { CachedItem, VariantItem } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 
 type Client = ReturnType<typeof createErpNextClient>
 
@@ -23,7 +24,7 @@ export function VariantEditorPage({ client, profileId }: { client: Client; profi
 
 function VariantEditor({ client, profileId, name, initialTemplate, onClose }: { client: Client; profileId: string; name: string | null; initialTemplate: string; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const meta = useQuery({ queryKey: ['doctype-meta', 'Item'], queryFn: () => client.getDocTypeMeta('Item') })
+  const meta = useQuery({ queryKey: queryKeys.metadata.doctype(profileId, 'Item'), queryFn: () => client.getDocTypeMeta('Item') })
   async function updateVariantCache(saved: Record<string, unknown>) {
     const savedName = String(saved.name ?? name ?? '')
     const cache = await readVariantCatalog(profileId)
@@ -42,7 +43,7 @@ export function ItemEditorPage({ client, profileId }: { client: Client; profileI
   const navigate = useNavigate()
   const isNew = !name || name === 'new'
   const queryClient = useQueryClient()
-  const meta = useQuery({ queryKey: ['doctype-meta', 'Item'], queryFn: () => client.getDocTypeMeta('Item') })
+  const meta = useQuery({ queryKey: queryKeys.metadata.doctype(profileId, 'Item'), queryFn: () => client.getDocTypeMeta('Item') })
   return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(['item-catalog', profileId], next) } await queryClient.invalidateQueries({ queryKey: ['variant-catalog', profileId] }) }} />}</section>
 }
 
@@ -63,8 +64,8 @@ export function UomEditorPage({ client, profileId }: { client: Client; profileId
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const item = useQuery({ queryKey: ['item-uoms', profileId, name], queryFn: () => client.getDocument<Record<string, unknown>>('Item', name!), enabled: Boolean(name), staleTime: 5 * 60 * 1000 })
-  const uoms = useQuery({ queryKey: ['uom-options', profileId], queryFn: async () => { const cached = await readUomCatalog(profileId); const next = await syncUomCatalog(client, profileId, cached); if (next !== cached) await writeUomCatalog(next); return next.uoms }, staleTime: UOM_CACHE_TTL_MS, gcTime: UOM_CACHE_TTL_MS * 2 })
+  const item = useQuery({ queryKey: queryKeys.item.detail(profileId, name ?? ''), queryFn: () => client.getDocument<Record<string, unknown>>('Item', name!), enabled: Boolean(name), staleTime: 5 * 60 * 1000 })
+  const uoms = useQuery({ queryKey: queryKeys.uom.options(profileId), queryFn: async () => { const cached = await readUomCatalog(profileId); const next = await syncUomCatalog(client, profileId, cached); if (next !== cached) await writeUomCatalog(next); return next.uoms }, staleTime: UOM_CACHE_TTL_MS, gcTime: UOM_CACHE_TTL_MS * 2 })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const values = useMemo(() => item.data ? readUomValues(item.data) : null, [item.data])

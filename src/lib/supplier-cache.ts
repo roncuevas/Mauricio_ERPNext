@@ -1,8 +1,9 @@
 import type { SupplierCatalogCache } from './types'
-import { readCache, writeCache } from './indexed-db'
+import { createCacheStore } from './indexed-db'
 
 const config = { databaseName: 'mauricio-erpnext-suppliers', storeName: 'supplier-catalogs' }
+const store = createCacheStore<SupplierCatalogCache>(config)
 
-export const readSupplierCatalog = (profileId: string) => readCache<SupplierCatalogCache>(config, profileId)
+export const readSupplierCatalog = store.read
 
-export const writeSupplierCatalog = (cache: SupplierCatalogCache) => writeCache(config, cache)
+export const writeSupplierCatalog = store.write

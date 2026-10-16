@@ -1,14 +1,15 @@
 import type { ItemCatalogCache } from './types'
-import { readCache, writeCache } from './indexed-db'
+import { createCacheStore } from './indexed-db'
 import { searchScore } from './search'
 
 const databaseName = 'mauricio-erpnext'
 const storeName = 'item-catalogs'
 const config = { databaseName, storeName }
+const store = createCacheStore<ItemCatalogCache>(config)
 
-export const readItemCatalog = (profileId: string) => readCache<ItemCatalogCache>(config, profileId)
+export const readItemCatalog = store.read
 
-export const writeItemCatalog = (cache: ItemCatalogCache) => writeCache(config, cache)
+export const writeItemCatalog = store.write
 
 export async function patchItemCatalog(profileId: string, item: ItemCatalogCache['items'][number]) {
   const cache = await readItemCatalog(profileId)

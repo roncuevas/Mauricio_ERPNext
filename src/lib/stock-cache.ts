@@ -1,8 +1,9 @@
 import type { StockCache } from './types'
-import { readCache, writeCache } from './indexed-db'
+import { createCacheStore } from './indexed-db'
 
 const config = { databaseName: 'mauricio-erpnext-stock', storeName: 'stock-caches' }
+const store = createCacheStore<StockCache>(config)
 
-export const readStockCache = (profileId: string) => readCache<StockCache>(config, profileId)
+export const readStockCache = store.read
 
-export const writeStockCache = (cache: StockCache) => writeCache(config, cache)
+export const writeStockCache = store.write

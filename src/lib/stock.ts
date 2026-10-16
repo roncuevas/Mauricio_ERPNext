@@ -1,6 +1,36 @@
 import type { Company, StockBin, StockCache, VariantItem, Warehouse } from './types'
 import type { ErpNextClient } from './erpnext'
 import { listAllDocuments } from './pagination'
+import { searchScore } from './search'
+
+const PAGE_SIZE = 25
+
+export function stockSearch(bins: StockBin[], items: VariantItem[], search: string) {
+  const term = search.trim().toLocaleLowerCase()
+  if (!term) return bins
+  const itemMap = new Map(items.map((item) => [item.name, item]))
+  return bins.filter((bin) => `${bin.item_code} ${itemMap.get(bin.item_code)?.item_name ?? ''}`.toLocaleLowerCase().includes(term))
+}
+
+export function visibleStockBins(bins: StockBin[], _items: VariantItem[] = [], _warehouses: Warehouse[] = []) {
+  const warehouseNames = new Set(_warehouses.filter((warehouse) => !warehouse.disabled && !warehouse.is_group).map((warehouse) => warehouse.name))
+  return bins.filter((bin) => warehouseNames.has(bin.warehouse) && [bin.actual_qty, bin.reserved_qty, bin.ordered_qty, bin.projected_qty, bin.stock_value].some((value) => Number(value ?? 0) !== 0))
+}
+
+export function paginateStock<T>(rows: T[], page: number, pageSize = PAGE_SIZE) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const safePage = Math.min(Math.max(page, 1), totalPages)
+  return { rows: rows.slice((safePage - 1) * pageSize, safePage * pageSize), page: safePage, totalPages }
+}
+
+export function searchReconciliationItems(items: VariantItem[], search: string) {
+  return items.map((item, index) => ({ item, index, match: searchScore(search, [
+    { value: item.item_name, weight: 5 },
+    { value: item.name, weight: 5 },
+    { value: item.brand, weight: 3 },
+    { value: item.item_group, weight: 2 },
+  ]) })).filter((entry) => entry.match).sort((left, right) => (right.match?.score ?? 0) - (left.match?.score ?? 0) || left.index - right.index).map((entry) => entry.item)
+}
 
 export type StockMovementKind = 'Material Receipt' | 'Material Issue' | 'Material Transfer'
 

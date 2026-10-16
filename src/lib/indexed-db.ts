@@ -6,6 +6,11 @@ type StoreConfig = {
   version?: number
 }
 
+export type CacheStore<T extends CacheRecord> = {
+  read: (profileId: string) => Promise<T | null>
+  write: (cache: T) => Promise<T>
+}
+
 const databases = new Map<string, Promise<IDBDatabase>>()
 
 function openDatabase({ databaseName, storeName, version = 1 }: StoreConfig): Promise<IDBDatabase> {
@@ -26,6 +31,7 @@ function openDatabase({ databaseName, storeName, version = 1 }: StoreConfig): Pr
 }
 
 export async function readCache<T extends CacheRecord>(config: StoreConfig, profileId: string): Promise<T | null> {
+  if (!profileId.trim()) throw new Error('La caché requiere un perfil válido.')
   const database = await openDatabase(config)
   return new Promise((resolve, reject) => {
     const request = database.transaction(config.storeName, 'readonly').objectStore(config.storeName).get(profileId)
@@ -35,10 +41,18 @@ export async function readCache<T extends CacheRecord>(config: StoreConfig, prof
 }
 
 export async function writeCache<T extends CacheRecord>(config: StoreConfig, cache: T): Promise<T> {
+  if (!cache.profileId.trim()) throw new Error('La caché requiere un perfil válido.')
   const database = await openDatabase(config)
   return new Promise((resolve, reject) => {
     const request = database.transaction(config.storeName, 'readwrite').objectStore(config.storeName).put(cache)
     request.onsuccess = () => resolve(cache)
     request.onerror = () => reject(request.error ?? new Error('No se pudo guardar la caché local.'))
   })
+}
+
+export function createCacheStore<T extends CacheRecord>(config: StoreConfig): CacheStore<T> {
+  return {
+    read: (profileId) => readCache<T>(config, profileId),
+    write: (cache) => writeCache<T>(config, cache),
+  }
 }

@@ -6,12 +6,13 @@ import { createErpNextClient } from '../lib/erpnext'
 import { listAllDocuments } from '../lib/pagination'
 import { readSupplierCatalog, writeSupplierCatalog } from '../lib/supplier-cache'
 import type { Supplier, SupplierCatalogCache } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 
 type Client = ReturnType<typeof createErpNextClient>
 
 export function SuppliersPage({ client, profileId }: { client: Client; profileId: string }) {
   const queryClient = useQueryClient()
-  const query = useQuery({ queryKey: ['supplier-catalog', profileId], queryFn: () => readSupplierCatalog(profileId), staleTime: Infinity })
+  const query = useQuery({ queryKey: queryKeys.catalog.supplier(profileId), queryFn: () => readSupplierCatalog(profileId), staleTime: Infinity })
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)

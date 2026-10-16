@@ -36,6 +36,7 @@ export function createErpNextClient(connection: ConnectionProfile) {
   }
 
   return {
+    profileId: connection.id,
     async getCurrentUser() { return request<string>('/api/method/frappe.auth.get_logged_user') },
     async getUserProfile(user: string) { return request<ErpNextUserProfile>(`/api/resource/User/${encodeURIComponent(user)}`) },
     async callMethod<T>(method: string, args: Record<string, unknown> = {}) { return request<T>(`/api/method/${method}`, { method: 'POST', body: JSON.stringify(args) }) },

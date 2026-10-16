@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { itemCanReconcile, movementPayload, reconciliationPayload } from './stock'
-import { paginateStock, searchReconciliationItems, stockSearch, visibleStockBins } from '../pages/stock-page'
+import { itemCanReconcile, movementPayload, paginateStock, reconciliationPayload, searchReconciliationItems, stockSearch, visibleStockBins } from './stock'
 import type { StockBin, VariantItem } from './types'
 
 describe('stock payloads', () => {

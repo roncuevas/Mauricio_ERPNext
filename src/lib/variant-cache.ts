@@ -1,13 +1,14 @@
 import type { ItemUom, VariantCatalogCache, VariantItem } from './types'
-import { readCache, writeCache } from './indexed-db'
+import { createCacheStore } from './indexed-db'
 
 const databaseName = 'mauricio-erpnext-variants'
 const storeName = 'variant-catalogs'
 const config = { databaseName, storeName }
+const store = createCacheStore<VariantCatalogCache>(config)
 
-export const readVariantCatalog = (profileId: string) => readCache<VariantCatalogCache>(config, profileId)
+export const readVariantCatalog = store.read
 
-export const writeVariantCatalog = (cache: VariantCatalogCache) => writeCache(config, cache)
+export const writeVariantCatalog = store.write
 
 export async function patchVariantCatalog(profileId: string, item: VariantItem) {
   const cache = await readVariantCatalog(profileId)

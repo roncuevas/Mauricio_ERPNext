@@ -11,6 +11,7 @@ import { calculateGrossMargin, findComparablePurchases } from '../lib/pricing'
 import { PriceFilterSheet } from '../components/price-filter-sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import type { ItemPrice, ItemPriceCatalogCache, PriceList, VariantItem } from '../lib/types'
+import { queryKeys } from '../lib/query-keys'
 
 type Client = ReturnType<typeof createErpNextClient>
 
@@ -165,8 +166,8 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const pricesQuery = useQuery({ queryKey: ['item-price-catalog', profileId], queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantsQuery = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const pricesQuery = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
+  const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
   const priceListsQuery = useQuery({ queryKey: ['price-lists', profileId], queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '')
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
@@ -248,8 +249,8 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const pricesQuery = useQuery({ queryKey: ['item-price-catalog', profileId], queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantsQuery = useQuery({ queryKey: ['variant-catalog', profileId], queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const pricesQuery = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
+  const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
   const priceListsQuery = useQuery({ queryKey: ['price-lists', profileId], queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [editingPriceName, setEditingPriceName] = useState(searchParams.get('price') ?? '')
   const [message, setMessage] = useState('')
