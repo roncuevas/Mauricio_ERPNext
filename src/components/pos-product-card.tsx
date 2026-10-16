@@ -1,7 +1,7 @@
 import { formatMoney } from '../lib/pos'
 import type { CachedItem } from '../lib/types'
 
-export function PosProductCard({ item, price, currency, quantity, isTemplate, inCart, variantCount = 0, uomCount = 0, onAdd, onDecrease, onOpenTemplate }: { item: CachedItem; price: number | null; currency: string; quantity: number; isTemplate: boolean; inCart?: boolean; variantCount?: number; uomCount?: number; onAdd: () => void; onDecrease: () => void; onOpenTemplate: () => void }) {
+export function PosProductCard({ item, price, priceLabel, currency, quantity, isTemplate, inCart, variantCount = 0, uomCount = 0, onAdd, onDecrease, onOpenTemplate }: { item: CachedItem; price: number | null; priceLabel?: string; currency: string; quantity: number; isTemplate: boolean; inCart?: boolean; variantCount?: number; uomCount?: number; onAdd: () => void; onDecrease: () => void; onOpenTemplate: () => void }) {
   const title = item.item_name || item.name
   const weight = Number(item.weight_per_unit ?? 0) > 0 ? `${item.weight_per_unit} ${item.weight_uom || ''}`.trim() : ''
   const configurable = isTemplate || uomCount > 1
@@ -9,7 +9,7 @@ export function PosProductCard({ item, price, currency, quantity, isTemplate, in
     <button type="button" className="pos-product-card-main" onClick={onOpenTemplate} aria-label={`Configurar venta de ${title}`}>
       <strong className="pos-product-title">{title}</strong>
       <span className="pos-product-meta">{item.brand || 'Sin marca'}{weight ? ` · ${weight}` : ''}</span>
-      <b className={price === null ? 'pos-product-price pos-product-price-missing' : 'pos-product-price'}>{price === null ? 'Sin precio' : formatMoney(price, currency)}</b>
+      <b className={price === null && !priceLabel ? 'pos-product-price pos-product-price-missing' : 'pos-product-price'}>{priceLabel ?? (price === null ? 'Sin precio' : formatMoney(price, currency))}</b>
       {isTemplate && <span className="pos-product-template-label">Plantilla · {variantCount} variantes</span>}
       {!isTemplate && uomCount > 1 && <span className="pos-product-template-label">Varias UOM · configurar</span>}
     </button>
