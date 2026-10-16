@@ -35,6 +35,13 @@ La aplicación no tiene backend propio. Cada usuario configura la URL de su inst
 API Key y API Secret desde el navegador. Las credenciales se cifran con Web Crypto
 antes de guardarse localmente y nunca se incluyen en el bundle.
 
+## Feature flags
+
+Los flags se leen actualmente desde variables `VITE_FF_*` al construir la SPA. La
+resolución está aislada en `src/lib/feature-flags.ts`, por lo que el proveedor puede
+cambiar después a Firebase Remote Config, LaunchDarkly u otro servicio sin acoplar
+los componentes a ese proveedor. Consulta `.env.example` para los nombres disponibles.
+
 ## Verificación
 
 ```bash
