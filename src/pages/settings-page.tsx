@@ -1,12 +1,15 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
+import { Button, Field, Input, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
+import { Checkbox } from '../components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
 import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
-import type { ConnectionProfile } from '../lib/types'
+import type { ConnectionProfile, PosProfile } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
+import { clearPosPreferences, DEFAULT_POS_PREFERENCES, readPosPreferences, writePosPreferences, type PosPreferences } from '../lib/pos-preferences'
 
 function formatProfileDate(value?: string) {
   if (!value) return '—'
@@ -34,9 +37,34 @@ function UserDetail({ label, value }: { label: string; value?: string }) {
 export function SettingsPage({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
   const client = useMemo(() => createErpNextClient(connection), [connection])
   const userQuery = useQuery({ queryKey: queryKeys.settings.userProfile(connection.id), queryFn: () => loadUserProfile(client) })
+  const posProfilesQuery = useQuery({ queryKey: queryKeys.pos.profiles(connection.id), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'disabled'], pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
+  const customersQuery = useQuery({ queryKey: queryKeys.pos.customers(connection.id), queryFn: async () => (await client.listDocuments<{ name: string; customer_name?: string }>('Customer', { fields: ['name', 'customer_name'], filters: [['disabled', '=', 0]], pageLength: 500, orderBy: 'customer_name asc' })).data })
+  const [posDraft, setPosDraft] = useState<PosPreferences>(() => readPosPreferences(connection.id))
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [posMessage, setPosMessage] = useState('')
+  const [posError, setPosError] = useState('')
   const { theme, setTheme, themes } = useTheme()
   const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
   const user = userQuery.data?.profile
+  const customerOptions = (customersQuery.data ?? []).filter((customer) => `${customer.name} ${customer.customer_name ?? ''}`.toLocaleLowerCase().includes(customerSearch.toLocaleLowerCase()))
+
+  function savePosPreferences() {
+    setPosError('')
+    const profile = posProfilesQuery.data?.find((entry) => entry.name === posDraft.profileName)
+    const customer = customersQuery.data?.find((entry) => entry.name === posDraft.defaultCustomer)
+    if (posDraft.profileName && !profile) return setPosError('El POS Profile seleccionado ya no está disponible.')
+    if (posDraft.defaultCustomer && !customer) return setPosError('El cliente seleccionado ya no está disponible.')
+    writePosPreferences(connection.id, posDraft)
+    setPosMessage('Preferencias de POS guardadas en este navegador.')
+  }
+
+  function resetPosPreferences() {
+    clearPosPreferences(connection.id)
+    setPosDraft({ ...DEFAULT_POS_PREFERENCES })
+    setCustomerSearch('')
+    setPosError('')
+    setPosMessage('Preferencias de POS restauradas.')
+  }
 
   return <section>
     <PageHeader title="Configuración" description="Administra tu conexión y personaliza la apariencia de esta aplicación." />
@@ -51,6 +79,23 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
       <div className="card settings-user-card">
         <div className="settings-section-heading"><div><p className="settings-eyebrow">Usuario ERPNext</p><h2>Perfil de usuario</h2><p className="muted">Datos informativos obtenidos de la instancia activa. No se modifican desde aquí.</p></div><span className="settings-section-icon" aria-hidden="true">◎</span></div>
         {userQuery.isPending ? <div className="settings-user-loading"><Spinner /> Cargando perfil…</div> : user ? <><dl className="settings-user-details"><UserDetail label="Nombre" value={user.displayName} /><UserDetail label="Correo" value={user.email} /><UserDetail label="Usuario" value={user.username || user.name} /><UserDetail label="Tipo de usuario" value={user.userType} /><UserDetail label="Estado" value={user.enabled === undefined ? undefined : user.enabled ? 'Activo' : 'Desactivado'} /><UserDetail label="Móvil" value={user.mobile} /><UserDetail label="Teléfono" value={user.phone} /><UserDetail label="Idioma" value={user.language} /><UserDetail label="Zona horaria" value={user.timeZone} /><UserDetail label="Creado" value={formatProfileDate(user.creation)} /><UserDetail label="Último acceso / actividad" value={formatProfileDate(user.lastLogin)} /></dl><div className="settings-user-roles"><span className="field-label">Roles</span>{user.roles.length ? <div className="settings-role-list">{user.roles.map((role) => <span key={role}>{role}</span>)}</div> : <p className="muted">No se devolvieron roles.</p>}</div>{userQuery.data?.warning && <Notice tone="warning">{userQuery.data.warning}</Notice>}<RefreshButton className="settings-user-refresh" label="Actualizar perfil" loading={userQuery.isFetching} onClick={() => { void userQuery.refetch() }} /></> : null}
+      </div>
+
+      <div className="card settings-pos-card">
+        <div className="settings-section-heading"><div><p className="settings-eyebrow">Operación</p><h2>Preferencias del POS</h2><p className="muted">Se guardan solo en este navegador y para esta conexión. ERPNext sigue controlando perfiles, turnos y ventas.</p></div><span className="settings-section-icon" aria-hidden="true">▣</span></div>
+        {posProfilesQuery.isError && <Notice>{posProfilesQuery.error instanceof Error ? posProfilesQuery.error.message : 'No se pudieron cargar los POS Profiles.'}</Notice>}
+        {customersQuery.isError && <Notice>{customersQuery.error instanceof Error ? customersQuery.error.message : 'No se pudieron cargar los clientes.'}</Notice>}
+        <div className="settings-pos-form">
+          <Field label="POS Profile predeterminado"><Select value={posDraft.profileName || '__none__'} onValueChange={(value) => setPosDraft((current) => ({ ...current, profileName: value === '__none__' ? '' : value }))} disabled={posProfilesQuery.isPending}><SelectTrigger aria-label="POS Profile predeterminado"><SelectValue placeholder="Usar el primer perfil activo" /></SelectTrigger><SelectContent align="start"><SelectItem value="__none__">Usar el primer perfil activo</SelectItem>{(posProfilesQuery.data ?? []).map((profile) => <SelectItem key={profile.name} value={profile.name}>{profile.name}{profile.company ? ` · ${profile.company}` : ''}</SelectItem>)}</SelectContent></Select></Field>
+          <Field label="Buscar cliente predeterminado"><Input value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Filtrar por nombre o ID" aria-label="Buscar cliente predeterminado" disabled={customersQuery.isPending} /></Field>
+          <Field label="Cliente predeterminado"><Select value={posDraft.defaultCustomer || '__none__'} onValueChange={(value) => setPosDraft((current) => ({ ...current, defaultCustomer: value === '__none__' ? '' : value }))} disabled={customersQuery.isPending}><SelectTrigger aria-label="Cliente predeterminado"><SelectValue placeholder="Sin cliente predeterminado" /></SelectTrigger><SelectContent align="start"><SelectItem value="__none__">Sin cliente predeterminado</SelectItem>{customerOptions.map((customer) => <SelectItem key={customer.name} value={customer.name}>{customer.customer_name || customer.name}{customer.customer_name ? ` · ${customer.name}` : ''}</SelectItem>)}</SelectContent></Select></Field>
+        </div>
+        <div className="settings-pos-options">
+          <label className="settings-pos-option"><Checkbox checked={posDraft.rememberCustomer} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, rememberCustomer: checked === true }))} /><span><strong>Recordar cliente</strong><small>Conservarlo después de cobrar o guardar un carrito.</small></span></label>
+          <label className="settings-pos-option"><Checkbox checked={posDraft.autoFocusProductSearch} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, autoFocusProductSearch: checked === true }))} /><span><strong>Enfocar búsqueda de productos</strong><small>Facilitar la captura rápida al abrir el POS.</small></span></label>
+        </div>
+        {(posMessage || posError) && <div className="mt-4"><Notice tone={posError ? 'error' : 'info'}>{posError || posMessage}</Notice></div>}
+        <div className="settings-actions"><Button type="button" onClick={savePosPreferences}>Guardar preferencias</Button><Button type="button" variant="secondary" onClick={resetPosPreferences}>Restaurar valores</Button></div>
       </div>
 
       <div className="card settings-theme-card">
