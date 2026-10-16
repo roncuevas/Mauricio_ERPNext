@@ -22,4 +22,12 @@ describe('quotation helpers', () => {
   it('extracts a mapped sales order and removes server metadata', () => {
     expect(extractMappedSalesOrder({ docs: [{ doctype: 'Sales Order', name: 'new-sales-order', docstatus: 0, customer: 'Cliente Uno', items: [{ doctype: 'Sales Order Item', name: 'new-row', item_code: 'ITEM-1', parent: 'new-sales-order' }] }] })).toEqual({ doctype: 'Sales Order', customer: 'Cliente Uno', items: [{ doctype: 'Sales Order Item', item_code: 'ITEM-1' }] })
   })
+
+  it('accepts the direct mapped document returned by frappe.model.mapper.make_mapped_doc', () => {
+    expect(extractMappedSalesOrder({ doctype: 'Sales Order', name: 'new-sales-order', customer: 'Cliente Uno', items: [{ doctype: 'Sales Order Item', item_code: 'ITEM-1', __islocal: 1 }] })).toEqual({ doctype: 'Sales Order', customer: 'Cliente Uno', items: [{ doctype: 'Sales Order Item', item_code: 'ITEM-1' }] })
+  })
+
+  it('accepts a mapped document nested in a data envelope', () => {
+    expect(extractMappedSalesOrder({ data: { doctype: 'Sales Order', customer: 'Cliente Uno' } })).toEqual({ doctype: 'Sales Order', customer: 'Cliente Uno' })
+  })
 })

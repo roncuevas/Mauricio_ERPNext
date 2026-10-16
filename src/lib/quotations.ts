@@ -22,13 +22,24 @@ export function quotationValidityState(validTill?: string, today = new Date()) {
 }
 
 export function extractMappedSalesOrder(result: unknown): Record<string, unknown> | null {
-  const value = result && typeof result === 'object' ? result as Record<string, unknown> : {}
-  const candidates = Array.isArray(result) ? result : Array.isArray(value.docs) ? value.docs : [value.doc]
+  const candidates = getMappedCandidates(result)
   const mapped = candidates.find((candidate) => candidate && typeof candidate === 'object' && ((candidate as Record<string, unknown>).doctype === 'Sales Order' || (candidate as Record<string, unknown>).doctype === 'Sales Order Item'))
   if (!mapped || typeof mapped !== 'object') return null
   const document = (mapped as Record<string, unknown>).doctype === 'Sales Order Item' ? candidates.find((candidate) => candidate && typeof candidate === 'object' && (candidate as Record<string, unknown>).doctype === 'Sales Order') : mapped
   if (!document || typeof document !== 'object') return null
   return stripMappedMetadata(document as Record<string, unknown>)
+}
+
+function getMappedCandidates(result: unknown): unknown[] {
+  if (Array.isArray(result)) return result
+  if (!result || typeof result !== 'object') return []
+
+  const value = result as Record<string, unknown>
+  if (Array.isArray(value.docs)) return value.docs
+  if (value.doc && typeof value.doc === 'object') return [value.doc]
+  if (value.data && typeof value.data === 'object') return getMappedCandidates(value.data)
+
+  return [value]
 }
 
 function stripMappedMetadata(value: Record<string, unknown>): Record<string, unknown> {
