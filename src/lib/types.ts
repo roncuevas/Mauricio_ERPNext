@@ -322,11 +322,13 @@ export type QuotationStatus = 'Draft' | 'Open' | 'Replied' | 'Partially Ordered'
 
 export type QuotationSummary = {
   name: string
+  docstatus?: number
   quotation_to?: string
   party_name?: string
   customer_name?: string
   company?: string
   transaction_date?: string
+  delivery_date?: string
   valid_till?: string
   status?: QuotationStatus | string
   currency?: string
@@ -348,6 +350,7 @@ export type QuotationItem = {
   warehouse?: string
   prevdoc_docname?: string
   prevdoc_detail_docname?: string
+  delivery_date?: string
 }
 
 export type QuotationDocument = QuotationSummary & {

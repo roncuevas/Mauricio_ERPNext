@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Input, Notice, PageHeader, RefreshButton, SearchButton, SegmentedControl, Spinner } from '../components/ui'
 import { MetadataDocEditor } from '../components/metadata-editor'
@@ -36,7 +36,7 @@ export function VariantsPage({ client, profileId }: { client: Client; profileId:
 }
 
 export function DocTypesPage({ client, profileId }: { client: Client; profileId: string }) {
-  const [doctype, setDoctype] = useState(''); const [selected, setSelected] = useState<string | null>(null); const [doctypeSearchInput, setDoctypeSearchInput] = useState(''); const [doctypeSearch, setDoctypeSearch] = useState(''); const [documentSearchInput, setDocumentSearchInput] = useState(''); const [documentSearch, setDocumentSearch] = useState(''); const [syncMessage, setSyncMessage] = useState(''); const queryClient = useQueryClient(); const query = useQuery({ queryKey: ['doctype-catalog', profileId], queryFn: () => readDocTypeCatalog(profileId), staleTime: Infinity })
+  const [searchParams] = useSearchParams(); const requestedDoctype = searchParams.get('doctype') ?? ''; const requestedSearch = searchParams.get('search') ?? ''; const [doctype, setDoctype] = useState(requestedDoctype); const [selected, setSelected] = useState<string | null>(null); const [doctypeSearchInput, setDoctypeSearchInput] = useState(''); const [doctypeSearch, setDoctypeSearch] = useState(''); const [documentSearchInput, setDocumentSearchInput] = useState(requestedSearch); const [documentSearch, setDocumentSearch] = useState(requestedSearch); const [syncMessage, setSyncMessage] = useState(''); const queryClient = useQueryClient(); const query = useQuery({ queryKey: ['doctype-catalog', profileId], queryFn: () => readDocTypeCatalog(profileId), staleTime: Infinity })
   const refresh = useMutation({ mutationFn: async () => { const doctypes = await listAllDocuments<{ name: string }>(client, 'DocType', { fields: ['name'], orderBy: 'name asc' }, (count) => setSyncMessage(`Descargando DocTypes: ${count}`)); const next: DocTypeCatalogCache = { profileId, updatedAt: new Date().toISOString(), doctypes }; return writeDocTypeCatalog(next) }, onSuccess: async (next) => { queryClient.setQueryData(['doctype-catalog', profileId], next); setSyncMessage(`DocTypes actualizados: ${next.doctypes.length}`) }, onError: (error) => setSyncMessage(error.message) })
   const names = useMemo(() => query.data?.doctypes ?? [], [query.data?.doctypes]); const hasCache = Boolean(query.data); const updated = query.data ? new Date(query.data.updatedAt).toLocaleString() : ''
   useEffect(() => { if (!doctype && names[0]?.name) setDoctype(names[0].name) }, [doctype, names])
