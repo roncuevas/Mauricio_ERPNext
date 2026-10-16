@@ -728,6 +728,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-toolbar-main .control { width: 100%; min-width: 0; background: var(--color-surface-muted); box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%); }
 .pos-shift-selector { justify-content: space-between; padding-right: .7rem; text-align: left; }
 .pos-shift-selector > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-select-chevron { width: 1rem; height: 1rem; flex: 0 0 auto; opacity: .65; }
 .pos-toolbar-main .control:hover:not(:disabled) { border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border)); }
 .pos-toolbar-actions { width: 100%; align-items: center; border-top: 1px solid var(--color-border-subtle); padding-top: .8rem; }
 .pos-toolbar-actions .button { min-width: 9rem; }
