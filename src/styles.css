@@ -513,7 +513,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .price-management-entry:has(.price-kind-selling) > div:nth-child(2) > span:last-child { display: none; }
 .variants-search { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: .5rem; margin-bottom: 1rem; }
 .variants-toggle-button { display: inline-flex; width: var(--control-height); min-width: var(--control-height); min-height: var(--control-height); height: var(--control-height); align-items: center; justify-content: center; padding: .25rem; font-size: 0; }
-.variants-toggle-button span { display: block; font-size: 1.25rem; line-height: 1; }
+.variants-toggle-button span { position: relative; display: block; width: .8rem; height: .7rem; font-size: 0; line-height: 0; }
+.variants-toggle-button span::before, .variants-toggle-button span::after { position: absolute; top: .25rem; width: .55rem; height: 2px; border-radius: 999px; background: currentColor; content: ''; }
+.variants-toggle-button span::before { left: 0; transform: rotate(45deg); }
+.variants-toggle-button span::after { right: 0; transform: rotate(-45deg); }
+.variants-toggle-button[aria-label="Colapsar variantes"] span::before { transform: rotate(-45deg); }
+.variants-toggle-button[aria-label="Colapsar variantes"] span::after { transform: rotate(45deg); }
 .variants-status { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-bottom: 1rem; color: #64748b; font-size: .72rem; line-height: 1.35; }
 .variants-tree { background: #fff; }
 .variant-tree-node { border-bottom: 1px solid #e2e8f0; }
