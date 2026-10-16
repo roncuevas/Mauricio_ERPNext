@@ -142,6 +142,47 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .spinner { display: inline-block; width: 1rem; height: 1rem; flex: 0 0 1rem; animation: spin 1s linear infinite; border: 2px solid currentColor; border-top-color: transparent; border-radius: 999px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.product-table-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: .55rem; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-surface-muted); padding: .75rem 1rem; }
+.product-table-toolbar > div:first-child { min-width: 0; margin-right: auto; font-size: .78rem; color: var(--color-heading); }
+.product-table-column-menu { max-height: min(30rem, calc(100vh - 5rem)); overflow-y: auto; }
+.product-table-desktop { min-width: 0; overflow-x: auto; }
+.product-table { min-width: max-content; table-layout: fixed; }
+.product-table thead { background: var(--color-surface-muted); }
+.product-table th, .product-table td { border-color: var(--color-border-subtle); }
+.product-table th { position: relative; white-space: nowrap; }
+.product-table-head-content { position: relative; display: flex; min-height: 1.5rem; align-items: center; padding-right: .45rem; }
+.product-table-resize-handle { position: absolute; top: -.45rem; right: -.35rem; z-index: 2; width: .7rem; height: calc(100% + .9rem); cursor: col-resize; border-right: 2px solid transparent; }
+.product-table-resize-handle:hover, .product-table-resize-handle:focus-visible, .product-table-resize-handle.is-resizing { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); outline: none; }
+.product-table-row { cursor: pointer; }
+.product-table-row:hover { background: var(--color-primary-soft); }
+.product-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.product-table-product { display: grid; min-width: 0; gap: .15rem; white-space: normal; }
+.product-table-title { overflow: hidden; color: var(--color-heading); font-weight: 750; text-overflow: ellipsis; text-decoration: none; }
+.product-table-title:hover { color: var(--color-primary); }
+.product-table-product code { overflow: hidden; color: var(--color-muted); font-size: .7rem; text-overflow: ellipsis; }
+.product-table-product small { overflow: hidden; color: var(--color-muted); font-size: .68rem; text-overflow: ellipsis; }
+.product-table-actions-head, .product-table-actions-cell { position: sticky; right: 0; z-index: 1; background: var(--color-surface); box-shadow: -5px 0 10px color-mix(in srgb, var(--color-ink) 7%, transparent); }
+.product-table-actions-head { background: var(--color-surface-muted); }
+.product-table-actions { display: flex; flex-wrap: wrap; gap: .35rem; white-space: normal; }
+.product-table-mobile { display: none; }
+
+@media (max-width: 700px) {
+  .product-table-toolbar { align-items: flex-start; flex-wrap: wrap; }
+  .product-table-toolbar > div:first-child { flex: 1 1 100%; }
+  .product-table-desktop { display: none; }
+  .product-table-mobile { display: grid; gap: .65rem; padding: .7rem; background: var(--color-surface-muted); }
+  .product-table-mobile-card { display: grid; gap: .8rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface); padding: .85rem; box-shadow: var(--shadow-sm); }
+  .product-table-mobile-heading { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+  .product-table-mobile-heading > div:first-child { min-width: 0; flex: 1; }
+  .product-table-mobile-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem .8rem; margin: 0; }
+  .product-table-mobile-card dl > div { min-width: 0; display: grid; gap: .15rem; }
+  .product-table-mobile-card dt { color: var(--color-muted); font-size: .64rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+  .product-table-mobile-card dd { min-width: 0; margin: 0; overflow: hidden; color: var(--color-heading); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+  .product-table-compact-value { overflow: hidden; text-overflow: ellipsis; }
+  .product-table-mobile-actions .product-table-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .product-table-mobile-actions .button { width: 100%; }
+}
+
 /* Theme bridge for legacy utility and feature-specific color classes. */
 [data-theme] .text-blue-700, [data-theme] .text-blue-900 { color: var(--color-primary-hover) !important; }
 [data-theme] .text-blue-500, [data-theme] .text-blue-600 { color: var(--color-primary) !important; }
