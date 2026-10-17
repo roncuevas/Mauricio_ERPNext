@@ -13,7 +13,7 @@ import { VirtualizedCollection } from '../components/virtualized-collection'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { filterItems, readItemCatalog } from '../lib/item-cache'
 import { readItemPriceCatalog } from '../lib/price-cache'
-import { readVariantCatalog } from '../lib/variant-cache'
+import { readVariantCatalogOrItems } from '../lib/variant-cache'
 import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftToCartLines, formatMoney, normalizeClosingResponse, openingPayload, paymentLines, returnInvoicePayload, salesInvoicePayload, validateClosingInput } from '../lib/pos'
 import type { CachedItem, ItemPrice, ItemUom, PosCartLine, PosDraftDocument, PosDraftSummary, PosPaymentLine, PosPaymentMethod, PosProfile, PosSaleSummary, PosTaxRow, PosTaxTemplate } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
@@ -91,7 +91,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const customers = useQuery({ queryKey: queryKeys.pos.customers(profileId), queryFn: async () => (await client.listDocuments<{ name: string; customer_name?: string }>('Customer', { fields: ['name', 'customer_name'], filters: [['disabled', '=', 0]], pageLength: 500, orderBy: 'customer_name asc' })).data })
   const catalog = useQuery({ queryKey: queryKeys.catalog.item(profileId), queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
   const prices = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantCatalog = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const variantCatalog = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalogOrItems(profileId), staleTime: Infinity })
   const currency = selectedProfile?.currency || 'MXN'
   const paymentMethods = useMemo(() => methods.data ?? [], [methods.data])
   const closingPaymentMethods = useMemo(() => {

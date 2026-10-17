@@ -18,7 +18,8 @@ export async function syncProductCardDetails(client: ErpNextClient, profileId: s
     return nextPrices
   })()
 
-  if (variantCache) return { prices, variants: variantCache.items.length }
+  const variantDetailsAreSynced = variantCache?.items.some((item) => item.uoms !== undefined || item.attributes !== undefined)
+  if (variantDetailsAreSynced) return { prices, variants: variantCache?.items.length ?? 0 }
 
   setMessage('Descargando UOM y variantes para la vista Cards...')
   const items = await listAllDocuments<VariantItem>(client, 'Item', {

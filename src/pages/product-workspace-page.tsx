@@ -8,10 +8,10 @@ import { FilterSheet } from '../components/filter-sheet'
 import { EmptyState, LoadingState } from '../components/ui/states'
 import { readItemPriceCatalog } from '../lib/price-cache'
 import { filterItems, readItemCatalog, writeItemCatalog } from '../lib/item-cache'
-import { readVariantCatalog } from '../lib/variant-cache'
+import { readVariantCatalog, writeVariantCatalog } from '../lib/variant-cache'
 import { readItemSearchDetails } from '../lib/catalog-sync'
 import { syncProductCardDetails } from '../lib/product-details-sync'
-import type { CachedItem, ItemCatalogCache } from '../lib/types'
+import type { CachedItem, ItemCatalogCache, VariantItem } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
 import { cacheStatusLabel, getCacheStatus } from '../lib/cache-policy'
 import type { createErpNextClient } from '../lib/erpnext'
@@ -39,7 +39,8 @@ export function ProductWorkspacePage({ client, profileId }: { client: Client; pr
   useEffect(() => { localStorage.setItem(`mauricio-erpnext:products-view:${profileId}`, view) }, [profileId, view])
 
   useEffect(() => {
-    if (view === 'cards' && prices.isFetched && variants.isFetched && (!prices.data || !variants.data) && !detailsPromptDismissed) setDetailsPrompt(true)
+    const hasVariantDetails = variants.data?.items.some((item) => item.uoms !== undefined || item.attributes !== undefined)
+    if (view === 'cards' && prices.isFetched && variants.isFetched && (!prices.data || !hasVariantDetails) && !detailsPromptDismissed) setDetailsPrompt(true)
   }, [detailsPromptDismissed, prices.data, prices.isFetched, variants.data, variants.isFetched, view])
 
   const refresh = useMutation({ mutationFn: async () => {
@@ -52,6 +53,15 @@ export function ProductWorkspacePage({ client, profileId }: { client: Client; pr
       items.push(...batch.data)
       if (batch.data.length < batchSize) break
       start += batch.data.length
+    }
+    const baseCache: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: items.map((item) => ({ ...item, barcodes: [] })) }
+    await writeItemCatalog(baseCache)
+    queryClient.setQueryData(queryKeys.catalog.item(profileId), baseCache)
+    const currentVariantCache = await readVariantCatalog(profileId)
+    if (!currentVariantCache?.items.length) {
+      const baseVariantCache = { profileId, updatedAt: baseCache.updatedAt, items: items as VariantItem[] }
+      await writeVariantCatalog(baseVariantCache)
+      queryClient.setQueryData(queryKeys.catalog.variant(profileId), baseVariantCache)
     }
     const searchDetails = await readItemSearchDetails(client, items, setSyncMessage)
     const next: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) })) }

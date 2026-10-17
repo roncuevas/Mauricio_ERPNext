@@ -12,7 +12,7 @@ import { readProfiles } from './lib/storage'
 import { readSharedConnection } from './lib/share-link'
 import { readItemCatalog } from './lib/item-cache'
 import { readItemPriceCatalog } from './lib/price-cache'
-import { readVariantCatalog } from './lib/variant-cache'
+import { readVariantCatalogOrItems } from './lib/variant-cache'
 import { queryKeys } from './lib/query-keys'
 import { markPerformance } from './lib/performance'
 import type { ConnectionProfile } from './lib/types'
@@ -85,11 +85,12 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
 function LocalCachePrefetch({ profileId }: { profileId: string }) {
   const queryClient = useQueryClient()
   useEffect(() => {
-    void Promise.all([
-      queryClient.prefetchQuery({ queryKey: queryKeys.catalog.item(profileId), queryFn: () => readItemCatalog(profileId), staleTime: Infinity }),
-      queryClient.prefetchQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity }),
-      queryClient.prefetchQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity }),
-    ]).then(() => markPerformance('local-cache-ready'))
+    void Promise.all([readItemCatalog(profileId), readItemPriceCatalog(profileId), readVariantCatalogOrItems(profileId)]).then(([items, prices, variants]) => {
+      queryClient.setQueryData(queryKeys.catalog.item(profileId), items)
+      queryClient.setQueryData(queryKeys.catalog.price(profileId), prices)
+      queryClient.setQueryData(queryKeys.catalog.variant(profileId), variants)
+      markPerformance('local-cache-ready')
+    })
   }, [profileId, queryClient])
   return null
 }

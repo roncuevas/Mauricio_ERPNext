@@ -38,7 +38,7 @@ export function ProductTable({ items, prices, variants, profileId, onOpen, onUom
   useEffect(() => { writeProductTableConfig(profileId, config) }, [config, profileId])
 
   const columns = useMemo<Column[]>(() => [
-    { id: 'product', label: 'Producto', mobilePriority: 0, render: ({ item }) => <div className="product-table-product"><Link to={`/items/${encodeURIComponent(String(item.name))}`} onClick={(event) => event.stopPropagation()} className="product-table-title">{text(item.item_name ?? item.name)}</Link><code>{text(item.item_code ?? item.name)}</code>{Array.isArray(item.barcodes) && item.barcodes[0] && <small>Barcode: {String(item.barcodes[0])}</small>}</div> },
+    { id: 'product', label: 'Producto', mobilePriority: 0, render: ({ item }) => <div className="product-table-product"><Link to={`/items/${encodeURIComponent(String(item.name))}`} onClick={(event) => event.stopPropagation()} className="product-table-title">{text(item.item_name ?? item.name)}</Link><code>{text(item.item_code ?? item.name)}</code></div> },
     { id: 'group', label: 'Grupo', mobilePriority: 2, render: ({ item }) => text(item.item_group) },
     { id: 'brand', label: 'Marca', mobilePriority: 4, render: ({ item }) => text(item.brand) },
     { id: 'stockUom', label: 'UOM de stock', mobilePriority: 1, render: ({ item, variant }) => <span className="variant-stock-badge">{text(item.stock_uom ?? variant?.stock_uom)}</span> },

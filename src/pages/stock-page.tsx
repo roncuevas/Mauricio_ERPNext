@@ -7,7 +7,7 @@ import { StockFilterSheet } from '../components/stock-filter-sheet'
 import { createErpNextClient } from '../lib/erpnext'
 import { itemCanReconcile, loadStockData, paginateStock, reconciliationPayload, searchReconciliationItems, stockErrorMessage, stockSearch, visibleStockBins } from '../lib/stock'
 import { readStockCache, writeStockCache } from '../lib/stock-cache'
-import { readVariantCatalog } from '../lib/variant-cache'
+import { readVariantCatalogOrItems } from '../lib/variant-cache'
 import { queryKeys } from '../lib/query-keys'
 import type { StockBin, VariantItem, Warehouse } from '../lib/types'
 
@@ -29,7 +29,7 @@ function StockCard({ bin, item }: { bin: StockBin; item?: VariantItem }) {
 export function StockPage({ client, profileId }: { client: Client; profileId: string }) {
   const queryClient = useQueryClient(); const [searchParams, setSearchParams] = useSearchParams()
   const stockQuery = useQuery({ queryKey: queryKeys.catalog.stock(profileId), queryFn: () => readStockCache(profileId), staleTime: Infinity })
-  const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalogOrItems(profileId), staleTime: Infinity })
   const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? ''); const [syncMessage, setSyncMessage] = useState(''); const [filtersOpen, setFiltersOpen] = useState(false)
   const refresh = useMutation({ mutationFn: async () => { const data = await loadStockData(client, setSyncMessage); return writeStockCache({ profileId, updatedAt: new Date().toISOString(), ...data }) }, onSuccess: async (next) => { queryClient.setQueryData(queryKeys.catalog.stock(profileId), next); await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.stock(profileId), refetchType: 'active' }); setSyncMessage(`Inventario actualizado: ${next.bins.length} existencias`) }, onError: (error) => setSyncMessage(stockErrorMessage(error)) })
   const cache = stockQuery.data; const items = useMemo(() => cache?.items?.length ? cache.items : variantsQuery.data?.items ?? [], [cache?.items, variantsQuery.data?.items])
@@ -51,7 +51,7 @@ function ReconciliationLineEditor({ line, items, onChange, onRemove }: { line: R
 
 export function StockReconciliationPage({ client, profileId }: { client: Client; profileId: string }) {
   const navigate = useNavigate(); const queryClient = useQueryClient(); const [searchParams] = useSearchParams()
-  const stockQuery = useQuery({ queryKey: queryKeys.catalog.stock(profileId), queryFn: () => readStockCache(profileId), staleTime: Infinity }); const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalog(profileId), staleTime: Infinity })
+  const stockQuery = useQuery({ queryKey: queryKeys.catalog.stock(profileId), queryFn: () => readStockCache(profileId), staleTime: Infinity }); const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalogOrItems(profileId), staleTime: Infinity })
   const cache = stockQuery.data; const allItems = useMemo(() => cache?.items?.length ? cache.items : variantsQuery.data?.items ?? [], [cache?.items, variantsQuery.data?.items]); const items = useMemo(() => allItems.filter(itemCanReconcile), [allItems]); const warehouses = useMemo(() => activeWarehouses(cache?.warehouses ?? [], ''), [cache?.warehouses])
   const [warehouseName, setWarehouseName] = useState(searchParams.get('warehouse') ?? ''); const [searchInput, setSearchInput] = useState(''); const [selectedItem, setSelectedItem] = useState(''); const [lines, setLines] = useState<ReconciliationLine[]>([]); const [postingDate, setPostingDate] = useState(today); const [postingTime, setPostingTime] = useState(now); const [remarks, setRemarks] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('')
   const warehouse = warehouses.find((candidate) => candidate.name === warehouseName); const bins = cache?.bins ?? []; const selectedNames = useMemo(() => new Set(lines.map((line) => line.itemCode)), [lines]); const matchingItems = useMemo(() => searchReconciliationItems(items, searchInput).filter((item) => !selectedNames.has(item.name)), [items, searchInput, selectedNames])
