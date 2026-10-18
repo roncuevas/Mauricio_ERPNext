@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Field, Input, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
+import { Badge, Button, Field, Input, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
 import { createErpNextClient } from '../lib/erpnext'
 import { listAllDocuments } from '../lib/pagination'
-import { patchItemPriceCatalog, readItemPriceCatalog, writeItemPriceCatalog } from '../lib/price-cache'
-import { buildVariantTree, readVariantCatalogOrItems } from '../lib/variant-cache'
+import { patchItemPriceCatalog, writeItemPriceCatalog } from '../lib/price-cache'
+import { buildVariantTree } from '../lib/variant-cache'
 import { variantSearchScore } from '../components/variant-tree'
 import { calculateGrossMargin, findComparablePurchases } from '../lib/pricing'
 import { PriceFilterSheet } from '../components/price-filter-sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import type { ItemPrice, ItemPriceCatalogCache, PriceList, VariantItem } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
+import { catalogQueryOptions } from '../lib/catalog-query-options'
 
 type Client = ReturnType<typeof createErpNextClient>
 
@@ -151,7 +152,7 @@ function PriceNode({ item, depth, childrenByParent, pricesByItem, visibleNames, 
         </div>
         {prices.length > 0 && <div className="price-entry-list">{prices.map((price) => <div className="price-entry" key={price.name}>
           <div className="price-entry-top"><span className={`price-kind ${price.buying ? 'price-kind-buying' : 'price-kind-selling'}`}>{price.buying ? 'Compra' : 'Venta'}</span><span className="price-amount">{money(price)}</span></div>
-          <div className="price-entry-meta"><span>{price.price_list || 'Sin lista'}</span><span>UOM: {price.uom || item.stock_uom || '—'}</span>{price.buying ? <span>Proveedor: {price.supplier || 'General'}</span> : price.customer ? <span>Cliente: {price.customer}</span> : null}</div>
+          <div className="price-entry-meta"><span>{price.price_list || 'Sin lista'}</span><Badge tone={price.buying ? 'warning' : 'success'}>UOM: {price.uom || item.stock_uom || '—'}</Badge>{price.buying ? <span>Proveedor: {price.supplier || 'General'}</span> : price.customer ? <span>Cliente: {price.customer}</span> : null}</div>
           {price.selling ? <div className="price-entry-margin"><MarginSummary selling={price} purchases={findComparablePurchases(price, prices)} /></div> : null}
           <Button className="price-edit-button" type="button" variant="secondary" onClick={() => onEdit(item, price)}>Editar</Button>
         </div>)}</div>}
@@ -166,8 +167,8 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const pricesQuery = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalogOrItems(profileId), staleTime: Infinity })
+  const pricesQuery = useQuery(catalogQueryOptions.price(profileId))
+  const variantsQuery = useQuery(catalogQueryOptions.variant(profileId))
   const priceListsQuery = useQuery({ queryKey: queryKeys.prices.lists(profileId), queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '')
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
@@ -249,8 +250,8 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const pricesQuery = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantsQuery = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalogOrItems(profileId), staleTime: Infinity })
+  const pricesQuery = useQuery(catalogQueryOptions.price(profileId))
+  const variantsQuery = useQuery(catalogQueryOptions.variant(profileId))
   const priceListsQuery = useQuery({ queryKey: queryKeys.prices.lists(profileId), queryFn: () => loadPriceLists(client), staleTime: 5 * 60 * 1000 })
   const [editingPriceName, setEditingPriceName] = useState(searchParams.get('price') ?? '')
   const [message, setMessage] = useState('')

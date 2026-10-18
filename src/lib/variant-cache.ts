@@ -68,3 +68,28 @@ export function buildVariantTree(items: VariantItem[]) {
   const roots = items.filter((item) => !item.variant_of || !items.some((candidate) => candidate.name === item.variant_of))
   return { roots, children }
 }
+
+export type VariantHierarchyEntry = {
+  item: VariantItem
+  depth: number
+  role: 'plantilla' | 'variante' | 'item'
+  parent?: string
+}
+
+export function flattenVariantHierarchy(items: VariantItem[], includeTemplates = true): VariantHierarchyEntry[] {
+  const tree = buildVariantTree(items)
+  const entries: VariantHierarchyEntry[] = []
+  const visited = new Set<string>()
+  const visit = (item: VariantItem, depth: number, parent?: string) => {
+    if (visited.has(item.name)) return
+    visited.add(item.name)
+    const children = tree.children.get(item.name) ?? []
+    const isTemplate = Boolean(item.has_variants) || children.length > 0
+    if (includeTemplates || !isTemplate) entries.push({ item, depth, role: isTemplate ? 'plantilla' : depth > 0 ? 'variante' : 'item', parent })
+    children.sort((left, right) => (left.item_name || left.name).localeCompare(right.item_name || right.name, 'es')).forEach((child) => visit(child, depth + 1, item.name))
+  }
+  const roots = [...tree.roots].sort((left, right) => (left.item_name || left.name).localeCompare(right.item_name || right.name, 'es'))
+  roots.forEach((root) => visit(root, 0))
+  items.filter((item) => !visited.has(item.name)).forEach((item) => visit(item, 0))
+  return entries
+}

@@ -45,6 +45,13 @@ export const queryKeys = {
     items: (profileId: string) => ['quotation-items', profileId] as const,
     warehouses: (profileId: string) => ['quotation-warehouses', profileId] as const,
   },
+  salesOrders: {
+    list: (profileId: string, company: string, date: string) => ['sales-orders', profileId, company, date] as const,
+    cache: (profileId: string) => ['sales-orders-cache', profileId] as const,
+    document: (profileId: string, name: string | null) => ['sales-order', profileId, name] as const,
+    customers: (profileId: string) => ['sales-order-customers', profileId] as const,
+    profiles: (profileId: string) => ['sales-order-profiles', profileId] as const,
+  },
   settings: {
     userProfile: (profileId: string) => ['settings-user-profile', profileId] as const,
   },

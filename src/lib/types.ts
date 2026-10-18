@@ -238,6 +238,83 @@ export type PosProfile = {
   payments?: PosPaymentMethod[]
 }
 
+export type CustomerSummary = {
+  name: string
+  customer_name?: string
+  customer_group?: string
+  territory?: string
+  default_price_list?: string
+  default_currency?: string
+  disabled?: number | boolean
+}
+
+export type CustomerCatalogCache = {
+  profileId: string
+  updatedAt: string
+  customers: CustomerSummary[]
+}
+
+export type SalesOrderItem = {
+  name?: string
+  item_code: string
+  item_name?: string
+  description?: string
+  uom?: string
+  stock_uom?: string
+  conversion_factor?: number
+  qty: number
+  rate: number
+  price_list_rate?: number
+  discount_percentage?: number
+  warehouse?: string
+  amount?: number
+}
+
+export type SalesOrderSummary = {
+  name: string
+  customer: string
+  customer_name?: string
+  company: string
+  transaction_date: string
+  delivery_date?: string
+  status?: string
+  docstatus?: number
+  currency?: string
+  selling_price_list?: string
+  grand_total?: number
+  total?: number
+  modified?: string
+  items?: SalesOrderItem[]
+}
+
+export type SalesOrderCatalogCache = {
+  profileId: string
+  schemaVersion: 2
+  updatedAt: string
+  buckets: SalesOrderCacheBucket[]
+}
+
+export type SalesOrderCacheBucket = {
+  company: string
+  date: string
+  updatedAt: string
+  salesOrders: SalesOrderSummary[]
+  error?: string
+}
+
+export type SalesOrderFormState = {
+  name?: string
+  docstatus?: number
+  customer: string
+  transaction_date: string
+  delivery_date: string
+  company: string
+  currency: string
+  selling_price_list: string
+  set_warehouse: string
+  items: SalesOrderItem[]
+}
+
 export type PosOpeningEntry = {
   name: string
   user?: string

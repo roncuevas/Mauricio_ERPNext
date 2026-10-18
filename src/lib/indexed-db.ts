@@ -3,6 +3,7 @@ export type CacheRecord = { profileId: string }
 type StoreConfig = {
   databaseName: string
   storeName: string
+  additionalStoreNames?: string[]
   version?: number
 }
 
@@ -13,7 +14,7 @@ export type CacheStore<T extends CacheRecord> = {
 
 const databases = new Map<string, Promise<IDBDatabase>>()
 
-function openDatabase({ databaseName, storeName, version = 1 }: StoreConfig): Promise<IDBDatabase> {
+function openDatabase({ databaseName, storeName, additionalStoreNames = [], version = 1 }: StoreConfig): Promise<IDBDatabase> {
   const key = `${databaseName}:${version}`
   const existing = databases.get(key)
   if (existing) return existing
@@ -21,7 +22,10 @@ function openDatabase({ databaseName, storeName, version = 1 }: StoreConfig): Pr
   const promise = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(databaseName, version)
     request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(storeName)) request.result.createObjectStore(storeName, { keyPath: 'profileId' })
+      const stores = [storeName, ...additionalStoreNames]
+      for (const name of stores) {
+        if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: 'profileId' })
+      }
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error ?? new Error('No se pudo abrir la caché local.'))

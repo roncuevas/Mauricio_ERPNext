@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildVariantTree, getVariantAttributeCoverage } from './variant-cache'
+import { buildVariantTree, flattenVariantHierarchy, getVariantAttributeCoverage } from './variant-cache'
 
 describe('variant catalog tree', () => {
   it('groups variants below their template and keeps orphan variants visible', () => {
@@ -20,5 +20,18 @@ describe('variant catalog tree', () => {
     ]
 
     expect(getVariantAttributeCoverage(template, variants)).toEqual([{ attribute: 'Color', expected: ['Rojo', 'Azul', 'Verde'], created: ['Rojo', 'Azul'], missing: ['Verde'] }])
+  })
+
+  it('flattens templates before variants and keeps orphan items visible', () => {
+    const entries = flattenVariantHierarchy([
+      { name: 'DOG-BLUE', item_name: 'Perro azul', variant_of: 'DOG-TEMPLATE' },
+      { name: 'DOG-TEMPLATE', item_name: 'Perro', has_variants: true, uoms: [{ uom: 'Kg', conversion_factor: 1 }] },
+      { name: 'CAT', item_name: 'Gato' },
+    ])
+    expect(entries.map((entry) => [entry.item.name, entry.role, entry.depth])).toEqual([
+      ['CAT', 'item', 0],
+      ['DOG-TEMPLATE', 'plantilla', 0],
+      ['DOG-BLUE', 'variante', 1],
+    ])
   })
 })

@@ -11,9 +11,8 @@ import { PosMissingPriceDialog } from '../components/pos-missing-price-dialog'
 import { PosPriceSheet } from '../components/pos-price-sheet'
 import { VirtualizedCollection } from '../components/virtualized-collection'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { filterItems, readItemCatalog } from '../lib/item-cache'
-import { readItemPriceCatalog } from '../lib/price-cache'
-import { readVariantCatalogOrItems } from '../lib/variant-cache'
+import { filterItems } from '../lib/item-cache'
+import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftToCartLines, formatMoney, normalizeClosingResponse, openingPayload, paymentLines, returnInvoicePayload, salesInvoicePayload, validateClosingInput } from '../lib/pos'
 import type { CachedItem, ItemPrice, ItemUom, PosCartLine, PosDraftDocument, PosDraftSummary, PosPaymentLine, PosPaymentMethod, PosProfile, PosSaleSummary, PosTaxRow, PosTaxTemplate } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
@@ -89,9 +88,9 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const posSettings = useQuery({ queryKey: queryKeys.pos.settings(profileId), queryFn: async () => client.getDocument<{ invoice_type?: 'Sales Invoice' | 'POS Invoice' }>('POS Settings', 'POS Settings') })
   const methods = useQuery({ queryKey: queryKeys.pos.paymentMethods(profileId, selectedProfile?.name), enabled: Boolean(selectedProfile), queryFn: async () => { const profileName = selectedProfile!.name; const profile = await client.getDocument<PosProfile>('POS Profile', profileName); let configured: PosPaymentMethod[] = profile.payments ?? []; if (!configured.length) { try { configured = (await client.listDocuments<PosPaymentMethod>('POS Payment Method', { fields: ['name', 'parent', 'parenttype', 'parentfield', 'mode_of_payment', 'default', 'allow_in_returns'], filters: [['parent', '=', profileName], ['parenttype', '=', 'POS Profile'], ['parentfield', '=', 'payments']], pageLength: 100, orderBy: 'idx asc' })).data } catch { configured = [] } } return configured.map((item) => ({ mode_of_payment: item.mode_of_payment || (item as PosPaymentMethod & { name?: string }).name || '', default: item.default, allow_in_returns: item.allow_in_returns })).filter((payment) => payment.mode_of_payment) } })
   const customers = useQuery({ queryKey: queryKeys.pos.customers(profileId), queryFn: async () => (await client.listDocuments<{ name: string; customer_name?: string }>('Customer', { fields: ['name', 'customer_name'], filters: [['disabled', '=', 0]], pageLength: 500, orderBy: 'customer_name asc' })).data })
-  const catalog = useQuery({ queryKey: queryKeys.catalog.item(profileId), queryFn: () => readItemCatalog(profileId), staleTime: Infinity })
-  const prices = useQuery({ queryKey: queryKeys.catalog.price(profileId), queryFn: () => readItemPriceCatalog(profileId), staleTime: Infinity })
-  const variantCatalog = useQuery({ queryKey: queryKeys.catalog.variant(profileId), queryFn: () => readVariantCatalogOrItems(profileId), staleTime: Infinity })
+  const catalog = useQuery(catalogQueryOptions.item(profileId))
+  const prices = useQuery(catalogQueryOptions.price(profileId))
+  const variantCatalog = useQuery(catalogQueryOptions.variant(profileId))
   const currency = selectedProfile?.currency || 'MXN'
   const paymentMethods = useMemo(() => methods.data ?? [], [methods.data])
   const closingPaymentMethods = useMemo(() => {
