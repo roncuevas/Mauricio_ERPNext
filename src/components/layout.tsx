@@ -3,12 +3,13 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { IconButton } from './ui'
 import { useTheme } from './theme-provider'
 import { featureFlags } from '../lib/feature-flags'
+import { WorkspaceNavigation } from './workspace-navigation'
 
 type NavigationItem = { to: string; label: string }
 type NavigationGroup = { id: string; label: string; icon: string; landing: string; items: NavigationItem[] }
 
 const navigationGroups: NavigationGroup[] = [
-  { id: 'operation', label: 'Operación', icon: '▣', landing: '/pos', items: [{ to: '/pos', label: 'POS' }, { to: '/pos/turnos', label: 'Turnos' }, { to: '/pos/cotizaciones', label: 'Cotizaciones' }] },
+  { id: 'operation', label: 'Operación', icon: '▣', landing: '/pos', items: [{ to: '/pos', label: 'POS' }, { to: '/pos/ventas', label: 'Ventas del día' }, { to: '/pos/turnos', label: 'Turnos' }, { to: '/pos/cotizaciones', label: 'Cotizaciones' }] },
   { id: 'catalog', label: 'Catálogo', icon: '▦', landing: '/items', items: [{ to: '/items', label: 'Productos' }, { to: '/variants', label: 'Variantes' }, { to: '/prices', label: 'Precios' }] },
   { id: 'inventory', label: 'Inventario', icon: '◫', landing: '/stock', items: [{ to: '/stock', label: 'Inventario' }, { to: '/suppliers', label: 'Proveedores' }] },
   { id: 'administration', label: 'Administración', icon: '⚙', landing: '/settings', items: [{ to: '/settings', label: 'Configuración' }, { to: '/doctypes', label: 'DocTypes' }] },
@@ -122,5 +123,5 @@ export function ThemeModeToggle() {
 }
 
 export function PageLayout({ children }: { client?: unknown; children?: ReactNode }) {
-  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">{children ?? <Outlet />}</div>
+  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><WorkspaceNavigation />{children ?? <Outlet />}</div>
 }
