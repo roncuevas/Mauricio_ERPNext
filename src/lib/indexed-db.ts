@@ -20,14 +20,24 @@ function openDatabase({ databaseName, storeName, additionalStoreNames = [], vers
   if (existing) return existing
 
   const promise = new Promise<IDBDatabase>((resolve, reject) => {
+    const stores = [storeName, ...additionalStoreNames]
     const request = indexedDB.open(databaseName, version)
     request.onupgradeneeded = () => {
-      const stores = [storeName, ...additionalStoreNames]
       for (const name of stores) {
         if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: 'profileId' })
       }
     }
-    request.onsuccess = () => resolve(request.result)
+    request.onsuccess = () => {
+      const database = request.result
+      const missingStores = stores.filter((name) => !database.objectStoreNames.contains(name))
+      if (!missingStores.length) {
+        resolve(database)
+        return
+      }
+      database.close()
+      databases.delete(key)
+      openDatabase({ databaseName, storeName, additionalStoreNames, version: database.version + 1 }).then(resolve, reject)
+    }
     request.onerror = () => reject(request.error ?? new Error('No se pudo abrir la caché local.'))
   })
   databases.set(key, promise)

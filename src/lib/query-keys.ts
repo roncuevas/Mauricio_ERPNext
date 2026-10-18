@@ -54,5 +54,6 @@ export const queryKeys = {
   },
   settings: {
     userProfile: (profileId: string) => ['settings-user-profile', profileId] as const,
+    cacheOverview: (profileId: string) => ['settings-cache-overview', profileId] as const,
   },
 } as const

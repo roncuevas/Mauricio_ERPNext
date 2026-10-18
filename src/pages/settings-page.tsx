@@ -4,6 +4,8 @@ import { Button, Field, Input, Notice, PageHeader, RefreshButton, Spinner } from
 import { Checkbox } from '../components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { CacheManagerPanel } from '../components/cache-manager-panel'
 import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
@@ -45,6 +47,7 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   const [posError, setPosError] = useState('')
   const { theme, setTheme, themes } = useTheme()
   const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
+  const activePosProfile = posProfilesQuery.data?.find((entry) => entry.name === posDraft.profileName) ?? posProfilesQuery.data?.[0]
   const user = userQuery.data?.profile
   const customerOptions = (customersQuery.data ?? []).filter((customer) => `${customer.name} ${customer.customer_name ?? ''}`.toLocaleLowerCase().includes(customerSearch.toLocaleLowerCase()))
 
@@ -68,7 +71,9 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
 
   return <section>
     <PageHeader title="Configuración" description="Administra tu conexión y personaliza la apariencia de esta aplicación." />
-    <div className="settings-grid">
+    <Tabs defaultValue="general" className="settings-tabs">
+      <TabsList aria-label="Secciones de configuración"><TabsTrigger value="general">General</TabsTrigger><TabsTrigger value="caches">Cachés</TabsTrigger></TabsList>
+      <TabsContent value="general"><div className="settings-grid">
       <div className="card settings-connection-card">
         <div className="settings-section-heading"><div><p className="settings-eyebrow">Conexión</p><h2>Instancia ERPNext</h2></div><span className="settings-section-icon" aria-hidden="true">↗</span></div>
         <dl className="settings-connection-details"><div><dt className="field-label">Perfil</dt><dd>{connection.label}</dd></div><div><dt className="field-label">Instancia</dt><dd className="break-all">{connection.baseUrl}</dd></div></dl>
@@ -102,7 +107,8 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
         <div className="settings-section-heading"><div><p className="settings-eyebrow">Apariencia</p><h2>Paleta de colores</h2><p className="muted">El cambio se aplica a toda la aplicación y se guarda en este navegador.</p></div><span className="settings-theme-current" style={{ background: activeTheme.colors.primary }} aria-label={`Paleta activa: ${activeTheme.name}`} /></div>
         <div className="theme-preview" aria-label="Vista previa de la paleta activa"><div><span className="theme-preview-label">Vista previa</span><strong>{activeTheme.name}</strong></div><div className="theme-preview-actions"><span className="theme-preview-chip">Datos sincronizados</span><Button size="compact">Acción principal</Button><Button size="compact" variant="secondary">Secundaria</Button></div></div>
         <RadioGroup className="theme-grid" value={theme} onValueChange={setTheme} aria-label="Paletas disponibles">{themes.map((entry) => <label key={entry.id} className={`theme-option${entry.id === theme ? ' theme-option-active' : ''}`} htmlFor={`theme-${entry.id}`}><RadioGroupItem id={`theme-${entry.id}`} value={entry.id} className="sr-only" /><span className="theme-option-swatches" aria-hidden="true"><i style={{ background: entry.colors.primary }} /><i style={{ background: entry.colors.secondary }} /><i style={{ background: entry.colors.accent }} /><i style={{ background: entry.colors.page }} /></span><span className="theme-option-copy"><strong>{entry.name}</strong><small>{entry.description}</small></span><span className="theme-option-check" aria-hidden="true">{entry.id === theme ? '✓' : ''}</span></label>)}</RadioGroup>
-      </div>
-    </div>
+      </div></div></TabsContent>
+      <TabsContent value="caches"><CacheManagerPanel client={client} profileId={connection.id} activeProfile={activePosProfile} /></TabsContent>
+    </Tabs>
   </section>
 }

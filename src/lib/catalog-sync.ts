@@ -9,8 +9,8 @@ export type ItemVariantAttributeRow = { parent: string; attribute: string; attri
 const UOM_PAGE_LENGTH = 500
 export const UOM_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
-export async function syncUomCatalog(client: ErpNextClient, profileId: string, cached: UomCatalogCache | null) {
-  if (cached && Date.now() - Date.parse(cached.updatedAt) < UOM_CACHE_TTL_MS) return cached
+export async function syncUomCatalog(client: ErpNextClient, profileId: string, cached: UomCatalogCache | null, force = false) {
+  if (!force && cached && Date.now() - Date.parse(cached.updatedAt) < UOM_CACHE_TTL_MS) return cached
   try {
     const uoms: string[] = []
     let start = 0
