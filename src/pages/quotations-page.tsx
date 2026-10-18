@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, ButtonLink, Card, Field, Input, Notice, PageHeader, RefreshButton, SearchButton, Spinner, Textarea } from '../components/ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { EntityCombobox } from '../components/entity-combobox'
 import { StatusBadge } from '../components/ui/status-badge'
 import { defaultDeliveryDate, extractMappedSalesOrder, filterQuotations, minimumDeliveryDate, normalizeMappedSalesOrder, quotationPayload, quotationRevision, quotationValidityState, relatedSalesOrderFilters, relatedSalesOrderNames, RelatedSalesOrderError, validateMappedSalesOrder, validateQuotationForSalesOrder, validateQuotationForm, type QuotationFormState } from '../lib/quotations'
 import { createErpNextClient, ErpNextError } from '../lib/erpnext'
@@ -17,6 +18,7 @@ function formatDate(value?: string) { return value ? new Date(`${value}T12:00:00
 function formatMoney(value: number | undefined, currency = 'MXN') { return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(Number(value ?? 0)) }
 function NativeSelect({ value, onChange, options, placeholder, disabled = false }: { value?: string; onChange: (value: string) => void; options: string[]; placeholder: string; disabled?: boolean }) {
   const emptyValue = '__empty__'
+  if (options.length > 5) return <EntityCombobox ariaLabel={placeholder} value={value} onValueChange={onChange} options={options.map((option) => ({ value: option, label: option }))} placeholder={placeholder} searchPlaceholder={`Buscar ${placeholder.toLocaleLowerCase()}…`} allowClear disabled={disabled} />
   return <Select value={value || emptyValue} disabled={disabled} onValueChange={(next) => onChange(next === emptyValue ? '' : next)}><SelectTrigger aria-label={placeholder}><SelectValue placeholder={placeholder} /></SelectTrigger><SelectContent align="start"><SelectItem value={emptyValue}>{placeholder}</SelectItem>{options.map((option) => <SelectItem value={option} key={option}>{option}</SelectItem>)}</SelectContent></Select>
 }
 function TextField({ label, value, onChange, type = 'text', disabled = false }: { label: string; value: string | number | undefined; onChange: (value: string) => void; type?: string; disabled?: boolean }) { return <Field label={label}><Input type={type} value={value ?? ''} disabled={disabled} step={type === 'number' ? 'any' : undefined} onChange={(event) => onChange(event.target.value)} /></Field> }

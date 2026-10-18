@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Field, Input, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
+import { Button, Field, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
 import { Checkbox } from '../components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { CacheManagerPanel } from '../components/cache-manager-panel'
+import { EntityCombobox } from '../components/entity-combobox'
 import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
@@ -42,14 +42,12 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   const posProfilesQuery = useQuery({ queryKey: queryKeys.pos.profiles(connection.id), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'disabled'], pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
   const customersQuery = useQuery({ queryKey: queryKeys.pos.customers(connection.id), queryFn: async () => (await client.listDocuments<{ name: string; customer_name?: string }>('Customer', { fields: ['name', 'customer_name'], filters: [['disabled', '=', 0]], pageLength: 500, orderBy: 'customer_name asc' })).data })
   const [posDraft, setPosDraft] = useState<PosPreferences>(() => readPosPreferences(connection.id))
-  const [customerSearch, setCustomerSearch] = useState('')
   const [posMessage, setPosMessage] = useState('')
   const [posError, setPosError] = useState('')
   const { theme, setTheme, themes } = useTheme()
   const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
   const activePosProfile = posProfilesQuery.data?.find((entry) => entry.name === posDraft.profileName) ?? posProfilesQuery.data?.[0]
   const user = userQuery.data?.profile
-  const customerOptions = (customersQuery.data ?? []).filter((customer) => `${customer.name} ${customer.customer_name ?? ''}`.toLocaleLowerCase().includes(customerSearch.toLocaleLowerCase()))
 
   function savePosPreferences() {
     setPosError('')
@@ -64,7 +62,6 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   function resetPosPreferences() {
     clearPosPreferences(connection.id)
     setPosDraft({ ...DEFAULT_POS_PREFERENCES })
-    setCustomerSearch('')
     setPosError('')
     setPosMessage('Preferencias de POS restauradas.')
   }
@@ -91,9 +88,8 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
         {posProfilesQuery.isError && <Notice>{posProfilesQuery.error instanceof Error ? posProfilesQuery.error.message : 'No se pudieron cargar los POS Profiles.'}</Notice>}
         {customersQuery.isError && <Notice>{customersQuery.error instanceof Error ? customersQuery.error.message : 'No se pudieron cargar los clientes.'}</Notice>}
         <div className="settings-pos-form">
-          <Field label="POS Profile predeterminado"><Select value={posDraft.profileName || '__none__'} onValueChange={(value) => setPosDraft((current) => ({ ...current, profileName: value === '__none__' ? '' : value }))} disabled={posProfilesQuery.isPending}><SelectTrigger aria-label="POS Profile predeterminado"><SelectValue placeholder="Usar el primer perfil activo" /></SelectTrigger><SelectContent align="start"><SelectItem value="__none__">Usar el primer perfil activo</SelectItem>{(posProfilesQuery.data ?? []).map((profile) => <SelectItem key={profile.name} value={profile.name}>{profile.name}{profile.company ? ` · ${profile.company}` : ''}</SelectItem>)}</SelectContent></Select></Field>
-          <Field label="Buscar cliente predeterminado"><Input value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Filtrar por nombre o ID" aria-label="Buscar cliente predeterminado" disabled={customersQuery.isPending} /></Field>
-          <Field label="Cliente predeterminado"><Select value={posDraft.defaultCustomer || '__none__'} onValueChange={(value) => setPosDraft((current) => ({ ...current, defaultCustomer: value === '__none__' ? '' : value }))} disabled={customersQuery.isPending}><SelectTrigger aria-label="Cliente predeterminado"><SelectValue placeholder="Sin cliente predeterminado" /></SelectTrigger><SelectContent align="start"><SelectItem value="__none__">Sin cliente predeterminado</SelectItem>{customerOptions.map((customer) => <SelectItem key={customer.name} value={customer.name}>{customer.customer_name || customer.name}{customer.customer_name ? ` · ${customer.name}` : ''}</SelectItem>)}</SelectContent></Select></Field>
+          <Field label="POS Profile predeterminado"><EntityCombobox ariaLabel="POS Profile predeterminado" value={posDraft.profileName} onValueChange={(value) => setPosDraft((current) => ({ ...current, profileName: value }))} placeholder="Usar el primer perfil activo" searchPlaceholder="Buscar POS Profile…" allowClear options={(posProfilesQuery.data ?? []).map((profile) => ({ value: profile.name, label: profile.name, searchText: `${profile.company ?? ''} ${profile.warehouse ?? ''}`, meta: profile.company }))} disabled={posProfilesQuery.isPending} loading={posProfilesQuery.isPending} /></Field>
+          <Field label="Cliente predeterminado"><EntityCombobox ariaLabel="Cliente predeterminado" value={posDraft.defaultCustomer} onValueChange={(value) => setPosDraft((current) => ({ ...current, defaultCustomer: value }))} placeholder="Sin cliente predeterminado" searchPlaceholder="Buscar cliente…" allowClear options={(customersQuery.data ?? []).map((customer) => ({ value: customer.name, label: customer.customer_name || customer.name, searchText: customer.name, meta: customer.customer_name ? customer.name : undefined }))} disabled={customersQuery.isPending} loading={customersQuery.isPending} /></Field>
         </div>
         <div className="settings-pos-options">
           <label className="settings-pos-option"><Checkbox checked={posDraft.rememberCustomer} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, rememberCustomer: checked === true }))} /><span><strong>Recordar cliente</strong><small>Conservarlo después de cobrar o guardar un carrito.</small></span></label>
