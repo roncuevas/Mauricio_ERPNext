@@ -69,6 +69,19 @@ test.describe('responsive navigation and empty states', () => {
     })
     expect(menuLayout.height).toBeGreaterThanOrEqual(menuLayout.viewport)
     expect(menuLayout.bodyOverflow).toBe('hidden')
+    for (const label of ['Operación', 'Catálogo', 'Inventario', 'Administración']) {
+      const toggle = page.getByRole('button', { name: `Expandir ${label}` })
+      if (await toggle.isVisible()) await toggle.click()
+    }
+    const scrollLayout = await page.evaluate(() => {
+      const menu = document.querySelector<HTMLElement>('.mobile-navigation-menu')
+      if (!menu) return { clientHeight: 0, scrollHeight: 0, scrollTop: 0 }
+      menu.scrollTo({ top: menu.scrollHeight })
+      return { clientHeight: menu.clientHeight, scrollHeight: menu.scrollHeight, scrollTop: menu.scrollTop }
+    })
+    expect(scrollLayout.scrollHeight).toBeGreaterThan(scrollLayout.clientHeight)
+    expect(scrollLayout.scrollTop).toBeGreaterThan(0)
+    await expect(page.getByRole('link', { name: 'DocTypes' })).toBeVisible()
     const variantsLink = page.getByRole('link', { name: 'Variantes' })
     if (!(await variantsLink.isVisible())) await page.getByRole('button', { name: 'Expandir Catálogo' }).click()
     await variantsLink.click()

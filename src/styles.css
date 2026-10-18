@@ -672,7 +672,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .menu-button-icon { width: 1rem; font-size: 1.05rem; line-height: 1; text-align: center; }
   .menu-lock-button { border: 1px solid transparent; background: transparent; color: #64748b; }
   .menu-lock-button:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
-  .mobile-navigation-menu { display: grid; align-content: start; gap: .35rem; min-height: calc(100dvh - 4rem); overflow-y: auto; border-top: 1px solid #e2e8f0; background: linear-gradient(180deg, #f8fbff 0%, #fff 28%); padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
+  .mobile-navigation-menu { display: grid; align-content: start; gap: .35rem; height: calc(100dvh - 4rem); min-height: 0; max-height: calc(100dvh - 4rem); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; border-top: 1px solid #e2e8f0; background: linear-gradient(180deg, #f8fbff 0%, #fff 28%); padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
   .mobile-navigation-menu-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: .35rem; padding: 0 .25rem .4rem; color: #334155; font-size: .78rem; font-weight: 850; }
   .mobile-navigation-menu-heading small { color: #64748b; font-size: .65rem; font-weight: 600; text-align: right; }
   .navigation-groups-mobile { gap: .65rem; }
