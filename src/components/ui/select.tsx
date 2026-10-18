@@ -1,8 +1,46 @@
 import * as SelectPrimitive from '@radix-ui/react-select'
-import type { ComponentProps } from 'react'
+import { Children, isValidElement, type ComponentProps, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { EntityCombobox } from '../entity-combobox'
 
-export const Select = SelectPrimitive.Root
+type SelectProps = ComponentProps<typeof SelectPrimitive.Root> & { searchable?: boolean }
+type SelectOption = { value: string; label: string }
+type ElementProps = { children?: ReactNode; value?: unknown; placeholder?: string; 'aria-label'?: string }
+
+function textContent(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (!isValidElement(node)) return ''
+  return textContent((node.props as ElementProps).children)
+}
+
+function collectOptions(node: ReactNode, options: SelectOption[] = []) {
+  Children.forEach(node, (child) => {
+    if (!isValidElement(child)) return
+    if (child.type === SelectItem) {
+      const childProps = child.props as ElementProps
+      const value = String(childProps.value ?? '')
+      if (value) options.push({ value, label: textContent(childProps.children) || value })
+      return
+    }
+    collectOptions((child.props as ElementProps).children, options)
+  })
+  return options
+}
+
+export function Select({ searchable = false, children, value, defaultValue, onValueChange, disabled, ...props }: SelectProps) {
+  const trigger = Children.toArray(children).find((child) => isValidElement(child) && child.type === SelectTrigger)
+  const content = Children.toArray(children).find((child) => isValidElement(child) && child.type === SelectContent)
+  const options = collectOptions(content && isValidElement(content) ? (content.props as ElementProps).children : null)
+  const shouldSearch = searchable || options.length > 8
+  if (shouldSearch && options.length > 0) {
+    const triggerProps = trigger && isValidElement(trigger) ? trigger.props as ElementProps : {}
+    const valuePlaceholder = Children.toArray(triggerProps.children).find((child) => isValidElement(child) && child.type === SelectValue)
+    const placeholder = valuePlaceholder && isValidElement(valuePlaceholder) ? (valuePlaceholder.props as ElementProps).placeholder : undefined
+    return <EntityCombobox ariaLabel={String(triggerProps['aria-label'] ?? 'Seleccionar opción')} value={typeof value === 'string' ? value : typeof defaultValue === 'string' ? defaultValue : ''} onValueChange={onValueChange ?? (() => undefined)} options={options} placeholder={placeholder || 'Selecciona una opción'} disabled={Boolean(disabled)} allowClear={false} />
+  }
+  return <SelectPrimitive.Root {...props} value={value} defaultValue={defaultValue} onValueChange={onValueChange} disabled={disabled}>{children}</SelectPrimitive.Root>
+}
+
 export const SelectGroup = SelectPrimitive.Group
 export const SelectValue = SelectPrimitive.Value
 export const SelectLabel = SelectPrimitive.Label

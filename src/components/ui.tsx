@@ -10,6 +10,7 @@ export { Spinner } from './ui/spinner'
 export { Checkbox } from './ui/checkbox'
 export { RadioGroup, RadioGroupItem } from './ui/radio-group'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
+export { EntityCombobox } from './entity-combobox'
 import { Button, type ButtonProps } from './ui/button'
 
 export function IconButton({ label, icon, loading = false, variant = 'secondary', ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; icon: ReactNode; loading?: boolean; variant?: NonNullable<ButtonProps['variant']> }) {
