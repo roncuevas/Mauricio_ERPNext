@@ -177,6 +177,30 @@ test.describe('responsive navigation and empty states', () => {
       expect(dimensions.body, `${path} has horizontal page overflow`).toBeLessThanOrEqual(dimensions.viewport + 1)
       if (path !== '/settings') await expect(page.locator('.mobile-actions')).toBeVisible()
     }
+
+    await page.goto('/pos/ventas')
+    await expect(page.locator('.page-header-mobile-primary')).toBeVisible()
+    await expect(page.locator('.page-header-mobile-primary .button')).toHaveCSS('min-height', '44px')
+
+    await page.goto('/items')
+    for (const button of await page.locator('.segmented-control button').all()) await expect(button).toHaveCSS('min-height', '44px')
+
+    await page.goto('/variants')
+    await expect(page.locator('.variants-toggle-button')).toHaveCSS('min-height', '44px')
+    for (const button of await page.locator('.variant-node-actions .button').all()) await expect(button).toHaveCSS('min-height', '44px')
+  })
+
+  test('tablet keeps the compact workspace usable without page overflow', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet', 'Este caso corresponde al proyecto tablet')
+    await createConnection(page)
+    await page.goto('/items')
+    await expect(page.getByRole('heading', { name: 'Productos' })).toBeVisible()
+    await expect(page.locator('.mobile-navigation')).toBeVisible()
+    for (const path of ['/items', '/prices', '/variants', '/stock', '/stock/reconciliation', '/pos/ventas', '/pos/turnos']) {
+      await page.goto(path)
+      const dimensions = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: window.innerWidth }))
+      expect(dimensions.body, `${path} has horizontal page overflow`).toBeLessThanOrEqual(dimensions.viewport + 1)
+    }
   })
 
   test('desktop preserves the sidebar and compact actions stay hidden', async ({ page }, testInfo) => {

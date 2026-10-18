@@ -35,9 +35,9 @@ export function Notice({ children, tone = 'error' }: { children: ReactNode; tone
   return <div className={`notice notice-${tone}`} role={tone === 'error' ? 'alert' : undefined}>{children}</div>
 }
 
-export function PageHeader({ title, description, action, toolbar, status, sticky = false, visible = true }: { title: string; description?: string; action?: ReactNode; toolbar?: ReactNode; status?: ReactNode; sticky?: boolean; visible?: boolean }) {
+export function PageHeader({ title, description, action, mobileAction, toolbar, status, sticky = false, visible = true }: { title: string; description?: string; action?: ReactNode; mobileAction?: ReactNode; toolbar?: ReactNode; status?: ReactNode; sticky?: boolean; visible?: boolean }) {
   if (!visible) return null
-  return <header className={cn('page-header', sticky && 'page-header-sticky')}><div className="page-header-main"><div className="min-w-0"><h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>{description && <p className="mt-1 muted">{description}</p>}</div>{action && <><div className="page-header-actions desktop-actions">{action}</div><details className="mobile-actions"><summary>Acciones</summary><div className="mobile-actions-content">{action}</div></details></>}</div>{toolbar && <div className="page-header-toolbar">{toolbar}</div>}{status && <div className="page-header-status">{status}</div>}</header>
+  return <header className={cn('page-header', sticky && 'page-header-sticky')}><div className="page-header-main"><div className="min-w-0"><h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>{description && <p className="mt-1 muted">{description}</p>}</div>{action && <><div className="page-header-actions desktop-actions">{action}</div>{mobileAction && <div className="page-header-mobile-primary">{mobileAction}</div>}<details className="mobile-actions"><summary>Acciones</summary><div className="mobile-actions-content">{action}</div></details></>}</div>{toolbar && <div className="page-header-toolbar">{toolbar}</div>}{status && <div className="page-header-status">{status}</div>}</header>
 }
 
 export function SegmentedControl<T extends string>({ label, value, options, onChange, className = '' }: { label: string; value: T; options: Array<{ value: T; label: string }>; onChange: (value: T) => void; className?: string }) {
