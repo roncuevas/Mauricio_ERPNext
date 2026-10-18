@@ -68,7 +68,7 @@ export function salesOrderPayload(form: SalesOrderFormState, isNew = false) {
     company: form.company, currency: form.currency, selling_price_list: form.selling_price_list, set_warehouse: form.set_warehouse,
     docstatus: 0,
     order_type: 'Sales',
-    items: form.items.map(({ name, amount, ...item }) => ({ ...item, delivery_date: form.delivery_date, price_list_rate: Number(item.price_list_rate ?? item.rate), ...(isNew ? {} : name ? { name } : {}) })),
+    items: form.items.map(({ name, ...item }) => ({ ...item, delivery_date: form.delivery_date, price_list_rate: Number(item.price_list_rate ?? item.rate), ...(isNew ? {} : name ? { name } : {}) })),
   }
   if (!isNew && form.name) payload.name = form.name
   return payload

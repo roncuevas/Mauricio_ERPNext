@@ -18,7 +18,6 @@ const today = () => new Date().toISOString().slice(0, 10)
 const now = () => new Date().toTimeString().slice(0, 8)
 
 
-function itemLabel(item: VariantItem | undefined, code: string) { return item ? `${item.item_name || item.name} · ${item.name}` : code }
 function money(value: number | undefined) { return Number(value ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }) }
 function returnQuery(params: URLSearchParams) { const query = new URLSearchParams(); for (const key of ['company', 'warehouse', 'search', 'page']) { const value = params.get(key); if (value) query.set(key, value) } return query.toString() }
 function activeWarehouses(warehouses: Warehouse[], company: string) { return warehouses.filter((warehouse) => !warehouse.disabled && !warehouse.is_group && (!company || warehouse.company === company)) }
