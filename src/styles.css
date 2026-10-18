@@ -649,7 +649,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 @media (max-width: 1023px) {
   .app-sidebar { display: none; }
-  .app-sidebar + main { margin-left: 0; }
+  .app-sidebar + main, .app-shell-sidebar-collapsed .app-sidebar + main { margin-left: 0; }
   .mobile-navigation { display: block; position: fixed; inset: 0 0 auto; z-index: 50; border-bottom: 1px solid #dbe4ef; background: rgba(255,255,255,.96); box-shadow: 0 5px 18px rgba(15, 23, 42, .08); backdrop-filter: blur(12px); }
   .mobile-navigation-open { height: 100dvh; background: white; }
   main { padding-top: 4rem; }
