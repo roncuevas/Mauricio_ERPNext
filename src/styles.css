@@ -399,12 +399,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-sidebar-theme-toggle { margin: 0 0 .5rem auto; }
 .app-sidebar-lock { display: flex; width: 100%; min-height: 2.65rem; align-items: center; justify-content: space-between; border: 1px solid transparent; border-radius: .65rem; padding: .55rem .75rem; color: #64748b; font-size: .72rem; font-weight: 750; text-align: left; transition: background .15s ease, border-color .15s ease, color .15s ease; }
 .app-sidebar-lock:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
-.app-shell-sidebar-collapsed .app-sidebar { width: 4.75rem; flex-basis: 4.75rem; }
-.app-shell-sidebar-collapsed .app-sidebar + main { margin-left: 4.75rem; }
-.app-shell-sidebar-collapsed .app-sidebar-brand { justify-content: center; padding-inline: .75rem; }
+.app-shell-sidebar-collapsed .app-sidebar { width: 5.25rem; flex-basis: 5.25rem; }
+.app-shell-sidebar-collapsed .app-sidebar + main { margin-left: 5.25rem; }
+.app-shell-sidebar-collapsed .app-sidebar-brand { flex-direction: column; justify-content: center; gap: .65rem; padding: 1.1rem .5rem .9rem; }
 .app-shell-sidebar-collapsed .app-sidebar-brand-copy, .app-shell-sidebar-collapsed .app-sidebar-profile, .app-shell-sidebar-collapsed .app-sidebar-lock span:first-child { display: none; }
-.app-shell-sidebar-collapsed .app-sidebar-collapse-toggle { position: absolute; top: 1.45rem; right: .55rem; }
-.app-shell-sidebar-collapsed .app-sidebar-nav { padding-inline: .65rem; }
+.app-shell-sidebar-collapsed .app-sidebar-collapse-toggle { position: static; width: 2rem; min-height: 2rem; margin-inline: auto; }
+.app-shell-sidebar-collapsed .app-sidebar-nav { border-top: 1px solid var(--color-border-subtle); padding: .85rem .65rem; }
 .app-shell-sidebar-collapsed .app-sidebar-footer-actions { justify-content: center; }
 .app-shell-sidebar-collapsed .app-sidebar-lock { justify-content: center; padding-inline: .55rem; }
 .page-header { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
