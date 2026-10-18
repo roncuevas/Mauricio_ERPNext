@@ -31,7 +31,7 @@ export function NavLink({ to, children }: { to: string; children: ReactNode }) {
   return <Link className={`app-nav-link whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${active ? 'app-nav-link-active bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`} aria-current={active ? 'page' : undefined} to={to}>{children}</Link>
 }
 
-function NavigationGroups({ mobile = false }: { mobile?: boolean }) {
+function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: boolean; collapsed?: boolean }) {
   const location = useLocation()
   const groups = useMemo(visibleGroups, [])
   const activeGroup = groups.find((group) => group.items.some((item) => routeMatches(location.pathname, item.to)))?.id ?? null
@@ -59,17 +59,17 @@ function NavigationGroups({ mobile = false }: { mobile?: boolean }) {
     {groups.map((group) => {
       const isOpen = openGroups.includes(group.id) || activeGroup === group.id
       const groupLabelId = `${mobile ? 'mobile-' : 'desktop-'}navigation-group-${group.id}`
-      return <section className={`navigation-group${isOpen ? ' navigation-group-open' : ''}`} key={group.id}>
+      return <section className={`navigation-group${isOpen ? ' navigation-group-open' : ''}${collapsed ? ' navigation-group-collapsed' : ''}`} key={group.id}>
         <div className="navigation-group-heading">
-          <Link className="navigation-group-link" to={group.landing} aria-current={activeGroup === group.id ? 'page' : undefined}>
+          <Link className="navigation-group-link" to={group.landing} title={collapsed ? group.label : undefined} aria-current={activeGroup === group.id ? 'page' : undefined}>
             <span className="navigation-group-icon" aria-hidden="true">{group.icon}</span>
-            <span>{group.label}</span>
+            <span className="navigation-group-label">{group.label}</span>
           </Link>
           <button className="navigation-group-toggle" type="button" aria-expanded={isOpen} aria-controls={groupLabelId} aria-label={`${isOpen ? 'Colapsar' : 'Expandir'} ${group.label}`} onClick={() => toggleGroup(group.id)}>
             <span aria-hidden="true">{isOpen ? '⌄' : '›'}</span>
           </button>
         </div>
-        <div id={groupLabelId} className="navigation-group-items" hidden={!isOpen}>
+        <div id={groupLabelId} className="navigation-group-items" hidden={!isOpen || collapsed}>
           {group.items.map((item) => <NavLink key={item.to} to={item.to}>{item.label}</NavLink>)}
         </div>
       </section>
@@ -77,8 +77,8 @@ function NavigationGroups({ mobile = false }: { mobile?: boolean }) {
   </div>
 }
 
-export function DesktopNavigation() {
-  return <NavigationGroups />
+export function DesktopNavigation({ collapsed = false }: { collapsed?: boolean }) {
+  return <NavigationGroups collapsed={collapsed} />
 }
 
 export function MobileNavigation({ onLock }: { onLock: () => void }) {
