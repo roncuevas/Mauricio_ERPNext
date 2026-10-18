@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 type WorkspaceTab = { value: string; label: string; to: string; matches: (pathname: string) => boolean }
@@ -53,18 +52,12 @@ export function WorkspaceNavigation() {
       </div>
       <span className="workspace-navigation-hint text-xs text-[var(--color-muted)]">Los datos se cargan sólo al abrir cada módulo.</span>
     </div>
-    <div className="workspace-navigation-desktop-tabs">
+    <div className="workspace-navigation-tabs">
       <Tabs value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(tab.to) }}>
-        <TabsList aria-label={`Secciones de ${workspace.label}`} className="w-full min-w-0 justify-start overflow-x-auto">
-          {workspace.tabs.map((tab) => <TabsTrigger key={tab.value} value={tab.value} className="whitespace-nowrap">{tab.label}</TabsTrigger>)}
+        <TabsList aria-label={`Secciones de ${workspace.label}`} className="workspace-navigation-tab-list">
+          {workspace.tabs.map((tab) => <TabsTrigger key={tab.value} value={tab.value} className="workspace-navigation-tab whitespace-nowrap">{tab.label}</TabsTrigger>)}
         </TabsList>
       </Tabs>
-    </div>
-    <div className="workspace-navigation-mobile-select">
-      <Select value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(tab.to) }}>
-        <SelectTrigger aria-label={`Sección de ${workspace.label}`}><SelectValue /></SelectTrigger>
-        <SelectContent>{workspace.tabs.map((tab) => <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>)}</SelectContent>
-      </Select>
     </div>
   </section>
 }

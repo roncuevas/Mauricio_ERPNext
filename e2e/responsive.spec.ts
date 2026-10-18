@@ -58,8 +58,12 @@ test.describe('responsive navigation and empty states', () => {
     await createConnection(page)
     await expect(page.getByRole('button', { name: 'Menú' })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toHaveCount(0)
-    await expect(page.locator('.workspace-navigation-desktop-tabs')).toBeHidden()
-    await expect(page.getByRole('combobox', { name: 'Sección de Catálogo' })).toBeVisible()
+    await expect(page.locator('.workspace-navigation-tabs')).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Productos' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('combobox', { name: 'Sección de Catálogo' })).toHaveCount(0)
+    await page.getByRole('tab', { name: 'Precios' }).click()
+    await expect(page).toHaveURL(/\/prices$/)
+    await page.goto('/items')
 
     await page.getByRole('button', { name: 'Menú' }).click()
     await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
@@ -92,10 +96,8 @@ test.describe('responsive navigation and empty states', () => {
     expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport + 1)
 
     await page.goto('/pos/ventas')
-    const workspaceSelect = page.getByRole('combobox', { name: 'Sección de Operación' })
-    await expect(workspaceSelect).toBeVisible()
-    await workspaceSelect.click()
-    await page.getByRole('option', { name: 'Turnos' }).click()
+    await expect(page.getByRole('tab', { name: 'Ventas del día' })).toHaveAttribute('aria-selected', 'true')
+    await page.getByRole('tab', { name: 'Turnos' }).click()
     await expect(page).toHaveURL(/\/pos\/turnos$/)
   })
 
@@ -153,16 +155,17 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.getByLabel('Precio *')).toBeVisible()
 
     const workspaceRoutes = [
-      ['/items', 'Sección de Catálogo'],
-      ['/prices', 'Sección de Catálogo'],
-      ['/stock', 'Sección de Inventario'],
-      ['/stock/reconciliation', 'Sección de Inventario'],
-      ['/pos/ventas', 'Sección de Operación'],
-      ['/pos/turnos', 'Sección de Operación'],
+      ['/items', 'Productos'],
+      ['/prices', 'Precios'],
+      ['/stock', 'Inventario'],
+      ['/stock/reconciliation', 'Reconciliación'],
+      ['/pos/ventas', 'Ventas del día'],
+      ['/pos/turnos', 'Turnos'],
     ] as const
     for (const [path, label] of workspaceRoutes) {
       await page.goto(path)
-      await expect(page.getByRole('combobox', { name: label })).toBeVisible()
+      await expect(page.locator('.workspace-navigation-tabs')).toBeVisible()
+      await expect(page.getByRole('tab', { name: label })).toHaveAttribute('aria-selected', 'true')
       const dimensions = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: window.innerWidth }))
       expect(dimensions.body, `${path} has horizontal page overflow`).toBeLessThanOrEqual(dimensions.viewport + 1)
     }
@@ -220,8 +223,9 @@ test.describe('responsive navigation and empty states', () => {
     test.skip(testInfo.project.name !== 'desktop', 'Este caso corresponde al proyecto de escritorio')
     await createConnection(page)
     await expect(page.locator('.app-sidebar')).toBeVisible()
-    await expect(page.locator('.workspace-navigation-desktop-tabs')).toBeVisible()
-    await expect(page.locator('.workspace-navigation-mobile-select')).toBeHidden()
+    await expect(page.locator('.workspace-navigation-tabs')).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Productos' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('combobox', { name: 'Sección de Catálogo' })).toHaveCount(0)
     await expect(page.locator('.app-sidebar .app-brand-name')).toHaveText('Mauricio')
     await expect(page.getByText('Conexión activa')).toBeVisible()
     await expect(page.getByRole('link', { name: 'Productos' })).toBeVisible()
