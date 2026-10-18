@@ -58,6 +58,8 @@ test.describe('responsive navigation and empty states', () => {
     await createConnection(page)
     await expect(page.getByRole('button', { name: 'Menú' })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toHaveCount(0)
+    await expect(page.locator('.workspace-navigation-desktop-tabs')).toBeHidden()
+    await expect(page.getByRole('combobox', { name: 'Sección de Catálogo' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Menú' }).click()
     await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
@@ -67,12 +69,21 @@ test.describe('responsive navigation and empty states', () => {
     })
     expect(menuLayout.height).toBeGreaterThanOrEqual(menuLayout.viewport)
     expect(menuLayout.bodyOverflow).toBe('hidden')
-    await page.getByRole('link', { name: 'Variantes' }).click()
+    const variantsLink = page.getByRole('link', { name: 'Variantes' })
+    if (!(await variantsLink.isVisible())) await page.getByRole('button', { name: 'Expandir Catálogo' }).click()
+    await variantsLink.click()
     await expect(page).toHaveURL(/\/variants$/)
     await expect(page.getByRole('button', { name: 'Menú' })).toBeVisible()
 
     const dimensions = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: window.innerWidth }))
     expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport + 1)
+
+    await page.goto('/pos/ventas')
+    const workspaceSelect = page.getByRole('combobox', { name: 'Sección de Operación' })
+    await expect(workspaceSelect).toBeVisible()
+    await workspaceSelect.click()
+    await page.getByRole('option', { name: 'Turnos' }).click()
+    await expect(page).toHaveURL(/\/pos\/turnos$/)
   })
 
   test('imports shared credentials, pre-fills the form, and removes secrets from the URL', async ({ page }) => {
@@ -128,6 +139,21 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.locator('h1').filter({ hasText: 'Agregar precio' })).toBeVisible()
     await expect(page.getByLabel('Precio *')).toBeVisible()
 
+    const workspaceRoutes = [
+      ['/items', 'Sección de Catálogo'],
+      ['/prices', 'Sección de Catálogo'],
+      ['/stock', 'Sección de Inventario'],
+      ['/stock/reconciliation', 'Sección de Inventario'],
+      ['/pos/ventas', 'Sección de Operación'],
+      ['/pos/turnos', 'Sección de Operación'],
+    ] as const
+    for (const [path, label] of workspaceRoutes) {
+      await page.goto(path)
+      await expect(page.getByRole('combobox', { name: label })).toBeVisible()
+      const dimensions = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: window.innerWidth }))
+      expect(dimensions.body, `${path} has horizontal page overflow`).toBeLessThanOrEqual(dimensions.viewport + 1)
+    }
+
     const routes = [
       ['/items', 'Productos'],
       ['/variants', 'Variantes'],
@@ -157,6 +183,8 @@ test.describe('responsive navigation and empty states', () => {
     test.skip(testInfo.project.name !== 'desktop', 'Este caso corresponde al proyecto de escritorio')
     await createConnection(page)
     await expect(page.locator('.app-sidebar')).toBeVisible()
+    await expect(page.locator('.workspace-navigation-desktop-tabs')).toBeVisible()
+    await expect(page.locator('.workspace-navigation-mobile-select')).toBeHidden()
     await expect(page.locator('.app-sidebar .app-brand-name')).toHaveText('Mauricio')
     await expect(page.getByText('Conexión activa')).toBeVisible()
     await expect(page.getByRole('link', { name: 'Productos' })).toBeVisible()
@@ -168,8 +196,15 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.getByRole('button', { name: 'Activar modo claro' })).toBeVisible()
     await page.getByRole('button', { name: 'Activar modo claro' }).click()
     await expect(page.locator('html')).toHaveAttribute('data-color-mode', 'light')
+    await page.getByRole('button', { name: 'Expandir Administración' }).click()
     await page.getByRole('link', { name: 'Configuración' }).click()
     await expect(page.getByRole('heading', { name: 'Configuración' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Contraer barra lateral' })).toBeVisible()
+    await page.getByRole('button', { name: 'Contraer barra lateral' }).click()
+    await expect(page.getByRole('button', { name: 'Expandir barra lateral' })).toBeVisible()
+    await expect(page.locator('.app-shell-sidebar-collapsed')).toBeVisible()
+    await page.getByRole('button', { name: 'Expandir barra lateral' }).click()
+    await expect(page.getByRole('button', { name: 'Contraer barra lateral' })).toBeVisible()
   })
 
   test('POS keeps keyboard-accessible shadcn flows on mobile and desktop', async ({ page }, testInfo) => {

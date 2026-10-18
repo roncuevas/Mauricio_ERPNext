@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 type WorkspaceTab = { value: string; label: string; to: string; matches: (pathname: string) => boolean }
@@ -44,18 +45,26 @@ export function WorkspaceNavigation() {
   if (!workspace || workspace.tabs.length < 2) return null
   const activeTab = workspace.tabs.find((tab) => tab.matches(location.pathname)) ?? workspace.tabs[0]
 
-  return <section className="mb-6 grid gap-3" aria-label={`Workspace de ${workspace.label}`}>
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
+  return <section className="workspace-navigation mb-6 grid min-w-0 gap-3" aria-label={`Workspace de ${workspace.label}`}>
+    <div className="workspace-navigation-header flex min-w-0 flex-wrap items-end justify-between gap-3">
+      <div className="workspace-navigation-copy min-w-0">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">{workspace.label}</p>
-        <p className="mt-1 text-sm text-[var(--color-muted)]">{workspace.description}</p>
+        <p className="workspace-navigation-description mt-1 text-sm text-[var(--color-muted)]">{workspace.description}</p>
       </div>
-      <span className="text-xs text-[var(--color-muted)]">Los datos se cargan sólo al abrir cada módulo.</span>
+      <span className="workspace-navigation-hint text-xs text-[var(--color-muted)]">Los datos se cargan sólo al abrir cada módulo.</span>
     </div>
-    <Tabs value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(tab.to) }}>
-      <TabsList aria-label={`Secciones de ${workspace.label}`} className="w-full justify-start overflow-x-auto">
-        {workspace.tabs.map((tab) => <TabsTrigger key={tab.value} value={tab.value} className="whitespace-nowrap">{tab.label}</TabsTrigger>)}
-      </TabsList>
-    </Tabs>
+    <div className="workspace-navigation-desktop-tabs">
+      <Tabs value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(tab.to) }}>
+        <TabsList aria-label={`Secciones de ${workspace.label}`} className="w-full min-w-0 justify-start overflow-x-auto">
+          {workspace.tabs.map((tab) => <TabsTrigger key={tab.value} value={tab.value} className="whitespace-nowrap">{tab.label}</TabsTrigger>)}
+        </TabsList>
+      </Tabs>
+    </div>
+    <div className="workspace-navigation-mobile-select">
+      <Select value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(tab.to) }}>
+        <SelectTrigger aria-label={`Sección de ${workspace.label}`}><SelectValue /></SelectTrigger>
+        <SelectContent>{workspace.tabs.map((tab) => <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>)}</SelectContent>
+      </Select>
+    </div>
   </section>
 }
