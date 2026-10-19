@@ -5,6 +5,7 @@ import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { defaultUom, priceForUom } from '../lib/pos-catalog'
 import { buildVariantTree } from '../lib/variant-cache'
+import { searchScore } from '../lib/search'
 import type { ItemPrice, ItemUom, VariantItem } from '../lib/types'
 
 type ProductTreeProps = {
@@ -21,7 +22,7 @@ type ProductTreeProps = {
 function matchesItem(item: VariantItem, query: string) {
   if (!query) return true
   const values = [item.name, item.item_code, item.item_name, item.brand, item.item_group, item.stock_uom, item.sales_uom, ...(((item as { barcodes?: string[] }).barcodes) ?? [])]
-  return values.some((value) => String(value ?? '').toLocaleLowerCase().includes(query))
+  return searchScore(query, values.map((value) => ({ value, weight: 1 }))) !== null
 }
 
 function formatRate(rate: number, currency: string) {
@@ -77,7 +78,7 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
 export function SalesOrderProductTree({ items, prices, priceList, search, disabled = false, currency, onSearchChange, onAdd }: ProductTreeProps) {
   const tree = useMemo(() => buildVariantTree(items), [items])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const query = search.trim().toLocaleLowerCase()
+  const query = search.trim()
   const visibleNames = useMemo(() => {
     const visible = new Set<string>()
     const visit = (item: VariantItem): boolean => {
