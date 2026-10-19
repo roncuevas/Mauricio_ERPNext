@@ -268,6 +268,28 @@ export default interface Resources {
         "templateVariants": "Plantilla · {{count}} variantes",
         "viewPrices": "Ver precios de {{title}}",
         "viewPricesShort": "Ver precios"
+      },
+      "variant": {
+        "addPrice": "Agregar precio",
+        "addToCart": "Agregar al carrito",
+        "available": "Variantes disponibles",
+        "checkingPrice": "Consultando precio…",
+        "chosen": "Variante elegida",
+        "close": "Cerrar selección de variante",
+        "configuration": "Configuración de variante",
+        "configure": "Configurar venta",
+        "description": "Elige una variante, presentación y precio antes de agregarla al carrito.",
+        "empty": "Esta plantilla no tiene variantes activas disponibles.",
+        "loading": "Cargando variantes",
+        "noMatches": "No hay variantes que coincidan.",
+        "noPriceForUom": "Sin precio para esta UOM",
+        "optionsHint": "{{count}} opciones · usa búsqueda o teclado",
+        "results": "Resultados",
+        "saleUom": "UOM de venta",
+        "searchLabel": "Buscar variante",
+        "searchPlaceholder": "Buscar por nombre, SKU, atributo o marca…",
+        "selectUom": "Selecciona UOM",
+        "selected": "Seleccionada"
       }
     },
     "prices": {
