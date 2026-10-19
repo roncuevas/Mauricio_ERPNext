@@ -1,4 +1,5 @@
 import type { DocTypeField, QuotationDocument, QuotationItem, QuotationPayment, QuotationSummary, QuotationTax } from './types'
+import i18n from './i18n'
 
 export const quotationStatuses = ['Draft', 'Open'] as const
 
@@ -31,20 +32,20 @@ export function quotationPayload(form: QuotationFormState, isNew = false): Recor
 }
 
 export function validateQuotationForm(form: QuotationFormState) {
-  if (!form.quotation_to || !form.party_name) return 'Selecciona un cliente o Lead.'
-  if (!form.company) return 'Selecciona una compañía.'
-  if (!form.transaction_date) return 'Selecciona la fecha de transacción.'
-  if (form.valid_till && form.valid_till < form.transaction_date) return 'La fecha de vigencia debe ser igual o posterior a la fecha de transacción.'
-  if (!form.items.length) return 'Agrega al menos una partida.'
+  if (!form.quotation_to || !form.party_name) return i18n.t('quotationsPage.validationCustomer')
+  if (!form.company) return i18n.t('quotationsPage.validationCompany')
+  if (!form.transaction_date) return i18n.t('quotationsPage.validationTransactionDate')
+  if (form.valid_till && form.valid_till < form.transaction_date) return i18n.t('quotationsPage.validationValidity')
+  if (!form.items.length) return i18n.t('quotationsPage.validationItems')
   for (const [index, item] of form.items.entries()) {
-    if (!item.item_code) return `La partida ${index + 1} requiere un artículo.`
-    if (!Number.isFinite(Number(item.qty)) || Number(item.qty) <= 0) return `La cantidad de la partida ${index + 1} debe ser mayor que cero.`
-    if (!Number.isFinite(Number(item.rate)) || Number(item.rate) < 0) return `La tarifa de la partida ${index + 1} no es válida.`
-    if (Number(item.discount_percentage ?? 0) < 0 || Number(item.discount_percentage ?? 0) > 100) return `El descuento de la partida ${index + 1} debe estar entre 0 y 100%.`
+    if (!item.item_code) return i18n.t('quotationsPage.validationItemCode', { index: index + 1 })
+    if (!Number.isFinite(Number(item.qty)) || Number(item.qty) <= 0) return i18n.t('quotationsPage.validationQuantity', { index: index + 1 })
+    if (!Number.isFinite(Number(item.rate)) || Number(item.rate) < 0) return i18n.t('quotationsPage.validationRate', { index: index + 1 })
+    if (Number(item.discount_percentage ?? 0) < 0 || Number(item.discount_percentage ?? 0) > 100) return i18n.t('quotationsPage.validationDiscount', { index: index + 1 })
   }
   const portions = form.payment_schedule.map((row) => Number(row.invoice_portion ?? 0))
-  if (portions.some((value) => !Number.isFinite(value) || value < 0 || value > 100)) return 'Los porcentajes de pago deben estar entre 0 y 100%.'
-  if (portions.length && Math.abs(portions.reduce((sum, value) => sum + value, 0) - 100) > 0.01) return 'Los porcentajes de pago deben sumar 100%.'
+  if (portions.some((value) => !Number.isFinite(value) || value < 0 || value > 100)) return i18n.t('quotationsPage.validationPaymentRange')
+  if (portions.length && Math.abs(portions.reduce((sum, value) => sum + value, 0) - 100) > 0.01) return i18n.t('quotationsPage.validationPaymentTotal')
   return null
 }
 
@@ -103,20 +104,20 @@ export function defaultDeliveryDate(transactionDate?: string, today = new Date()
 }
 
 export function validateQuotationForSalesOrder(quotation: Pick<QuotationDocument, 'party_name' | 'customer_name' | 'company' | 'items' | 'transaction_date'>, deliveryDate?: string) {
-  if (!deliveryDate) return 'Selecciona una fecha de entrega.'
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) return 'La fecha de entrega no es válida.'
-  if (quotation.transaction_date && deliveryDate <= quotation.transaction_date) return 'La fecha de entrega debe ser posterior a la fecha de transacción.'
-  if (!quotation.party_name && !quotation.customer_name) return 'La cotización no tiene cliente.'
-  if (!quotation.company) return 'La cotización no tiene compañía.'
-  if (!quotation.items?.length) return 'La cotización no tiene partidas.'
+  if (!deliveryDate) return i18n.t('quotationsPage.validationDeliveryDate')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) return i18n.t('quotationsPage.validationDeliveryDateInvalid')
+  if (quotation.transaction_date && deliveryDate <= quotation.transaction_date) return i18n.t('quotationsPage.validationDeliveryAfterTransaction')
+  if (!quotation.party_name && !quotation.customer_name) return i18n.t('quotationsPage.validationQuotationCustomer')
+  if (!quotation.company) return i18n.t('quotationsPage.validationQuotationCompany')
+  if (!quotation.items?.length) return i18n.t('quotationsPage.validationQuotationItems')
   return null
 }
 
 export function validateMappedSalesOrder(payload: Record<string, unknown>, deliveryDate?: string) {
-  if (!payload.customer) return 'ERPNext no devolvió un cliente para el Sales Order.'
-  if (!payload.company) return 'ERPNext no devolvió una compañía para el Sales Order.'
-  if (!Array.isArray(payload.items) || payload.items.length === 0) return 'ERPNext no devolvió partidas para el Sales Order.'
-  if (deliveryDate && typeof payload.transaction_date === 'string' && deliveryDate <= payload.transaction_date) return 'La fecha de entrega debe ser posterior a la fecha del Sales Order.'
+  if (!payload.customer) return i18n.t('quotationsPage.validationMappedCustomer')
+  if (!payload.company) return i18n.t('quotationsPage.validationMappedCompany')
+  if (!Array.isArray(payload.items) || payload.items.length === 0) return i18n.t('quotationsPage.validationMappedItems')
+  if (deliveryDate && typeof payload.transaction_date === 'string' && deliveryDate <= payload.transaction_date) return i18n.t('quotationsPage.validationMappedDelivery')
   return null
 }
 
@@ -141,7 +142,7 @@ export type RelatedSalesOrderRow = { name?: string; parent?: string; docstatus?:
 
 export class RelatedSalesOrderError extends Error {
   constructor(public names: string[]) {
-    super(`La cotización ya tiene Sales Order relacionado: ${names.join(', ')}.`)
+    super(i18n.t('quotationsPage.relatedOrderError', { names: names.join(', ') }))
   }
 }
 

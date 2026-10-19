@@ -16,7 +16,6 @@ export default defineConfig({
   lint: {
     ignore: [
       'src/components/ui.tsx',
-      'src/pages/quotations-page.tsx',
       'src/pages/sales-orders-page.tsx',
     ],
   },

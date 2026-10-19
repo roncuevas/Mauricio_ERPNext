@@ -39,11 +39,11 @@ describe('quotation helpers', () => {
 
   it('validates required conversion data and date order', () => {
     const quotation = { party_name: 'Cliente', company: 'Empresa', transaction_date: '2026-10-20', items: [{ item_code: 'ITEM-1', qty: 1, rate: 10 }] }
-    expect(validateQuotationForSalesOrder(quotation, '2026-10-20')).toContain('posterior')
-    expect(validateQuotationForSalesOrder(quotation, '2026-10-19')).toContain('posterior')
-    expect(validateQuotationForSalesOrder({ ...quotation, party_name: '' }, '2026-10-21')).toContain('cliente')
-    expect(validateQuotationForSalesOrder({ ...quotation, company: '' }, '2026-10-21')).toContain('compañía')
-    expect(validateQuotationForSalesOrder({ ...quotation, items: [] }, '2026-10-21')).toContain('partidas')
+    expect(validateQuotationForSalesOrder(quotation, '2026-10-20')).toMatch(/posterior|after/)
+    expect(validateQuotationForSalesOrder(quotation, '2026-10-19')).toMatch(/posterior|after/)
+    expect(validateQuotationForSalesOrder({ ...quotation, party_name: '' }, '2026-10-21')).toMatch(/cliente|customer/)
+    expect(validateQuotationForSalesOrder({ ...quotation, company: '' }, '2026-10-21')).toMatch(/compañía|company/)
+    expect(validateQuotationForSalesOrder({ ...quotation, items: [] }, '2026-10-21')).toMatch(/partidas|items/)
   })
 
   it('normalizes the header and every mapped row without metadata', () => {
@@ -52,7 +52,7 @@ describe('quotation helpers', () => {
 
   it('validates mapped required fields and detects draft or submitted related orders', () => {
     expect(validateMappedSalesOrder({ customer: 'Cliente', company: 'Empresa', items: [{}] })).toBeNull()
-    expect(validateMappedSalesOrder({ customer: 'Cliente', items: [{}] })).toContain('compañía')
+    expect(validateMappedSalesOrder({ customer: 'Cliente', items: [{}] })).toMatch(/compañía|company/)
     expect(relatedSalesOrderFilters('SAL-QTN-0001')).toEqual([['items.prevdoc_docname', '=', 'SAL-QTN-0001'], ['docstatus', '<', 2]])
     expect(relatedSalesOrderNames([{ parent: 'SO-1', docstatus: 0 }, { parent: 'SO-2', docstatus: 1 }, { parent: 'SO-3', docstatus: 2 }])).toEqual(['SO-1', 'SO-2'])
   })
@@ -64,9 +64,9 @@ describe('quotation helpers', () => {
 
   it('validates dates, quantities and payment percentages before REST writes', () => {
     const form = { quotation_to: 'Customer', party_name: 'C-1', company: 'Company', transaction_date: '2026-10-20', valid_till: '2026-10-19', items: [{ item_code: 'ITEM-1', qty: 0, rate: 10 }], taxes: [], payment_schedule: [] }
-    expect(validateQuotationForm(form)).toContain('vigencia')
-    expect(validateQuotationForm({ ...form, valid_till: '2026-10-20' })).toContain('cantidad')
-    expect(validateQuotationForm({ ...form, valid_till: '2026-10-20', items: [{ item_code: 'ITEM-1', qty: 1, rate: 10 }], payment_schedule: [{ invoice_portion: 50 }] })).toContain('sumar 100')
+    expect(validateQuotationForm(form)).toMatch(/vigencia|validity/)
+    expect(validateQuotationForm({ ...form, valid_till: '2026-10-20' })).toMatch(/cantidad|quantity/)
+    expect(validateQuotationForm({ ...form, valid_till: '2026-10-20', items: [{ item_code: 'ITEM-1', qty: 1, rate: 10 }], payment_schedule: [{ invoice_portion: 50 }] })).toMatch(/sumar 100|add up to 100/)
   })
 
   it('creates a revision payload with amended_from and no server identity', () => {
