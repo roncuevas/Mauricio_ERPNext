@@ -461,9 +461,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-shell-sidebar-collapsed .app-sidebar-brand-copy, .app-shell-sidebar-collapsed .app-sidebar-profile, .app-shell-sidebar-collapsed .app-sidebar-lock span:first-child { display: none; }
 .app-shell-sidebar-collapsed .app-sidebar-collapse-toggle { position: static; width: 2rem; min-height: 2rem; margin-inline: auto; }
 .app-shell-sidebar-collapsed .app-sidebar-nav { border-top: 1px solid var(--color-border-subtle); padding: .85rem .65rem; }
-.app-shell-sidebar-collapsed .app-sidebar-footer-actions { justify-content: center; }
+.app-shell-sidebar-collapsed .app-sidebar-footer-actions { flex-direction: column; justify-content: center; gap: .45rem; }
 .app-shell-sidebar-collapsed .app-sidebar-settings-link { width: 2.75rem; flex: 0 0 2.75rem; justify-content: center; padding-inline: .5rem; }
 .app-shell-sidebar-collapsed .app-sidebar-settings-label { display: none; }
+.app-shell-sidebar-collapsed .app-sidebar-language-selector { margin: 0; }
 .app-shell-sidebar-collapsed .app-sidebar-lock { justify-content: center; padding-inline: .55rem; }
 .page-header { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
 .workspace-navigation-header { min-width: 0; }

@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { CacheManagerPanel } from '../components/cache-manager-panel'
 import { EntityCombobox } from '../components/entity-combobox'
+import { LanguageSelector } from '../components/language-selector'
 import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
@@ -97,6 +98,11 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
         </div>
         {(posMessage || posError) && <div className="mt-4"><Notice tone={posError ? 'error' : 'info'}>{posError || posMessage}</Notice></div>}
         <div className="settings-actions"><Button type="button" onClick={savePosPreferences}>Guardar preferencias</Button><Button type="button" variant="secondary" onClick={resetPosPreferences}>Restaurar valores</Button></div>
+      </div>
+
+      <div className="card settings-language-card">
+        <div className="settings-section-heading"><div><p className="settings-eyebrow">Idioma</p><h2>Idioma de la aplicación</h2><p className="muted">Elige el idioma usado por la interfaz. Se guarda en este navegador.</p></div><span className="settings-section-icon" aria-hidden="true">文</span></div>
+        <LanguageSelector />
       </div>
 
       <div className="card settings-theme-card">

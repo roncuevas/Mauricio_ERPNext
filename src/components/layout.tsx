@@ -139,5 +139,5 @@ export function ThemeModeToggle({ className = 'app-sidebar-theme-toggle' }: { cl
 }
 
 export function PageLayout({ children }: { client?: unknown; children?: ReactNode }) {
-  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><div className="app-topbar"><LanguageSelector /></div><WorkspaceNavigation />{children ?? <Outlet />}</div>
+  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><WorkspaceNavigation />{children ?? <Outlet />}</div>
 }

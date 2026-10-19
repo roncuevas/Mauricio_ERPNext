@@ -4,7 +4,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { formatMoney } from '../lib/pos'
-import { defaultUom, uomOptionLabel } from '../lib/pos-catalog'
+import { uomOptionLabel } from '../lib/pos-catalog'
 import type { CachedItem, ItemPrice, ItemUom } from '../lib/types'
 
 function itemUoms(item: CachedItem): ItemUom[] {
