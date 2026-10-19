@@ -76,6 +76,27 @@ export default interface Resources {
         "selling": "Venta",
         "stockUom": "UOM de stock",
         "uomConversions": "Conversiones UOM"
+      },
+      "table": {
+        "actions": "Acciones",
+        "columns": "Columnas",
+        "group": "Grupo",
+        "margin": "Margen aproximado",
+        "marginValue": "{{value}}% · {{price}}",
+        "noCache": "Sin caché",
+        "optionalColumns": " {{count}} opcionales · Producto y Acciones siempre visibles",
+        "product": "Producto",
+        "purchasePrice": "Precio de compra",
+        "requiredActions": "Acciones · obligatoria",
+        "requiredProduct": "Producto · obligatoria",
+        "resetColumns": "Restablecer columnas",
+        "resize": "Ajustar ancho de {{label}}",
+        "salePrice": "Precio de venta",
+        "showColumns": "Mostrar columnas",
+        "template": "Plantilla",
+        "variant": "Variante",
+        "visibleColumns": "Columnas visibles",
+        "weight": "Peso"
       }
     },
     "common": {

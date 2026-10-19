@@ -18,7 +18,6 @@ export default defineConfig({
       'src/components/metadata-editor.tsx',
       'src/components/pos-sales.tsx',
       'src/components/pos-shadcn.tsx',
-      'src/components/product-table.tsx',
       'src/components/sales-order-product-tree.tsx',
       'src/components/ui.tsx',
       'src/components/uom-editor.tsx',

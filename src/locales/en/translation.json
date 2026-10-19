@@ -165,7 +165,8 @@
     "filters": "Inventory filters", "filtersTitle": "Inventory filters", "filtersDescription": "Filter stock by company, warehouse and product.", "allCompanies": "All companies", "warehouse": "Branch / warehouse", "allWarehouses": "All warehouses", "codeOrName": "Code or name", "applyFilters": "Apply filters"
   },
   "catalog": {
-    "product": { "noGroup": "Unclassified", "buying": "Buying", "selling": "Selling", "margin": "Approx. margin", "noPrice": "No price", "notComparable": "Not comparable", "sameUom": "same UOM", "marginValue": "{{value}}% · {{uom}}", "stockUom": "Stock UOM", "defaultSalesUom": "Default sales UOM", "defaultPurchaseUom": "Default purchase UOM", "uomConversions": "UOM conversions", "noConversions": "No conversions recorded", "edit": "Edit product", "configureUom": "Configure UOM" }
+    "product": { "noGroup": "Unclassified", "buying": "Buying", "selling": "Selling", "margin": "Approx. margin", "noPrice": "No price", "notComparable": "Not comparable", "sameUom": "same UOM", "marginValue": "{{value}}% · {{uom}}", "stockUom": "Stock UOM", "defaultSalesUom": "Default sales UOM", "defaultPurchaseUom": "Default purchase UOM", "uomConversions": "UOM conversions", "noConversions": "No conversions recorded", "edit": "Edit product", "configureUom": "Configure UOM" },
+    "table": { "product": "Product", "group": "Group", "weight": "Weight", "template": "Template", "variant": "Variant", "purchasePrice": "Purchase price", "salePrice": "Sale price", "margin": "Approx. margin", "marginValue": "{{value}}% · {{price}}", "noCache": "No cache", "actions": "Actions", "visibleColumns": "Visible columns", "optionalColumns": " {{count}} optional · Product and Actions always visible", "columns": "Columns", "showColumns": "Show columns", "requiredProduct": "Product · required", "requiredActions": "Actions · required", "resetColumns": "Reset columns", "resize": "Adjust width of {{label}}" }
   },
   "cache": {
     "labels": {
