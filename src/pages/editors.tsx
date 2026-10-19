@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { MetadataDocEditor } from '../components/metadata-editor'
@@ -15,11 +16,12 @@ import { queryKeys } from '../lib/query-keys'
 type Client = ReturnType<typeof createErpNextClient>
 
 export function VariantEditorPage({ client, profileId }: { client: Client; profileId: string }) {
+  const { t } = useTranslation()
   const { name } = useParams<{ name: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const isNew = !name || name === 'new'
-  return <section><PageHeader title={isNew ? 'Nueva variante' : 'Editar producto'} description={isNew ? 'Crea un Item y asígnalo a una plantilla.' : `Edita el Item ${name}.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} /><VariantEditor client={client} profileId={profileId} name={isNew ? null : name} initialTemplate={searchParams.get('template') ?? ''} onClose={() => navigate('/variants')} /></section>
+  return <section><PageHeader title={isNew ? t("editorsPage.newVariant") : t("editorsPage.editProduct")} description={isNew ? t("editorsPage.variantDescriptionNew") : t("editorsPage.variantDescriptionEdit", { name })} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>{t("editorsPage.configureUom")}</ButtonLink> : undefined} /><VariantEditor client={client} profileId={profileId} name={isNew ? null : name} initialTemplate={searchParams.get('template') ?? ''} onClose={() => navigate('/variants')} /></section>
 }
 
 function VariantEditor({ client, profileId, name, initialTemplate, onClose }: { client: Client; profileId: string; name: string | null; initialTemplate: string; onClose: () => void }) {
@@ -39,12 +41,13 @@ function VariantEditor({ client, profileId, name, initialTemplate, onClose }: { 
 }
 
 export function ItemEditorPage({ client, profileId }: { client: Client; profileId: string }) {
+  const { t } = useTranslation()
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const isNew = !name || name === 'new'
   const queryClient = useQueryClient()
   const meta = useQuery({ queryKey: queryKeys.metadata.doctype(profileId, 'Item'), queryFn: () => client.getDocTypeMeta('Item') })
-  return <section><PageHeader title={isNew ? 'Nuevo producto' : 'Editar producto'} description={isNew ? 'Crea un Item usando todos los campos del metadata de ERPNext.' : `Edita el Item ${name} usando todos los campos disponibles.`} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>Configurar UOM</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} profileId={profileId} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(queryKeys.catalog.item(profileId), next) } await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) }) }} />}</section>
+  return <section><PageHeader title={isNew ? t("editorsPage.newProduct") : t("editorsPage.editProduct")} description={isNew ? t("editorsPage.productDescriptionNew") : t("editorsPage.productDescriptionEdit", { name })} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>{t("editorsPage.configureUom")}</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} profileId={profileId} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(queryKeys.catalog.item(profileId), next) } await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) }) }} />}</section>
 }
 
 function readUomValues(document: Record<string, unknown>): UomEditorValues {
@@ -61,6 +64,7 @@ function readUomValues(document: Record<string, unknown>): UomEditorValues {
 }
 
 export function UomEditorPage({ client, profileId }: { client: Client; profileId: string }) {
+  const { t } = useTranslation()
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -84,11 +88,11 @@ export function UomEditorPage({ client, profileId }: { client: Client; profileId
       await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.item(profileId) })
       await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) })
       navigate(`/items/${encodeURIComponent(name)}`)
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudieron guardar las UOM.') } finally { setBusy(false) }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : t("editorsPage.saveUomError")) } finally { setBusy(false) }
   }
 
-  if (!name) return <Notice>Falta el producto que se quiere editar.</Notice>
+  if (!name) return <Notice>{t("editorsPage.uomMissingProduct")}</Notice>
   if (item.isError) return <Notice>{item.error.message}</Notice>
   if (item.isPending || !values) return <Spinner />
-  return <section><PageHeader title="UOM del producto" description="Administra la UOM base, las UOM predeterminadas y sus conversiones por producto." action={<Button variant="secondary" onClick={() => navigate(`/items/${encodeURIComponent(name)}`)}>Volver al producto</Button>} /><UomEditor itemName={name} itemLabel={String(item.data.item_name ?? '')} values={values} uomOptions={uoms.data ?? []} busy={busy} error={error || (uoms.isError ? `No se pudieron cargar sugerencias de UOM: ${uoms.error.message}` : '')} onSave={save} onCancel={() => navigate(`/items/${encodeURIComponent(name)}`)} /></section>
+  return <section><PageHeader title={t("editorsPage.uomTitle")} description={t("editorsPage.uomDescription")} action={<Button variant="secondary" onClick={() => navigate(`/items/${encodeURIComponent(name)}`)}>{t("editorsPage.backToProduct")}</Button>} /><UomEditor itemName={name} itemLabel={String(item.data.item_name ?? '')} values={values} uomOptions={uoms.data ?? []} busy={busy} error={error || (uoms.isError ? t("editorsPage.uomSuggestionsError", { error: uoms.error.message }) : '')} onSave={save} onCancel={() => navigate(`/items/${encodeURIComponent(name)}`)} /></section>
 }
