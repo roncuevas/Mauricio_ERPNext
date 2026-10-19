@@ -31,6 +31,10 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
 
   return <section className="home-workspace">
     <PageHeader title={t('home.title')} description={t('home.description')} action={<Button type="button" onClick={refreshSummary}>{t('home.refreshSummary')}</Button>} />
+    <div className="home-access-grid">
+      <AccessCard title={t('home.pricesAccessTitle')} description={t('home.pricesAccessDescription')} action={t('home.openPrices')} to="/prices" icon="$" />
+      <AccessCard title={t('home.posAccessTitle')} description={t('home.posAccessDescription')} action={t('home.openPos')} to="/pos" icon="▣" />
+    </div>
     {query.isError && <Notice>{query.error instanceof Error ? query.error.message : 'No se pudo leer el estado local.'}</Notice>}
     {query.isPending ? <div className="home-stat-grid">{Array.from({ length: 8 }, (_, index) => <Skeleton className="home-stat-skeleton" key={index} />)}</div> : <>
       <div className="home-stat-grid">
@@ -42,10 +46,6 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
         <StatCard label={t('home.ordersToday')} value={number(stats.ordersToday)} detail={money(stats.ordersTodayTotal)} />
         <StatCard label={t('home.quotations')} value={number(stats.quotations)} detail={money(stats.quotationsTotal)} />
         <StatCard label={t('home.openShifts')} value={number(stats.openShifts)} detail={t('home.posOpening')} tone={stats.openShifts ? 'success' : 'neutral'} />
-      </div>
-      <div className="home-access-grid">
-        <AccessCard title={t('home.pricesAccessTitle')} description={t('home.pricesAccessDescription')} action={t('home.openPrices')} to="/prices" icon="$" />
-        <AccessCard title={t('home.posAccessTitle')} description={t('home.posAccessDescription')} action={t('home.openPos')} to="/pos" icon="▣" />
       </div>
       <Card className="home-health-card"><div className="home-section-heading"><div><p className="settings-eyebrow">{t('home.localStatus')}</p><h2>{t('home.cacheHealth')}</h2></div><Badge tone={stats.errorCaches ? 'warning' : 'success'}>{stats.errorCaches ? t('home.errors', { count: stats.errorCaches }) : t('home.noRecentErrors')}</Badge></div><Separator /><div className="home-health-grid"><span><strong>{number(stats.freshCaches)}</strong>{t('home.updated')}</span><span><strong>{number(stats.staleCaches)}</strong>{t('home.stale')}</span><span><strong>{number(stats.missingCaches)}</strong>{t('home.missing')}</span><span><strong>{number(stats.errorCaches)}</strong>{t('home.withErrors')}</span></div><p className="muted">{t('home.sourceNote')}</p></Card>
     </>}
