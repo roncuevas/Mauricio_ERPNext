@@ -10,6 +10,7 @@ import type { createErpNextClient } from '../lib/erpnext'
 type Client = ReturnType<typeof createErpNextClient>
 
 const cacheOrder: ManagedCacheId[] = ['products', 'variants', 'uom', 'prices', 'priceLists', 'stock', 'suppliers', 'customers', 'doctypes', 'posContext', 'shifts', 'salesOrders', 'quotations']
+const contextCacheIds: ManagedCacheId[] = ['salesOrders', 'quotations']
 
 function formatDate(value?: string) {
   if (!value) return 'Nunca'
@@ -59,7 +60,7 @@ function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; bu
   </Card>
 }
 
-export function CacheManagerPanel({ client, profileId, activeProfile }: { client: Client; profileId: string; activeProfile?: PosProfile }) {
+export function CacheManagerPanel({ client, profileId, activeProfile, onChanged }: { client: Client; profileId: string; activeProfile?: PosProfile; onChanged?: () => void }) {
   const queryClient = useQueryClient()
   const [busyIds, setBusyIds] = useState<ManagedCacheId[]>([])
   const [message, setMessage] = useState('')
@@ -72,21 +73,26 @@ export function CacheManagerPanel({ client, profileId, activeProfile }: { client
     await Promise.all(relatedQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' })))
   }
 
-  const refresh = useMutation({ mutationFn: async (id: ManagedCacheId) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress)), onSuccess: async (_result, id) => { await invalidateRelated(id); await overview.refetch(); setMessage(`${entries.find((entry) => entry.id === id)?.label ?? 'Caché'} actualizada.`) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : 'No se pudo actualizar la caché.'); await overview.refetch() } })
+  const refresh = useMutation({ mutationFn: async (id: ManagedCacheId) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress)), onSuccess: async (_result, id) => { await invalidateRelated(id); await overview.refetch(); onChanged?.(); setMessage(`${entries.find((entry) => entry.id === id)?.label ?? 'Caché'} actualizada.`) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : 'No se pudo actualizar la caché.'); await overview.refetch(); onChanged?.() } })
 
   async function refreshOne(id: ManagedCacheId) {
+    if (contextCacheIds.includes(id) && !activeProfile?.company) { setError('Ventas del día y cotizaciones requieren un POS Profile con compañía activa.'); return }
     setError(''); setBusyIds((current) => [...current, id])
     try { await refresh.mutateAsync(id) } finally { setBusyIds((current) => current.filter((value) => value !== id)) }
   }
 
   async function refreshAll() {
-    setError(''); setMessage('Actualizando cachés…'); setBusyIds(cacheOrder)
-    const results = await Promise.allSettled(cacheOrder.map((id) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress))))
+    const refreshableIds = activeProfile?.company ? cacheOrder : cacheOrder.filter((id) => !contextCacheIds.includes(id))
+    const skippedCount = cacheOrder.length - refreshableIds.length
+    setError(''); setMessage('Actualizando cachés…'); setBusyIds(refreshableIds)
+    const results = await Promise.allSettled(refreshableIds.map((id) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress))))
     const failed = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-    await Promise.all(cacheOrder.map((id) => invalidateRelated(id)))
+    await Promise.all(refreshableIds.map((id) => invalidateRelated(id)))
     await overview.refetch()
+    onChanged?.()
     setBusyIds([])
-    if (failed.length) { setError(`${failed.length} caché(s) no pudieron actualizarse. La información anterior se conservó.`); setMessage(`${cacheOrder.length - failed.length} caché(s) actualizadas con resultados parciales.`) } else setMessage(`${cacheOrder.length} caché(s) actualizadas.`)
+    const skippedMessage = skippedCount ? ` ${skippedCount} requieren POS Profile con compañía.` : ''
+    if (failed.length) { setError(`${failed.length} caché(s) no pudieron actualizarse. La información anterior se conservó.`); setMessage(`${refreshableIds.length - failed.length} caché(s) actualizadas con resultados parciales.${skippedMessage}`) } else setMessage(`${refreshableIds.length} caché(s) actualizadas.${skippedMessage}`)
   }
 
   return <section className="settings-cache-panel" aria-labelledby="settings-cache-title">

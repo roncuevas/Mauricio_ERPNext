@@ -78,7 +78,7 @@ function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: bool
 }
 
 export function DesktopNavigation({ collapsed = false }: { collapsed?: boolean }) {
-  return <NavigationGroups collapsed={collapsed} />
+  return <div className="desktop-navigation-stack"><NavLink to="/" className="navigation-home-link"><span aria-hidden="true">⌂</span><span className="navigation-home-label">Inicio</span></NavLink><NavigationGroups collapsed={collapsed} /></div>
 }
 
 export function MobileNavigation({ onLock }: { onLock: () => void }) {
@@ -112,7 +112,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
     </div>
     {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label="Navegación principal">
       <div className="mobile-navigation-menu-heading"><span>Ir a</span><small>Sección actual: {currentPage}</small></div>
-      <NavigationGroups mobile />
+      <NavLink to="/" className="navigation-home-link"><span aria-hidden="true">⌂</span><span>Inicio</span></NavLink><NavigationGroups mobile />
     </nav>}
   </div>
 }

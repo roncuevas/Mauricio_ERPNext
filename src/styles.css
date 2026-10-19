@@ -345,6 +345,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .quotation-details-body { padding-inline: .1rem; }
 }
 .app-sidebar-nav { overflow-y: auto; padding: .35rem .75rem; }
+.desktop-navigation-stack { display: grid; gap: .55rem; }
+.navigation-home-link { align-items: center; gap: .55rem; }
+.navigation-home-link > span:first-child { width: 1.15rem; flex: 0 0 1.15rem; text-align: center; font-size: 1rem; line-height: 1; }
+.app-shell-sidebar-collapsed .navigation-home-link { justify-content: center; padding-inline: .5rem; }
+.app-shell-sidebar-collapsed .navigation-home-label { display: none; }
 .navigation-groups { display: grid; gap: .55rem; }
 .navigation-group { min-width: 0; }
 .navigation-group-heading { display: flex; min-width: 0; align-items: center; gap: .2rem; }
@@ -487,6 +492,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .settings-cache-actions .button { min-height: 2.5rem; }
 .settings-cache-attempt { color: var(--color-muted); font-size: .62rem; text-align: right; }
 .settings-cache-loading { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 12rem; color: var(--color-muted); }
+.home-workspace { display: grid; min-width: 0; gap: 1rem; }
+.home-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.home-stat-card { display: grid; min-width: 0; gap: .75rem; padding: 1rem; }
+.home-stat-heading, .home-section-heading { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.home-stat-heading > span { color: var(--color-muted); font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.home-stat-card > strong { overflow-wrap: anywhere; color: var(--color-heading); font-size: clamp(1.35rem, 2vw, 1.8rem); line-height: 1; }
+.home-stat-skeleton { min-height: 6rem; }
+.home-health-card { display: grid; gap: .85rem; padding: 1rem; }
+.home-section-heading h2 { margin: 0; color: var(--color-heading); font-size: 1.1rem; }
+.home-health-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
+.home-health-grid span { display: grid; gap: .15rem; color: var(--color-muted); font-size: .72rem; }
+.home-health-grid strong { color: var(--color-heading); font-size: 1.2rem; }
+.home-health-card .muted { margin: 0; font-size: .75rem; }
+.home-tabs { display: grid; gap: 1rem; }
+.home-tabs > [role="tablist"] { width: fit-content; max-width: 100%; overflow-x: auto; }
+.home-quick-actions { min-height: 10rem; }
+.home-quick-links { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
 [data-color-mode="dark"] .settings-cache-error { background: color-mix(in srgb, #9a3412 18%, var(--color-surface)); color: #fdba74; }
 .settings-connection-card, .settings-user-card, .settings-pos-card, .settings-theme-card { min-width: 0; padding: 1.25rem; }
 .settings-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
@@ -1156,6 +1178,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 900px) {
+  .home-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-health-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pos-toolbar { align-items: stretch; flex-direction: column; }
   .pos-toolbar-actions { justify-content: flex-start; }
   .pos-layout { grid-template-columns: minmax(0, 1fr); }
@@ -1165,6 +1189,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 640px) {
+  .home-stat-grid, .home-health-grid { grid-template-columns: 1fr; }
+  .home-stat-card, .home-health-card { padding: .85rem; }
   .pos-scroll-top { position: fixed; z-index: 30; right: 1rem; bottom: 1rem; display: grid; width: 2.8rem; height: 2.8rem; place-items: center; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-primary-hover); box-shadow: var(--shadow-card); font-size: 1.25rem; font-weight: 800; opacity: .95; }
   .pos-scroll-top:hover { border-color: var(--color-primary); color: var(--color-primary-hover); }
   .pos-workspace:has(> .pos-mobile-tabs) > .page-header,

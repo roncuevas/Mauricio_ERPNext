@@ -13,7 +13,7 @@ import { loadStockData } from './stock'
 import { readItemSearchDetails, readItemUomsThroughItems, readItemVariantAttributes, syncUomCatalog } from './catalog-sync'
 import { normalizeSalesOrder } from './sales-orders'
 import { CACHE_TTL_MS, getCacheStatus, type CacheKind, type CacheStatus } from './cache-policy'
-import type { CachedItem, CustomerSummary, DocTypeCatalogCache, ItemCatalogCache, ItemPrice, ItemPriceCatalogCache, PosOpeningEntry, PosPaymentMethod, PosProfile, PosTaxTemplate, PriceList, QuotationSummary, SalesOrderSummary, Supplier, SupplierCatalogCache, VariantCatalogCache, VariantItem } from './types'
+import type { CachedItem, CustomerSummary, DocTypeCatalogCache, ItemCatalogCache, ItemPrice, ItemPriceCatalogCache, PosOpeningEntry, PosPaymentMethod, PosProfile, PosTaxTemplate, PriceList, QuotationSummary, SalesOrderCatalogCache, SalesOrderSummary, StockCache, Supplier, SupplierCatalogCache, VariantCatalogCache, VariantItem } from './types'
 
 export type ManagedCacheId = 'products' | 'variants' | 'uom' | 'prices' | 'priceLists' | 'stock' | 'suppliers' | 'customers' | 'doctypes' | 'salesOrders' | 'posContext' | 'shifts' | 'quotations'
 
@@ -61,6 +61,14 @@ export type ManagedCacheOverview = {
   count?: number
   error?: string
   requiresContext?: boolean
+}
+
+export type HomeCacheData = {
+  overview: ManagedCacheOverview[]
+  stock: StockCache | null
+  salesOrders: SalesOrderCatalogCache | null
+  quotations: CacheSnapshot<QuotationCacheData> | null
+  shifts: CacheSnapshot<ShiftCacheData> | null
 }
 
 const cacheLabels: Record<ManagedCacheId, Omit<ManagedCacheOverview, 'id' | 'status' | 'updatedAt' | 'count' | 'error'>> = {
@@ -190,6 +198,17 @@ export async function readManagedCacheOverviews(profileId: string): Promise<Mana
     const hasFailedAttempt = Boolean(error && sync?.lastAttemptAt && (!sync.lastSuccessAt || sync.lastAttemptAt > sync.lastSuccessAt))
     return { id, ...cacheLabels[id], updatedAt: snapshots[id].updatedAt, lastAttemptAt: sync?.lastAttemptAt, lastSuccessAt: sync?.lastSuccessAt ?? snapshots[id].updatedAt, count: snapshots[id].count, error, status: hasFailedAttempt ? 'error' : snapshots[id].updatedAt ? getCacheStatus(cacheLabels[id].kind, { updatedAt: snapshots[id].updatedAt }) : 'missing' }
   })
+}
+
+export async function readHomeCacheData(profileId: string): Promise<HomeCacheData> {
+  const [overview, stock, salesOrders, quotations, shifts] = await Promise.all([
+    readManagedCacheOverviews(profileId),
+    safeRead(() => readStockCache(profileId)),
+    safeRead(() => readSalesOrderCatalog(profileId)),
+    safeRead(() => readSnapshot(quotationStore, profileId)),
+    safeRead(() => readSnapshot(shiftStore, profileId)),
+  ])
+  return { overview, stock, salesOrders, quotations, shifts }
 }
 
 async function refreshProducts(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void) {
