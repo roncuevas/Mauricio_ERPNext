@@ -534,6 +534,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-quick-actions { min-height: 10rem; }
 .home-quick-links { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
 [data-color-mode="dark"] .settings-cache-error { background: color-mix(in srgb, #9a3412 18%, var(--color-surface)); color: #fdba74; }
+@media (max-width: 1023px) {
+  [data-slot="sheet-content"].w-screen > div:first-child > div > .button {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    padding: .45rem;
+    font-size: 0;
+  }
+  [data-slot="sheet-content"].w-screen > div:first-child > div > .button::before {
+    color: currentColor;
+    content: '←';
+    font-size: 1rem;
+  }
+}
 .settings-connection-card, .settings-user-card, .settings-pos-card, .settings-theme-card { min-width: 0; padding: 1.25rem; }
 .settings-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .settings-section-heading h2 { margin: 0; color: var(--color-heading); font-size: 1.1rem; }
