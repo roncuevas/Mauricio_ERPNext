@@ -16,8 +16,6 @@ export default defineConfig({
   lint: {
     ignore: [
       'src/components/metadata-editor.tsx',
-      'src/components/pos-drafts-sheet.tsx',
-      'src/components/pos-product-card.tsx',
       'src/components/pos-sales.tsx',
       'src/components/pos-shadcn.tsx',
       'src/components/pos-variant-sheet.tsx',

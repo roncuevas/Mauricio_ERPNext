@@ -235,11 +235,39 @@ export default interface Resources {
         "salePrice": "Precio de venta",
         "title": "Precio personalizado"
       },
+      "drafts": {
+        "confirmDescription": "Se eliminará el borrador {{name}} de ERPNext. Esta acción no se puede deshacer.",
+        "confirmTitle": "¿Descartar venta retenida?",
+        "description": "Reanuda borradores POS guardados en ERPNext.",
+        "discard": "Descartar",
+        "discardDraft": "Descartar borrador",
+        "empty": "No hay ventas retenidas para este POS Profile.",
+        "erpnextDraft": "Borrador ERPNext",
+        "loading": "Cargando borradores",
+        "modified": "Modificado {{date}}",
+        "noCustomer": "Sin cliente",
+        "resume": "Continuar",
+        "title": "Ventas retenidas"
+      },
       "missingPrice": {
         "add": "Agregar precio ahora",
         "description": "{{itemName}} no tiene un precio válido para la UOM {{uom}}. El producto no se agregó al carrito. Puedes capturar el precio ahora; tu carrito actual quedará guardado.",
         "selectedUom": "seleccionada",
         "title": "Producto sin precio de venta"
+      },
+      "product": {
+        "add": "Agregar {{title}}",
+        "chooseUom": "Elegir UOM",
+        "chooseVariant": "Elegir variante",
+        "configureSale": "Configurar venta de {{title}}",
+        "multipleUom": "Varias UOM · configurar",
+        "noBrand": "Sin marca",
+        "noPrice": "Sin precio",
+        "quantity": "Cantidad de {{title}}",
+        "remove": "Quitar {{title}}",
+        "templateVariants": "Plantilla · {{count}} variantes",
+        "viewPrices": "Ver precios de {{title}}",
+        "viewPricesShort": "Ver precios"
       }
     },
     "prices": {
