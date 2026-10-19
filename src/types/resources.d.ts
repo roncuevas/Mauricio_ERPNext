@@ -270,6 +270,16 @@ export default interface Resources {
       "select": "Seleccionar idioma",
       "spanish": "Español"
     },
+    "metadataEditor": {
+      "close": "Cerrar",
+      "description": "Formulario generado desde el metadata de ERPNext. Los campos de solo lectura se muestran bloqueados.",
+      "hidden": "oculto",
+      "invalidJson": "El campo {{field}} debe contener JSON válido.",
+      "newDocument": "Nuevo {{doctype}}",
+      "save": "Guardar documento",
+      "saveError": "No se pudo guardar el documento.",
+      "selectPlaceholder": "Selecciona…"
+    },
     "navigation": {
       "activeConnection": "Conexión activa",
       "administration": "Administración",
@@ -895,6 +905,28 @@ export default interface Resources {
       "title": "Conversiones UOM",
       "uomFallback": "UOM",
       "uomPlaceholder": "Ej. Bulto"
+    },
+    "variantTree": {
+      "childrenLabel": "Variantes de {{name}}",
+      "complete": "Completo",
+      "completeCount": "{{complete}}/{{total}} completos",
+      "context": "Contexto",
+      "conversion": "1x {{uom}} = {{factor}} {{stock}} · 2x {{uom}} = {{double}} {{stock}}",
+      "conversionStock": "UOM stock: {{uom}}",
+      "coverage": "Atributos y cobertura",
+      "detected": "Valores detectados: {{count}}",
+      "disabled": "Deshabilitado",
+      "edit": "Editar",
+      "hideVariants": "Ocultar variantes de {{name}}",
+      "missing": "Faltan {{count}}",
+      "newVariant": "Nueva variante",
+      "noAttributes": "Sin atributos configurados en esta plantilla",
+      "showVariants": "Mostrar variantes de {{name}}",
+      "stockFallback": "Stock",
+      "stockUom": "UOM stock: {{uom}}",
+      "template": "Plantilla",
+      "uomCount": "{{count}} UOM",
+      "variantCount": "{{count}} variantes"
     },
     "variantsPage": {
       "attributesMissing": "La caché existente todavía no contiene atributos. Pulsa “Refrescar catálogo” para revisar valores creados y faltantes por plantilla.",
