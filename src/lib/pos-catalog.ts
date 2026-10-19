@@ -17,6 +17,12 @@ export function defaultUom(item: CachedItem): ItemUom {
   return item.uoms?.find((uom) => uom.uom === item.sales_uom) ?? item.uoms?.find((uom) => uom.uom === item.stock_uom) ?? { uom: item.stock_uom || item.sales_uom || '', conversion_factor: 1 }
 }
 
+export function uomOptionLabel(item: CachedItem, uom: ItemUom) {
+  const defaultUomName = defaultUom(item).uom
+  if (uom.uom === defaultUomName) return `${uom.uom} · Default`
+  return `${uom.uom} · ${uom.conversion_factor} ${item.stock_uom || defaultUomName}`
+}
+
 export function priceForUom(item: CachedItem, uom: string, prices: ItemPrice[], priceList?: string) {
   const matches = prices.filter((price) => [item.name, item.item_code].includes(price.item_code) && price.selling && (!priceList || price.price_list === priceList))
   return priceForUomFromMatches(item, uom, matches)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPriceIndex, defaultUom, priceForUom, priceForUomFromIndex, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, priceForUom, priceForUomFromIndex, uomOptionLabel, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -22,5 +22,11 @@ describe('POS catalog helpers', () => {
     expect(priceForUomFromIndex(item, 'Bulto', index)).toBe(500)
     expect(index.has('ITEM-1')).toBe(true)
     expect(index.get('ITEM-1')).toHaveLength(1)
+  })
+
+  it('labels the default UOM and conversion UOMs with the base unit', () => {
+    const itemWithKgDefault = { ...item, sales_uom: 'Kg' }
+    expect(uomOptionLabel(itemWithKgDefault, { uom: 'Bulto', conversion_factor: 20 })).toBe('Bulto · 20 Kg')
+    expect(uomOptionLabel(itemWithKgDefault, { uom: 'Kg', conversion_factor: 1 })).toBe('Kg · Default')
   })
 })

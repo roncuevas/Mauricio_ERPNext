@@ -3,7 +3,7 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { buildPriceIndex, defaultUom, priceForUomFromIndex, type PriceIndex } from '../lib/pos-catalog'
+import { buildPriceIndex, defaultUom, priceForUomFromIndex, uomOptionLabel, type PriceIndex } from '../lib/pos-catalog'
 import { buildVariantTree } from '../lib/variant-cache'
 import { searchScore } from '../lib/search'
 import type { ItemPrice, ItemUom, VariantItem } from '../lib/types'
@@ -68,7 +68,7 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
           <div className="price-entry">
             <div className="price-entry-top"><span className="price-kind price-kind-selling">Venta</span><span className="price-amount">{rate > 0 ? formatRate(rate, currency) : 'Tarifa editable'}</span></div>
             <div className="price-entry-meta"><span>Lista: {priceList || 'Sin lista seleccionada'}</span><Badge tone={rate > 0 ? 'success' : 'warning'}>UOM: {uom.uom || '—'}</Badge>{rate === 0 && <span>ERPNext validará la tarifa al guardar</span>}</div>
-            {!disabled && <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-3"><Select value={uom.uom || '__none__'} onValueChange={(value) => setSelectedUom(value === '__none__' ? '' : value)}><SelectTrigger className="min-w-32" aria-label={`UOM para ${item.item_name || item.name}`}><SelectValue placeholder="Selecciona UOM" /></SelectTrigger><SelectContent>{(item.uoms?.length ? item.uoms : [defaultUom(item)]).map((candidate) => <SelectItem key={candidate.uom} value={candidate.uom}>{candidate.uom}{candidate.conversion_factor !== 1 ? ` · ×${candidate.conversion_factor}` : ''}</SelectItem>)}</SelectContent></Select><Button type="button" size="compact" onClick={() => onAdd(item, uom, rate)}>Agregar</Button></div>}
+            {!disabled && <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-3"><Select value={uom.uom || '__none__'} onValueChange={(value) => setSelectedUom(value === '__none__' ? '' : value)}><SelectTrigger className="min-w-32" aria-label={`UOM para ${item.item_name || item.name}`}><SelectValue placeholder="Selecciona UOM" /></SelectTrigger><SelectContent>{(item.uoms?.length ? item.uoms : [defaultUom(item)]).map((candidate) => <SelectItem key={candidate.uom} value={candidate.uom}>{uomOptionLabel(item, candidate)}</SelectItem>)}</SelectContent></Select><Button type="button" size="compact" onClick={() => onAdd(item, uom, rate)}>Agregar</Button></div>}
           </div>
         </div>}
       </div>

@@ -4,7 +4,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { formatMoney } from '../lib/pos'
-import { defaultUom } from '../lib/pos-catalog'
+import { defaultUom, uomOptionLabel } from '../lib/pos-catalog'
 import type { CachedItem, ItemPrice, ItemUom } from '../lib/types'
 
 function itemUoms(item: CachedItem): ItemUom[] {
@@ -22,12 +22,6 @@ function priceFor(item: CachedItem, uom: string, prices: ItemPrice[], priceList?
 
 function variantDescription(item: CachedItem) {
   return item.attributes?.map((attribute) => `${attribute.attribute}: ${attribute.attribute_value}`).join(' · ') || item.name
-}
-
-function uomOptionLabel(item: CachedItem, uom: ItemUom) {
-  const defaultUomName = defaultUom(item).uom
-  if (uom.uom === defaultUomName) return `${uom.uom} · Default`
-  return `${uom.uom} · ${uom.conversion_factor} ${item.stock_uom || defaultUomName}`
 }
 
 export function PosVariantSheet({ template, variants, prices, priceList, currency, open, loading, error, onClose, onAdd, onMissingPrice, resolvePrice }: { template: CachedItem | null; variants: CachedItem[]; prices: ItemPrice[]; priceList?: string; currency: string; open: boolean; loading?: boolean; error?: string; onClose: () => void; onAdd: (item: CachedItem, uom: ItemUom, rate: number) => void; onMissingPrice?: (item: CachedItem, uom: ItemUom) => void; resolvePrice?: (item: CachedItem, uom: ItemUom) => Promise<number | null> }) {
