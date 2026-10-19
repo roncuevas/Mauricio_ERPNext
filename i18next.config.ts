@@ -16,8 +16,6 @@ export default defineConfig({
   lint: {
     ignore: [
       'src/components/cache-manager-panel.tsx',
-      'src/components/connection-screen.tsx',
-      'src/components/layout.tsx',
       'src/components/metadata-editor.tsx',
       'src/components/pos-drafts-sheet.tsx',
       'src/components/pos-missing-price-dialog.tsx',
@@ -29,7 +27,6 @@ export default defineConfig({
       'src/components/price-filter-sheet.tsx',
       'src/components/product-card.tsx',
       'src/components/product-table.tsx',
-      'src/components/route-error-boundary.tsx',
       'src/components/sales-order-product-tree.tsx',
       'src/components/stock-filter-sheet.tsx',
       'src/components/ui.tsx',

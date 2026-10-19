@@ -88,6 +88,7 @@ export default interface Resources {
       "encryptConnect": "Cifrar y conectar",
       "importButton": "Importar link",
       "importLink": "Importar desde link",
+      "invalidLink": "Pega un enlace de credenciales válido.",
       "linkLabel": "Link de credenciales",
       "linkPlaceholder": "Pega aquí el link completo",
       "localPassword": "Contraseña local",
@@ -98,9 +99,11 @@ export default interface Resources {
       "profilePlaceholder": "Mi ERPNext",
       "profiles": "Perfiles guardados",
       "profilesPlural": "perfiles",
+      "saveError": "No se pudo guardar la conexión.",
       "secure": "Conexión segura",
       "security": "Las credenciales se cifran y permanecen solo en este navegador.",
       "share": "Comparte tu perfil",
+      "shareCopied": "Enlace copiado. Contiene credenciales: compártelo solo por un canal seguro.",
       "shareProfile": "Compartir perfil",
       "sharedLinkImported": "Link importado. Solo falta la contraseña local para cifrar y conectar.",
       "sharedLinkWarning": "Este enlace contiene credenciales en el fragmento local del navegador. Confirma la contraseña para cifrarlas; después el enlace se limpia.",
@@ -113,6 +116,12 @@ export default interface Resources {
       "apiRequired": "La API Key y el API Secret son obligatorios.",
       "connection": "No se pudo conectar con ERPNext. Revisa HTTPS y CORS en la instancia.",
       "localStorage": "La preferencia es opcional; la sesión debe continuar si el storage está bloqueado.",
+      "route": {
+        "description": "El módulo falló antes de mostrar la vista. Puedes recargarlo o volver a Productos.",
+        "products": "Ir a Productos",
+        "retry": "Reintentar módulo",
+        "title": "No se pudo cargar esta pantalla"
+      },
       "timeout": "La solicitud tardó demasiado o fue cancelada.",
       "unknown": "Error desconocido"
     },

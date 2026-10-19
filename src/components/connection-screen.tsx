@@ -40,15 +40,15 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
       if (mode === 'share' && selected) {
         const profile = await decryptProfile(selected, form.passphrase)
         const url = buildShareUrl(profile, window.location.href)
-        try { await navigator.clipboard.writeText(url); setShareNotice('Enlace copiado. Contiene credenciales: compártelo solo por un canal seguro.') } catch { setShareNotice('No se pudo copiar automáticamente. Revisa los permisos del portapapeles e inténtalo de nuevo.') }
+        try { await navigator.clipboard.writeText(url); setShareNotice(t('connection.shareCopied')) } catch { setShareNotice(t('connection.clipboardError')) }
         return
       }
       const profile: ConnectionProfile = { id: crypto.randomUUID(), label: form.label.trim() || new URL(form.baseUrl).hostname, baseUrl: normalizeBaseUrl(form.baseUrl), apiKey: form.apiKey.trim(), apiSecret: form.apiSecret.trim() }
-      if (!profile.apiKey || !profile.apiSecret) throw new Error('La API Key y el API Secret son obligatorios.')
+      if (!profile.apiKey || !profile.apiSecret) throw new Error(t('errors.apiRequired'))
       const stored = await encryptProfile(profile, form.passphrase)
       const next = [...profiles.filter((p) => p.id !== stored.id), stored]
       writeProfiles(next); onProfilesChange(next); await onUnlock(profile)
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo guardar la conexión.') } finally { setBusy(false) }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : t('connection.saveError')) } finally { setBusy(false) }
   }
 
   function importFromLink() {
@@ -56,14 +56,14 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
     setShareNotice('')
     const imported = readSharedConnectionFromLink(importLink)
     if (!imported) {
-      setError('Pega un enlace de credenciales válido.')
+      setError(t('connection.invalidLink'))
       return
     }
     setSelected(null)
     setMode('new')
     setForm({ label: imported.label, baseUrl: imported.baseUrl, apiKey: imported.apiKey, apiSecret: imported.apiSecret, passphrase: '' })
     setShowImport(false)
-    setShareNotice('Link importado. Solo falta la contraseña local para cifrar y conectar.')
+    setShareNotice(t('connection.sharedLinkImported'))
   }
 
   function deleteProfile(profile: StoredProfile) {
@@ -81,7 +81,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
     <main className="connection-screen flex min-h-screen items-center justify-center p-4 sm:p-6">
       <div className="connection-shell w-full">
         <header className="connection-branding">
-          <img className="connection-brand-logo" src="/mauricio-logo-cropped.png" alt="Mauricio" />
+          <img className="connection-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} />
           <div><p className="connection-brand-name">{t('common.appName')}</p><p className="connection-brand-caption">{t('common.appCaption')}</p></div>
         </header>
         <Card className="connection-card p-6 sm:p-8">
@@ -95,7 +95,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
           <form className="connection-form" onSubmit={submit}>
-            {(mode === 'unlock' || mode === 'share') && selected ? <><div className="connection-selected-profile"><strong>{selected.label}</strong><span>{selected.baseUrl}</span></div><Field label="Contraseña local"><Input autoFocus type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><div className="connection-form-actions"><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? 'Desencriptar y copiar enlace' : 'Desbloquear'}</Button><Button type="button" variant="secondary" onClick={() => { setMode('new'); setSelected(null); setShareNotice(''); setError('') }}>Nueva conexión</Button></div></> : <><Field label="Nombre del perfil"><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder="Mi ERPNext" /></Field><Field label="URL de ERPNext"><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder="https://erp.example.com" required /></Field><Field label="API Key"><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label="API Secret"><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label="Contraseña local"><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder="Mínimo 8 caracteres" /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : 'Cifrar y conectar'}</Button></>}
+            {(mode === 'unlock' || mode === 'share') && selected ? <><div className="connection-selected-profile"><strong>{selected.label}</strong><span>{selected.baseUrl}</span></div><Field label={t('connection.localPassword')}><Input autoFocus type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><div className="connection-form-actions"><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button><Button type="button" variant="secondary" onClick={() => { setMode('new'); setSelected(null); setShareNotice(''); setError('') }}>{t('connection.new')}</Button></div></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : t('connection.encryptConnect')}</Button></>}
           </form>
           <p className="connection-security-note"><span aria-hidden="true">●</span> {t('connection.credentialsLocal')}</p>
         </Card>

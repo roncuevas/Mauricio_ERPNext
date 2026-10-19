@@ -87,6 +87,9 @@
     "shareProfile": "Compartir perfil",
     "deleteProfile": "Eliminar perfil",
     "copyShare": "Desencriptar y copiar enlace",
+    "shareCopied": "Enlace copiado. Contiene credenciales: compártelo solo por un canal seguro.",
+    "saveError": "No se pudo guardar la conexión.",
+    "invalidLink": "Pega un enlace de credenciales válido.",
     "clipboardError": "No se pudo copiar automáticamente. Revisa los permisos del portapapeles e inténtalo de nuevo.",
     "sharedLinkWarning": "Este enlace contiene credenciales en el fragmento local del navegador. Confirma la contraseña para cifrarlas; después el enlace se limpia.",
     "sharedLinkImported": "Link importado. Solo falta la contraseña local para cifrar y conectar.",
@@ -216,6 +219,7 @@
     "timeout": "La solicitud tardó demasiado o fue cancelada.",
     "apiRequired": "La API Key y el API Secret son obligatorios.",
     "localStorage": "La preferencia es opcional; la sesión debe continuar si el storage está bloqueado.",
-    "unknown": "Error desconocido"
+    "unknown": "Error desconocido",
+    "route": { "title": "No se pudo cargar esta pantalla", "description": "El módulo falló antes de mostrar la vista. Puedes recargarlo o volver a Productos.", "retry": "Reintentar módulo", "products": "Ir a Productos" }
   }
 }

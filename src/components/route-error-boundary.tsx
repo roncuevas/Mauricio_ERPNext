@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import i18n from '../lib/i18n'
 import { Button, Notice } from './ui'
 
 type RouteErrorBoundaryProps = {
@@ -33,6 +34,6 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, Route
     if (!this.state.error) return this.props.children
     const detail = import.meta.env.DEV ? this.state.error.message : ''
 
-    return <main className="flex min-h-[24rem] items-center justify-center p-6"><section className="card grid max-w-xl gap-4 p-6" role="alert"><div><h1 className="text-lg font-semibold">No se pudo cargar esta pantalla</h1><p className="mt-1 muted">El módulo falló antes de mostrar la vista. Puedes recargarlo o volver a Productos.</p></div>{detail && <Notice tone="warning">{detail}</Notice>}<div className="flex flex-wrap gap-2"><Button type="button" onClick={() => this.reload()}>Reintentar módulo</Button><Button type="button" variant="secondary" onClick={() => this.goToProducts()}>Ir a Productos</Button>{this.props.onLock && <Button type="button" variant="secondary" onClick={this.props.onLock}>Bloquear sesión</Button>}</div></section></main>
+    return <main className="flex min-h-[24rem] items-center justify-center p-6"><section className="card grid max-w-xl gap-4 p-6" role="alert"><div><h1 className="text-lg font-semibold">{i18n.t('errors.route.title')}</h1><p className="mt-1 muted">{i18n.t('errors.route.description')}</p></div>{detail && <Notice tone="warning">{detail}</Notice>}<div className="flex flex-wrap gap-2"><Button type="button" onClick={() => this.reload()}>{i18n.t('errors.route.retry')}</Button><Button type="button" variant="secondary" onClick={() => this.goToProducts()}>{i18n.t('errors.route.products')}</Button>{this.props.onLock && <Button type="button" variant="secondary" onClick={this.props.onLock}>{i18n.t('navigation.lock')}</Button>}</div></section></main>
   }
 }

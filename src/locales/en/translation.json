@@ -87,6 +87,9 @@
     "shareProfile": "Share profile",
     "deleteProfile": "Delete profile",
     "copyShare": "Decrypt and copy link",
+    "shareCopied": "Link copied. It contains credentials: share it only through a secure channel.",
+    "saveError": "Could not save the connection.",
+    "invalidLink": "Paste a valid credentials link.",
     "clipboardError": "Could not copy automatically. Check clipboard permissions and try again.",
     "sharedLinkWarning": "This link contains credentials in the browser's local fragment. Confirm the password to encrypt them; the link is then cleared.",
     "sharedLinkImported": "Link imported. Only the local password is needed to encrypt and connect.",
@@ -216,6 +219,7 @@
     "timeout": "The request took too long or was cancelled.",
     "apiRequired": "API Key and API Secret are required.",
     "localStorage": "This preference is optional; the session should continue if storage is blocked.",
-    "unknown": "Unknown error"
+    "unknown": "Unknown error",
+    "route": { "title": "This screen could not be loaded", "description": "The module failed before the view could be displayed. You can reload it or return to Products.", "retry": "Retry module", "products": "Go to Products" }
   }
 }

@@ -117,7 +117,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
   return <div className={`mobile-navigation${open ? ' mobile-navigation-open' : ''}`}>
     <div className="mobile-navigation-bar">
       <div className="mobile-navigation-brand">
-        <img className="mobile-brand-logo" src="/mauricio-logo-cropped.png" alt="Mauricio" />
+        <img className="mobile-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} />
         <div className="mobile-navigation-heading">
           <strong>{currentPage}</strong>
           <span>{t('common.appName')}</span>
@@ -132,7 +132,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
         </button>
       </div>
     </div>
-    {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label="Navegación principal">
+    {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label={t('navigation.main')}>
       <div className="mobile-navigation-menu-heading"><span>{t('navigation.goTo')}</span><small>{t('navigation.currentSection', { section: currentPage })}</small></div>
       <NavLink to="/" className="navigation-home-link"><SidebarIcon name="home" /><span>{t('navigation.home')}</span></NavLink><NavigationGroups mobile />
       <div className="mobile-navigation-menu-footer"><LanguageSelector compact className="mobile-language-selector" /></div>
