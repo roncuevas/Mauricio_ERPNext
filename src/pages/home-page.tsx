@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CacheManagerPanel } from '../components/cache-manager-panel'
-import { Badge, Button, Card, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Notice, PageHeader, Separator, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui'
+import { Badge, Button, ButtonLink, Card, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Notice, PageHeader, Separator, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui'
 import { readHomeCacheData } from '../lib/cache-manager'
 import { buildHomeStats } from '../lib/home-stats'
 import { localDate } from '../lib/sales-orders'
@@ -15,6 +15,10 @@ function money(value: number) { return value.toLocaleString('es-MX', { style: 'c
 
 function StatCard({ label, value, detail, tone = 'neutral' }: { label: string; value: string; detail: string; tone?: 'neutral' | 'success' | 'warning' }) {
   return <Card className="home-stat-card"><div className="home-stat-heading"><span>{label}</span><Badge tone={tone}>{detail}</Badge></div><strong>{value}</strong></Card>
+}
+
+function AccessCard({ title, description, action, to, icon }: { title: string; description: string; action: string; to: string; icon: string }) {
+  return <Card className="home-access-card"><div className="home-access-icon" aria-hidden="true">{icon}</div><div className="home-access-copy"><h2>{title}</h2><p>{description}</p></div><ButtonLink to={to}>{action}</ButtonLink></Card>
 }
 
 export function HomePage({ client, profileId }: { client: Client; profileId: string }) {
@@ -38,6 +42,10 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
         <StatCard label={t('home.ordersToday')} value={number(stats.ordersToday)} detail={money(stats.ordersTodayTotal)} />
         <StatCard label={t('home.quotations')} value={number(stats.quotations)} detail={money(stats.quotationsTotal)} />
         <StatCard label={t('home.openShifts')} value={number(stats.openShifts)} detail={t('home.posOpening')} tone={stats.openShifts ? 'success' : 'neutral'} />
+      </div>
+      <div className="home-access-grid">
+        <AccessCard title={t('home.pricesAccessTitle')} description={t('home.pricesAccessDescription')} action={t('home.openPrices')} to="/prices" icon="$" />
+        <AccessCard title={t('home.posAccessTitle')} description={t('home.posAccessDescription')} action={t('home.openPos')} to="/pos" icon="▣" />
       </div>
       <Card className="home-health-card"><div className="home-section-heading"><div><p className="settings-eyebrow">{t('home.localStatus')}</p><h2>{t('home.cacheHealth')}</h2></div><Badge tone={stats.errorCaches ? 'warning' : 'success'}>{stats.errorCaches ? t('home.errors', { count: stats.errorCaches }) : t('home.noRecentErrors')}</Badge></div><Separator /><div className="home-health-grid"><span><strong>{number(stats.freshCaches)}</strong>{t('home.updated')}</span><span><strong>{number(stats.staleCaches)}</strong>{t('home.stale')}</span><span><strong>{number(stats.missingCaches)}</strong>{t('home.missing')}</span><span><strong>{number(stats.errorCaches)}</strong>{t('home.withErrors')}</span></div><p className="muted">{t('home.sourceNote')}</p></Card>
     </>}

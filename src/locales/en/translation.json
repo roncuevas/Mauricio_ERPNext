@@ -126,6 +126,12 @@
     "quickActionsDescription": "Update data from the cache tab whenever needed.",
     "updateStats": "Refresh stats",
     "noCaches": "No caches have been downloaded yet. Open “Caches and fetch” and press “Refresh all”."
+    ,"pricesAccessTitle": "Prices",
+    "pricesAccessDescription": "Review and manage catalog prices.",
+    "posAccessTitle": "Point of sale",
+    "posAccessDescription": "Open the POS to sell, collect payments and review your shift.",
+    "openPrices": "Go to prices",
+    "openPos": "Open POS"
   },
   "cache": {
     "labels": {

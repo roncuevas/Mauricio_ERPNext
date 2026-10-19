@@ -126,6 +126,12 @@
     "quickActionsDescription": "Actualiza los datos desde la pestaña de cachés cuando lo necesites.",
     "updateStats": "Actualizar stats",
     "noCaches": "Aún no hay cachés descargadas. Abre “Cachés y fetch” y pulsa “Refrescar todo”."
+    ,"pricesAccessTitle": "Precios",
+    "pricesAccessDescription": "Consulta y administra los precios del catálogo.",
+    "posAccessTitle": "Punto de venta",
+    "posAccessDescription": "Abre el POS para vender, cobrar y revisar tu turno.",
+    "openPrices": "Ir a precios",
+    "openPos": "Abrir POS"
   },
   "cache": {
     "labels": {
