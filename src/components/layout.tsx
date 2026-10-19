@@ -37,7 +37,7 @@ function visibleGroups() {
 }
 
 function navigationItemKey(label: string) {
-  const keys: Record<string, string> = { 'Ventas del día': 'dailySales', Turnos: 'shifts', Cotizaciones: 'quotations', Productos: 'products', Variantes: 'variants', Precios: 'prices', Inventario: 'stock', Proveedores: 'suppliers', Configuración: 'settings', DocTypes: 'doctypes' }
+  const keys: Record<string, string> = { POS: 'pos', 'Ventas del día': 'dailySales', Turnos: 'shifts', Cotizaciones: 'quotations', Productos: 'products', Variantes: 'variants', Precios: 'prices', Inventario: 'stock', Proveedores: 'suppliers', Configuración: 'settings', DocTypes: 'doctypes' }
   return keys[label] ?? label
 }
 
