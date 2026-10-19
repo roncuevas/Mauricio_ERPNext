@@ -119,6 +119,7 @@ export default interface Resources {
       "noResults": "No hay coincidencias.",
       "priceList": "Lista de precios",
       "product": "Producto",
+      "products": "Productos",
       "refresh": "Refrescar",
       "retry": "Reintentar",
       "save": "Guardar",
@@ -268,6 +269,14 @@ export default interface Resources {
       "variants": "Variantes"
     },
     "pos": {
+      "closing": {
+        "closePanel": "Cerrar panel",
+        "countTitle": "Arqueo de cierre",
+        "description": "Confirma el efectivo y las formas de pago recibidas antes de cerrar.",
+        "ready": "Listo para revisar",
+        "reviewDifference": "Revisar diferencia",
+        "shiftClose": "Cierre de turno"
+      },
       "customPrice": {
         "apply": "Aplicar precio",
         "customSalePrice": "Precio de venta personalizado",
@@ -277,6 +286,13 @@ export default interface Resources {
         "positive": "Captura un precio mayor que cero.",
         "salePrice": "Precio de venta",
         "title": "Precio personalizado"
+      },
+      "customer": {
+        "empty": "No hay clientes coincidentes.",
+        "filter": "Filtrar clientes",
+        "label": "Cliente",
+        "placeholder": "Busca y selecciona cliente",
+        "search": "Buscar cliente"
       },
       "drafts": {
         "confirmDescription": "Se eliminará el borrador {{name}} de ERPNext. Esta acción no se puede deshacer.",
@@ -297,6 +313,16 @@ export default interface Resources {
         "description": "{{itemName}} no tiene un precio válido para la UOM {{uom}}. El producto no se agregó al carrito. Puedes capturar el precio ahora; tu carrito actual quedará guardado.",
         "selectedUom": "seleccionada",
         "title": "Producto sin precio de venta"
+      },
+      "mobile": {
+        "cart": "Carrito",
+        "heldSales": "Ventas retenidas",
+        "hideContext": "Ocultar contexto",
+        "moreActions": "Más acciones",
+        "showCart": "Mostrar carrito",
+        "showContext": "Mostrar contexto",
+        "showProducts": "Mostrar productos",
+        "view": "Vista del POS"
       },
       "product": {
         "add": "Agregar {{title}}",
