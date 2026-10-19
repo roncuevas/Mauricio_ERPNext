@@ -55,6 +55,9 @@
     "lockSidebar": "Collapse sidebar",
     "darkMode": "Enable dark mode",
     "lightMode": "Enable light mode"
+    ,"lockConfirmTitle": "Lock the session?",
+    "lockConfirmDescription": "The session will close and you will need your local password to unlock it again.",
+    "lockConfirmAction": "Yes, lock"
   },
   "connection": {
     "secure": "Secure connection",

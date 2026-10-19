@@ -55,6 +55,9 @@
     "lockSidebar": "Contraer barra lateral",
     "darkMode": "Activar modo oscuro",
     "lightMode": "Activar modo claro"
+    ,"lockConfirmTitle": "¿Bloquear la sesión?",
+    "lockConfirmDescription": "La sesión se cerrará y necesitarás tu contraseña local para volver a entrar.",
+    "lockConfirmAction": "Sí, bloquear"
   },
   "connection": {
     "secure": "Conexión segura",
