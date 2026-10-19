@@ -36,6 +36,10 @@
   text-rendering: optimizeLegibility;
 }
 
+[data-density="compact"] .card { padding-block: .8rem; }
+[data-density="compact"] .page-header { gap: .65rem; }
+[data-density="compact"] .control, [data-density="compact"] .button { min-height: 2.25rem; }
+
 /* shadcn semantic bridge. Values stay owned by Mauricio theme tokens. */
 :root {
   --shadcn-background: var(--color-page);
@@ -519,6 +523,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .settings-grid { display: grid; gap: 1rem; }
 .settings-tabs { display: grid; gap: 1rem; }
 .settings-tabs > [role="tablist"] { width: fit-content; max-width: 100%; overflow-x: auto; }
+.settings-tabs-list { display: flex; flex-wrap: nowrap; }
 .settings-cache-panel { display: grid; gap: 1rem; min-width: 0; }
 .settings-cache-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 .settings-cache-toolbar h2 { margin: 0; color: var(--color-heading); font-size: 1.25rem; }
@@ -578,7 +583,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-size: 1rem;
   }
 }
-.settings-connection-card, .settings-user-card, .settings-pos-card, .settings-theme-card { min-width: 0; padding: 1.25rem; }
+.settings-connection-card, .settings-user-card, .settings-pos-card, .settings-theme-card, .settings-section-card { min-width: 0; padding: 1.25rem; }
 .settings-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .settings-section-heading h2 { margin: 0; color: var(--color-heading); font-size: 1.1rem; }
 .settings-section-heading .muted { max-width: 42rem; margin-top: .35rem; }
@@ -597,6 +602,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .settings-user-refresh { margin-top: 1rem; }
 .settings-pos-form { display: grid; gap: .85rem; margin-top: 1.25rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .settings-pos-options { display: grid; gap: .65rem; margin-top: 1.15rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-navigation-grid { display: grid; gap: .85rem; margin-top: 1.25rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-theme-mode { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; border: 1px solid var(--color-border-subtle); border-radius: .7rem; background: var(--color-surface-muted); padding: .8rem; }
+.settings-theme-mode strong { color: var(--color-heading); font-size: .82rem; }
+.settings-theme-mode .muted { margin-top: .2rem; }
 .settings-pos-option { display: flex; align-items: flex-start; gap: .6rem; border: 1px solid var(--color-border-subtle); border-radius: .7rem; background: var(--color-surface-muted); padding: .7rem; }
 .settings-pos-option > span { display: grid; gap: .15rem; }
 .settings-pos-option strong { color: var(--color-heading); font-size: .76rem; }
@@ -848,8 +857,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .price-node:has(> .price-node) > .price-node-row { padding-top: 1.2rem; }
   .price-node > .price-node { margin-left: .45rem; border-left-width: 2px; }
   .price-node > .price-node::before { left: -2px; width: .7rem; border-top-width: 1px; }
-  .settings-connection-card, .settings-user-card, .settings-pos-card, .settings-theme-card { padding: 1rem; }
-  .settings-pos-form, .settings-pos-options { grid-template-columns: 1fr; }
+  .settings-connection-card, .settings-user-card, .settings-pos-card, .settings-theme-card, .settings-section-card { padding: 1rem; }
+  .settings-pos-form, .settings-pos-options, .settings-navigation-grid { grid-template-columns: 1fr; }
   .settings-user-details { grid-template-columns: 1fr; }
   .theme-preview { align-items: stretch; flex-direction: column; }
   .theme-preview-actions { justify-content: flex-start; }

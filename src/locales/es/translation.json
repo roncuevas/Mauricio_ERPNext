@@ -194,6 +194,23 @@
     "failed_other": "{{count}} cachés no pudieron actualizarse. La información anterior se conservó.",
     "readError": "No se pudo leer el estado de las cachés."
   },
+  "settings": {
+    "title": "Configuración",
+    "description": "Administra tu conexión y personaliza la aplicación.",
+    "sections": "Secciones de configuración",
+    "tabs": { "general": "General", "pos": "POS", "appearance": "Apariencia", "language": "Idioma y región", "data": "Datos", "navigation": "Navegación" },
+    "profilePermission": "ERPNext no permite leer el perfil completo del usuario. Solicita permiso de lectura sobre User para mostrar más datos.",
+    "connection": { "eyebrow": "Conexión", "title": "Instancia ERPNext", "description": "Estado de la conexión activa. Las credenciales se administran desde la pantalla de conexión.", "profile": "Perfil", "instance": "Instancia", "testing": "Probando", "test": "Probar conexión", "connectedAs": "Conectado como {{user}}", "userError": "No se pudo cargar el usuario actual." },
+    "user": { "eyebrow": "Usuario ERPNext", "title": "Perfil de usuario", "description": "Datos informativos obtenidos de la instancia activa. No se modifican desde aquí.", "loading": "Cargando perfil…", "name": "Nombre", "email": "Correo", "username": "Usuario", "type": "Tipo de usuario", "mobile": "Móvil", "phone": "Teléfono", "timezone": "Zona horaria", "created": "Creado", "lastLogin": "Último acceso / actividad", "roles": "Roles", "noRoles": "No se devolvieron roles.", "refresh": "Actualizar perfil" },
+    "posProfileMissing": "El POS Profile seleccionado ya no está disponible.",
+    "customerMissing": "El cliente seleccionado ya no está disponible.",
+    "posSaved": "Preferencias de POS guardadas en este navegador.",
+    "posReset": "Preferencias de POS restauradas.",
+    "pos": { "eyebrow": "Operación", "title": "Preferencias del POS", "description": "Se guardan solo en este navegador y para esta conexión. ERPNext sigue controlando perfiles, turnos y ventas.", "profile": "POS Profile predeterminado", "profilePlaceholder": "Usar el primer perfil activo", "profileSearch": "Buscar POS Profile…", "customer": "Cliente predeterminado", "customerPlaceholder": "Sin cliente predeterminado", "customerSearch": "Buscar cliente…", "rememberCustomer": "Recordar cliente", "rememberCustomerDescription": "Conservarlo después de cobrar o guardar un carrito.", "autoFocus": "Enfocar búsqueda de productos", "autoFocusDescription": "Facilitar la captura rápida al abrir el POS.", "profilesError": "No se pudieron cargar los POS Profiles.", "customersError": "No se pudieron cargar los clientes.", "restore": "Restaurar valores" },
+    "appearance": { "eyebrow": "Apariencia", "title": "Apariencia de la aplicación", "description": "Personaliza colores, modo de pantalla y densidad desde este navegador.", "colorMode": "Modo de color", "colorModeDescription": "Cambia entre modo claro y oscuro.", "preview": "Vista previa", "previewStatus": "Datos sincronizados", "primary": "Acción principal", "secondary": "Secundaria", "palette": "Paleta de colores" },
+    "language": { "eyebrow": "Idioma y región", "title": "Idioma de la aplicación", "description": "Elige el idioma usado por la interfaz. Se guarda en este navegador." },
+    "navigation": { "eyebrow": "Preferencias locales", "title": "Navegación y operación", "description": "Define cómo inicia y se organiza la aplicación en este navegador.", "landing": "Página inicial", "home": "Inicio", "pos": "POS", "products": "Productos", "prices": "Precios", "productView": "Vista predeterminada de productos", "table": "Tabla", "cards": "Cards", "hierarchy": "Jerarquía", "collapsedSidebar": "Iniciar con sidebar contraída", "collapsedSidebarDescription": "Deja más espacio para el contenido principal.", "compactDensity": "Usar densidad compacta", "compactDensityDescription": "Reduce espacios en listas y controles.", "groupsNote": "Los grupos abiertos se recuerdan automáticamente al usarlos.", "restore": "Restaurar preferencias locales" }
+  },
   "errors": {
     "connection": "No se pudo conectar con ERPNext. Revisa HTTPS y CORS en la instancia.",
     "timeout": "La solicitud tardó demasiado o fue cancelada.",

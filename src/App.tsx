@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './components/ui/alert-dialog'
 import { Button, IconButton, Spinner } from './components/ui'
 import { DesktopNavigation, MobileNavigation, NavLink, PageLayout, SidebarIcon, ThemeModeToggle } from './components/layout'
@@ -16,6 +16,7 @@ import { readItemPriceCatalog } from './lib/price-cache'
 import { readVariantCatalogOrItems } from './lib/variant-cache'
 import { queryKeys } from './lib/query-keys'
 import { markPerformance } from './lib/performance'
+import { readAppPreferences, writeAppPreferences, type AppPreferences } from './lib/app-preferences'
 import type { ConnectionProfile } from './lib/types'
 import { useTranslation } from 'react-i18next'
 
@@ -75,21 +76,21 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
   const { t } = useTranslation()
   const [confirmLock, setConfirmLock] = useState(false)
   const client = useMemo(() => createErpNextClient(connection), [connection])
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem('mauricio-erpnext:sidebar-collapsed') === 'true'
-    } catch {
-      return false
-    }
-  })
+  const [appPreferences, setAppPreferences] = useState<AppPreferences>(() => readAppPreferences())
+  const sidebarCollapsed = appPreferences.sidebarCollapsed
 
   useEffect(() => {
-    try {
-      localStorage.setItem('mauricio-erpnext:sidebar-collapsed', String(sidebarCollapsed))
-    } catch {
-      // La preferencia es opcional; la sesión debe continuar si el storage está bloqueado.
+    const onPreferencesChanged = (event: Event) => {
+      const detail = (event as CustomEvent<AppPreferences>).detail
+      if (detail) setAppPreferences(detail)
     }
-  }, [sidebarCollapsed])
+    window.addEventListener('mauricio-app-preferences-changed', onPreferencesChanged)
+    return () => window.removeEventListener('mauricio-app-preferences-changed', onPreferencesChanged)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.dataset.density = appPreferences.density
+  }, [appPreferences])
 
   useEffect(() => { markPerformance('app-shell-ready') }, [])
   const requestLock = () => setConfirmLock(true)
@@ -98,13 +99,13 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
     <LocalCachePrefetch profileId={connection.id} />
     <MobileNavigation onLock={requestLock} />
     <aside className="app-sidebar border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
-      <div className="app-sidebar-brand"><img className="app-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} /><div className="app-sidebar-brand-copy"><p className="app-brand-name">{t('common.appName')}</p><p className="app-brand-caption">{t('common.appCaption')}</p></div><IconButton className="app-sidebar-collapse-toggle" type="button" variant="secondary" label={sidebarCollapsed ? t('navigation.unlockSidebar') : t('navigation.lockSidebar')} aria-pressed={sidebarCollapsed} onClick={() => setSidebarCollapsed((current) => !current)} icon={<SidebarIcon name={sidebarCollapsed ? 'chevronRight' : 'chevronLeft'} />} /></div>
+      <div className="app-sidebar-brand"><img className="app-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} /><div className="app-sidebar-brand-copy"><p className="app-brand-name">{t('common.appName')}</p><p className="app-brand-caption">{t('common.appCaption')}</p></div><IconButton className="app-sidebar-collapse-toggle" type="button" variant="secondary" label={sidebarCollapsed ? t('navigation.unlockSidebar') : t('navigation.lockSidebar')} aria-pressed={sidebarCollapsed} onClick={() => setAppPreferences(writeAppPreferences({ ...appPreferences, sidebarCollapsed: !sidebarCollapsed }))} icon={<SidebarIcon name={sidebarCollapsed ? 'chevronRight' : 'chevronLeft'} />} /></div>
       <div className="app-sidebar-profile"><span className="app-sidebar-eyebrow">{t('navigation.activeConnection')}</span><strong title={connection.label}>{connection.label}</strong><small title={connection.baseUrl}>{connection.baseUrl.replace(/^https?:\/\//, '')}</small></div>
       <nav className="app-sidebar-nav" aria-label={t('navigation.main')}><DesktopNavigation collapsed={sidebarCollapsed} /></nav>
       <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings" className="app-sidebar-settings-link" ariaLabel={t('navigation.settings')}><span className="app-sidebar-settings-icon"><SidebarIcon name="settings" /></span><span className="app-sidebar-settings-label">{t('navigation.settings')}</span></NavLink><ThemeModeToggle /><LanguageSelector compact={sidebarCollapsed} className="app-sidebar-language-selector" /><button className="app-sidebar-lock" type="button" aria-label={t('navigation.lock')} onClick={requestLock}><span>{t('navigation.lock')}</span><SidebarIcon name="logout" /></button></div></div>
     </aside>
     <main className="min-w-0 flex-1"><RouteErrorBoundary onLock={requestLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></main>}><Routes><Route element={<PageLayout client={client} />}>
-        <Route path="/" element={<HomePage client={client} profileId={connection.id} />} />
+        <Route path="/" element={<DefaultLandingPage client={client} profileId={connection.id} route={appPreferences.landingRoute} />} />
         <Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} />
         <Route path="/pos/ventas" element={<SalesOrdersPage client={client} profileId={connection.id} />} />
         <Route path="/pos/ventas/nueva" element={<SalesOrdersPage client={client} profileId={connection.id} />} />
@@ -130,6 +131,11 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
       </Route></Routes></Suspense></RouteErrorBoundary></main>
     <AlertDialog open={confirmLock} onOpenChange={setConfirmLock}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('navigation.lockConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('navigation.lockConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel asChild><Button variant="secondary">{t('common.cancel')}</Button></AlertDialogCancel><AlertDialogAction asChild><Button variant="danger" onClick={lockSession}>{t('navigation.lockConfirmAction')}</Button></AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>
+}
+
+function DefaultLandingPage({ client, profileId, route }: { client: ReturnType<typeof createErpNextClient>; profileId: string; route: AppPreferences['landingRoute'] }) {
+  if (route === '/') return <HomePage client={client} profileId={profileId} />
+  return <Navigate to={route} replace />
 }
 
 function LocalCachePrefetch({ profileId }: { profileId: string }) {

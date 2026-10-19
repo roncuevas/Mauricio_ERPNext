@@ -194,6 +194,23 @@
     "failed_other": "{{count}} caches could not be updated. Previous data was kept.",
     "readError": "Could not read cache status."
   },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your connection and customize the application.",
+    "sections": "Settings sections",
+    "tabs": { "general": "General", "pos": "POS", "appearance": "Appearance", "language": "Language and region", "data": "Data", "navigation": "Navigation" },
+    "profilePermission": "ERPNext does not allow reading the full user profile. Request read permission for User to show more data.",
+    "connection": { "eyebrow": "Connection", "title": "ERPNext instance", "description": "Active connection status. Credentials are managed from the connection screen.", "profile": "Profile", "instance": "Instance", "testing": "Testing", "test": "Test connection", "connectedAs": "Connected as {{user}}", "userError": "Could not load the current user." },
+    "user": { "eyebrow": "ERPNext user", "title": "User profile", "description": "Informational data from the active instance. It cannot be changed here.", "loading": "Loading profile…", "name": "Name", "email": "Email", "username": "Username", "type": "User type", "mobile": "Mobile", "phone": "Phone", "timezone": "Timezone", "created": "Created", "lastLogin": "Last login / activity", "roles": "Roles", "noRoles": "No roles were returned.", "refresh": "Refresh profile" },
+    "posProfileMissing": "The selected POS Profile is no longer available.",
+    "customerMissing": "The selected customer is no longer available.",
+    "posSaved": "POS preferences saved in this browser.",
+    "posReset": "POS preferences restored.",
+    "pos": { "eyebrow": "Operations", "title": "POS preferences", "description": "Saved only in this browser and for this connection. ERPNext remains in control of profiles, shifts and sales.", "profile": "Default POS Profile", "profilePlaceholder": "Use the first active profile", "profileSearch": "Search POS Profile…", "customer": "Default customer", "customerPlaceholder": "No default customer", "customerSearch": "Search customer…", "rememberCustomer": "Remember customer", "rememberCustomerDescription": "Keep it after checkout or saving a cart.", "autoFocus": "Focus product search", "autoFocusDescription": "Speed up capture when opening POS.", "profilesError": "Could not load POS Profiles.", "customersError": "Could not load customers.", "restore": "Restore defaults" },
+    "appearance": { "eyebrow": "Appearance", "title": "Application appearance", "description": "Customize colors, display mode and density in this browser.", "colorMode": "Color mode", "colorModeDescription": "Switch between light and dark mode.", "preview": "Preview", "previewStatus": "Data synchronized", "primary": "Primary action", "secondary": "Secondary", "palette": "Color palette" },
+    "language": { "eyebrow": "Language and region", "title": "Application language", "description": "Choose the interface language. It is saved in this browser." },
+    "navigation": { "eyebrow": "Local preferences", "title": "Navigation and operation", "description": "Define how the application starts and is organized in this browser.", "landing": "Default landing page", "home": "Home", "pos": "POS", "products": "Products", "prices": "Prices", "productView": "Default product view", "table": "Table", "cards": "Cards", "hierarchy": "Hierarchy", "collapsedSidebar": "Start with collapsed sidebar", "collapsedSidebarDescription": "Leave more space for the main content.", "compactDensity": "Use compact density", "compactDensityDescription": "Reduce spacing in lists and controls.", "groupsNote": "Open groups are remembered automatically as you use them.", "restore": "Restore local preferences" }
+  },
   "errors": {
     "connection": "Could not connect to ERPNext. Check HTTPS and CORS on the instance.",
     "timeout": "The request took too long or was cancelled.",

@@ -202,6 +202,108 @@ export default interface Resources {
       "suppliers": "Proveedores",
       "unlockSidebar": "Expandir barra lateral",
       "variants": "Variantes"
+    },
+    "settings": {
+      "appearance": {
+        "colorMode": "Modo de color",
+        "colorModeDescription": "Cambia entre modo claro y oscuro.",
+        "description": "Personaliza colores, modo de pantalla y densidad desde este navegador.",
+        "eyebrow": "Apariencia",
+        "palette": "Paleta de colores",
+        "preview": "Vista previa",
+        "previewStatus": "Datos sincronizados",
+        "primary": "Acción principal",
+        "secondary": "Secundaria",
+        "title": "Apariencia de la aplicación"
+      },
+      "connection": {
+        "connectedAs": "Conectado como {{user}}",
+        "description": "Estado de la conexión activa. Las credenciales se administran desde la pantalla de conexión.",
+        "eyebrow": "Conexión",
+        "instance": "Instancia",
+        "profile": "Perfil",
+        "test": "Probar conexión",
+        "testing": "Probando",
+        "title": "Instancia ERPNext",
+        "userError": "No se pudo cargar el usuario actual."
+      },
+      "customerMissing": "El cliente seleccionado ya no está disponible.",
+      "description": "Administra tu conexión y personaliza la aplicación.",
+      "language": {
+        "description": "Elige el idioma usado por la interfaz. Se guarda en este navegador.",
+        "eyebrow": "Idioma y región",
+        "title": "Idioma de la aplicación"
+      },
+      "navigation": {
+        "cards": "Cards",
+        "collapsedSidebar": "Iniciar con sidebar contraída",
+        "collapsedSidebarDescription": "Deja más espacio para el contenido principal.",
+        "compactDensity": "Usar densidad compacta",
+        "compactDensityDescription": "Reduce espacios en listas y controles.",
+        "description": "Define cómo inicia y se organiza la aplicación en este navegador.",
+        "eyebrow": "Preferencias locales",
+        "groupsNote": "Los grupos abiertos se recuerdan automáticamente al usarlos.",
+        "hierarchy": "Jerarquía",
+        "home": "Inicio",
+        "landing": "Página inicial",
+        "pos": "POS",
+        "prices": "Precios",
+        "productView": "Vista predeterminada de productos",
+        "products": "Productos",
+        "restore": "Restaurar preferencias locales",
+        "table": "Tabla",
+        "title": "Navegación y operación"
+      },
+      "pos": {
+        "autoFocus": "Enfocar búsqueda de productos",
+        "autoFocusDescription": "Facilitar la captura rápida al abrir el POS.",
+        "customer": "Cliente predeterminado",
+        "customerPlaceholder": "Sin cliente predeterminado",
+        "customerSearch": "Buscar cliente…",
+        "customersError": "No se pudieron cargar los clientes.",
+        "description": "Se guardan solo en este navegador y para esta conexión. ERPNext sigue controlando perfiles, turnos y ventas.",
+        "eyebrow": "Operación",
+        "profile": "POS Profile predeterminado",
+        "profilePlaceholder": "Usar el primer perfil activo",
+        "profileSearch": "Buscar POS Profile…",
+        "profilesError": "No se pudieron cargar los POS Profiles.",
+        "rememberCustomer": "Recordar cliente",
+        "rememberCustomerDescription": "Conservarlo después de cobrar o guardar un carrito.",
+        "restore": "Restaurar valores",
+        "title": "Preferencias del POS"
+      },
+      "posProfileMissing": "El POS Profile seleccionado ya no está disponible.",
+      "posReset": "Preferencias de POS restauradas.",
+      "posSaved": "Preferencias de POS guardadas en este navegador.",
+      "profilePermission": "ERPNext no permite leer el perfil completo del usuario. Solicita permiso de lectura sobre User para mostrar más datos.",
+      "sections": "Secciones de configuración",
+      "tabs": {
+        "appearance": "Apariencia",
+        "data": "Datos",
+        "general": "General",
+        "language": "Idioma y región",
+        "navigation": "Navegación",
+        "pos": "POS"
+      },
+      "title": "Configuración",
+      "user": {
+        "created": "Creado",
+        "description": "Datos informativos obtenidos de la instancia activa. No se modifican desde aquí.",
+        "email": "Correo",
+        "eyebrow": "Usuario ERPNext",
+        "lastLogin": "Último acceso / actividad",
+        "loading": "Cargando perfil…",
+        "mobile": "Móvil",
+        "name": "Nombre",
+        "noRoles": "No se devolvieron roles.",
+        "phone": "Teléfono",
+        "refresh": "Actualizar perfil",
+        "roles": "Roles",
+        "timezone": "Zona horaria",
+        "title": "Perfil de usuario",
+        "type": "Tipo de usuario",
+        "username": "Usuario"
+      }
     }
   }
 }
