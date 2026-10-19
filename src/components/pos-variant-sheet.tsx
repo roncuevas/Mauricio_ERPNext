@@ -26,8 +26,8 @@ function variantDescription(item: CachedItem) {
 
 function uomOptionLabel(item: CachedItem, uom: ItemUom) {
   const defaultUomName = defaultUom(item).uom
-  if (uom.uom === defaultUomName) return `Default · ${uom.uom}`
-  return `${uom.conversion_factor}x ${item.stock_uom || defaultUomName}`
+  if (uom.uom === defaultUomName) return `${uom.uom} · Default`
+  return `${uom.uom} · ${uom.conversion_factor}${item.stock_uom || defaultUomName}`
 }
 
 export function PosVariantSheet({ template, variants, prices, priceList, currency, open, loading, error, onClose, onAdd, onMissingPrice, resolvePrice }: { template: CachedItem | null; variants: CachedItem[]; prices: ItemPrice[]; priceList?: string; currency: string; open: boolean; loading?: boolean; error?: string; onClose: () => void; onAdd: (item: CachedItem, uom: ItemUom, rate: number) => void; onMissingPrice?: (item: CachedItem, uom: ItemUom) => void; resolvePrice?: (item: CachedItem, uom: ItemUom) => Promise<number | null> }) {
