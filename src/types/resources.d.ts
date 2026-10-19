@@ -368,6 +368,13 @@ export default interface Resources {
         "viewPrices": "Ver precios de {{title}}",
         "viewPricesShort": "Ver precios"
       },
+      "products": {
+        "availableCached": "{{available}} disponibles · {{cached}} en caché",
+        "noMatches": "No hay coincidencias. Carga o refresca el catálogo en Productos.",
+        "searchLabel": "Buscar productos POS",
+        "searchPlaceholder": "Buscar nombre, SKU o barcode",
+        "selectCard": "Selecciona una tarjeta"
+      },
       "sales": {
         "activeShift": "Turno activo",
         "addProducts": "Agrega productos para iniciar la venta.",
