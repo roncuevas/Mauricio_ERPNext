@@ -214,7 +214,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 [data-color-mode="dark"] .border-slate-100, [data-color-mode="dark"] .border-slate-200, [data-color-mode="dark"] .border-slate-300 { border-color: var(--color-border-subtle) !important; }
 [data-color-mode="dark"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border-subtle) !important; }
 [data-color-mode="dark"] .app-brand-name, [data-color-mode="dark"] .price-node-title, [data-color-mode="dark"] .variant-node-title { color: var(--color-heading); }
-[data-color-mode="dark"] .app-sidebar-profile small, [data-color-mode="dark"] .app-sidebar-lock { color: var(--color-muted); }
+[data-color-mode="dark"] .app-sidebar-profile small { color: var(--color-muted); }
 [data-color-mode="dark"] .app-sidebar-lock:hover { border-color: #7f1d1d; background: #450a0a; color: #fecaca; }
 [data-color-mode="dark"] .button-secondary { color: #e2e8f0; }
 [data-color-mode="dark"] .notice-error { color: #fecaca; }
@@ -464,9 +464,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 640px) { .stock-controls { padding: .9rem; } .stock-filter-grid, .stock-form-grid, .stock-reconciliation-picker { grid-template-columns: 1fr; } .stock-search { align-items: stretch; } .stock-line { grid-template-columns: 1fr; } .stock-line > .field:nth-child(3) { grid-column: auto; } .stock-operation-card { padding: 1rem; } }
 @media (max-width: 520px) { .stock-card-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stock-row-actions .button { flex: 1 1 calc(50% - .35rem); } }
 .app-sidebar-theme-toggle { margin: 0 0 .5rem auto; }
-.app-sidebar-lock { display: flex; width: 100%; min-height: 2.65rem; align-items: center; justify-content: space-between; border: 1px solid transparent; border-radius: .65rem; padding: .55rem .75rem; color: #64748b; font-size: .72rem; font-weight: 750; text-align: left; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+.app-sidebar-lock { display: flex; width: 100%; min-height: 2.65rem; align-items: center; justify-content: space-between; border: 1px solid color-mix(in srgb, var(--color-danger) 28%, var(--color-border-subtle)); border-radius: .65rem; background: var(--color-danger-soft); padding: .55rem .75rem; color: var(--color-danger-hover); font-size: .72rem; font-weight: 750; text-align: left; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-danger) 8%, transparent); transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
 .app-sidebar-lock > .sidebar-icon { width: 1.05rem; height: 1.05rem; }
-.app-sidebar-lock:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
+.app-sidebar-lock:hover { border-color: var(--color-danger); background: color-mix(in srgb, var(--color-danger-soft) 75%, var(--color-danger) 25%); color: var(--color-danger-hover); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-danger) 14%, transparent); }
 .app-shell-sidebar-collapsed .app-sidebar { width: 5.25rem; flex-basis: 5.25rem; }
 .app-shell-sidebar-collapsed .app-sidebar + main { margin-left: 5.25rem; }
 .app-shell-sidebar-collapsed .app-sidebar-brand { flex-direction: column; justify-content: center; gap: .65rem; padding: 1.1rem .5rem .9rem; }
@@ -483,8 +483,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-shell-sidebar-collapsed .app-sidebar-language-selector { margin: 0; }
 .app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-theme-toggle { margin: 0; }
 .app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-settings-link.app-nav-link-active { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); }
-.app-shell-sidebar-collapsed .app-sidebar-lock { justify-content: center; margin-inline: auto; color: var(--color-muted); }
-.app-shell-sidebar-collapsed .app-sidebar-lock:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
+.app-shell-sidebar-collapsed .app-sidebar-lock { justify-content: center; margin-inline: auto; color: var(--color-danger-hover); }
 .page-header { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
 .workspace-navigation-header { min-width: 0; }
 .workspace-navigation-copy, .workspace-navigation-description { overflow-wrap: anywhere; }
