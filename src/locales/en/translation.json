@@ -164,6 +164,9 @@
   "stock": {
     "filters": "Inventory filters", "filtersTitle": "Inventory filters", "filtersDescription": "Filter stock by company, warehouse and product.", "allCompanies": "All companies", "warehouse": "Branch / warehouse", "allWarehouses": "All warehouses", "codeOrName": "Code or name", "applyFilters": "Apply filters"
   },
+  "catalog": {
+    "product": { "noGroup": "Unclassified", "buying": "Buying", "selling": "Selling", "margin": "Approx. margin", "noPrice": "No price", "notComparable": "Not comparable", "sameUom": "same UOM", "marginValue": "{{value}}% · {{uom}}", "stockUom": "Stock UOM", "defaultSalesUom": "Default sales UOM", "defaultPurchaseUom": "Default purchase UOM", "uomConversions": "UOM conversions", "noConversions": "No conversions recorded", "edit": "Edit product", "configureUom": "Configure UOM" }
+  },
   "cache": {
     "labels": {
       "products": "Products",

@@ -164,6 +164,9 @@
   "stock": {
     "filters": "Filtros de inventario", "filtersTitle": "Filtros de inventario", "filtersDescription": "Filtra existencias por empresa, almacén y producto.", "allCompanies": "Todas las empresas", "warehouse": "Sucursal / almacén", "allWarehouses": "Todos los almacenes", "codeOrName": "Código o nombre", "applyFilters": "Aplicar filtros"
   },
+  "catalog": {
+    "product": { "noGroup": "Sin clasificación", "buying": "Compra", "selling": "Venta", "margin": "Ganancia aprox.", "noPrice": "Sin precio", "notComparable": "Sin comparar", "sameUom": "misma UOM", "marginValue": "{{value}}% · {{uom}}", "stockUom": "UOM de stock", "defaultSalesUom": "UOM de venta default", "defaultPurchaseUom": "UOM de compra default", "uomConversions": "Conversiones UOM", "noConversions": "Sin conversiones registradas", "edit": "Editar producto", "configureUom": "Configurar UOM" }
+  },
   "cache": {
     "labels": {
       "products": "Productos",

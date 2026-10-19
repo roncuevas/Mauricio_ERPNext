@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button, ButtonLink } from './ui'
 import { calculateGrossMargin } from '../lib/pricing'
 import type { CachedItem, ItemPrice, VariantItem } from '../lib/types'
 
-function money(price: ItemPrice | null) {
-  if (!price) return 'Sin precio'
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: price.currency || 'MXN' }).format(Number(price.price_list_rate ?? 0))
+function money(price: ItemPrice | null, locale: string, noPrice: string) {
+  if (!price) return noPrice
+  return new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-MX', { style: 'currency', currency: price.currency || 'MXN' }).format(Number(price.price_list_rate ?? 0))
 }
 
 function priceForItem(prices: ItemPrice[], item: CachedItem) {
@@ -21,6 +22,7 @@ function productUoms(item: CachedItem, variant?: VariantItem) {
 }
 
 export function ProductCard({ item, prices, variant, onOpen }: { item: CachedItem; prices: ItemPrice[]; variant?: VariantItem; onOpen: () => void }) {
+  const { t, i18n } = useTranslation()
   const { purchase, sale } = priceForItem(prices, item)
   const comparablePrices = purchase && sale && (purchase.uom || '') === (sale.uom || '')
   const margin = comparablePrices ? calculateGrossMargin(sale, purchase) : null
@@ -34,10 +36,10 @@ export function ProductCard({ item, prices, variant, onOpen }: { item: CachedIte
   return <article className="product-card" onDoubleClick={onOpen}>
     <div className="product-card-heading">
       <div className="min-w-0">
-        <p className="product-card-eyebrow">{item.item_group || 'Sin clasificación'}</p>
+        <p className="product-card-eyebrow">{item.item_group || t('catalog.product.noGroup')}</p>
         <h2 className="product-card-title"><Link to={`/items/${encodeURIComponent(itemId)}`}>{String(item.item_name ?? itemId)}</Link></h2>
       </div>
-      <span className={`product-status ${item.disabled ? 'product-status-disabled' : 'product-status-active'}`}>{item.disabled ? 'Deshabilitado' : 'Activo'}</span>
+      <span className={`product-status ${item.disabled ? 'product-status-disabled' : 'product-status-active'}`}>{item.disabled ? t('common.disabled') : t('common.active')}</span>
     </div>
 
     <div className="product-card-identifiers">
@@ -47,22 +49,22 @@ export function ProductCard({ item, prices, variant, onOpen }: { item: CachedIte
     </div>
 
     <div className="product-card-metrics">
-      <div className="product-metric product-metric-purchase"><span>Compra</span><strong>{money(purchase)}</strong>{purchase?.supplier && <small>{purchase.supplier}</small>}</div>
-      <div className="product-metric product-metric-sale"><span>Venta</span><strong>{money(sale)}</strong>{sale?.price_list && <small>{sale.price_list}</small>}</div>
-      <div className={`product-metric ${margin && margin.amount >= 0 ? 'product-metric-margin' : 'product-metric-loss'}`}><span>Ganancia aprox.</span><strong>{margin ? money({ ...sale, price_list_rate: margin.amount }) : 'Sin comparar'}</strong>{margin && <small>{margin.percentage.toFixed(1)}% · misma UOM</small>}</div>
+      <div className="product-metric product-metric-purchase"><span>{t('catalog.product.buying')}</span><strong>{money(purchase, i18n.language, t('catalog.product.noPrice'))}</strong>{purchase?.supplier && <small>{purchase.supplier}</small>}</div>
+      <div className="product-metric product-metric-sale"><span>{t('catalog.product.selling')}</span><strong>{money(sale, i18n.language, t('catalog.product.noPrice'))}</strong>{sale?.price_list && <small>{sale.price_list}</small>}</div>
+      <div className={`product-metric ${margin && margin.amount >= 0 ? 'product-metric-margin' : 'product-metric-loss'}`}><span>{t('catalog.product.margin')}</span><strong>{margin ? money({ ...sale, price_list_rate: margin.amount }, i18n.language, t('catalog.product.noPrice')) : t('catalog.product.notComparable')}</strong>{margin && <small>{t('catalog.product.marginValue', { value: margin.percentage.toFixed(1), uom: t('catalog.product.sameUom') })}</small>}</div>
     </div>
 
     <div className="product-card-details">
-      <div><span className="product-detail-label">UOM de stock</span><strong><span className="variant-stock-badge">{stockUom}</span></strong></div>
-      <div><span className="product-detail-label">UOM de venta default</span><strong>{item.sales_uom || '—'}</strong></div>
-      <div><span className="product-detail-label">UOM de compra default</span><strong>{item.purchase_uom || '—'}</strong></div>
+      <div><span className="product-detail-label">{t('catalog.product.stockUom')}</span><strong><span className="variant-stock-badge">{stockUom}</span></strong></div>
+      <div><span className="product-detail-label">{t('catalog.product.defaultSalesUom')}</span><strong>{item.sales_uom || '—'}</strong></div>
+      <div><span className="product-detail-label">{t('catalog.product.defaultPurchaseUom')}</span><strong>{item.purchase_uom || '—'}</strong></div>
     </div>
 
     <div className="product-card-conversions">
-      <div className="product-section-heading"><span>Conversiones UOM</span><span className="product-count">{conversions.length}</span></div>
-      {conversions.length ? <div className="conversion-chips">{conversions.map((uom) => <span className="conversion-chip" key={`${itemId}-${uom.uom}`}><b>1x {uom.uom}</b> = {uom.conversion_factor} {stockUom}</span>)}</div> : <span className="product-empty-detail">Sin conversiones registradas</span>}
+      <div className="product-section-heading"><span>{t('catalog.product.uomConversions')}</span><span className="product-count">{conversions.length}</span></div>
+      {conversions.length ? <div className="conversion-chips">{conversions.map((uom) => <span className="conversion-chip" key={`${itemId}-${uom.uom}`}><b>1x {uom.uom}</b> = {uom.conversion_factor} {stockUom}</span>)}</div> : <span className="product-empty-detail">{t('catalog.product.noConversions')}</span>}
     </div>
 
-    <div className="product-card-actions"><Button type="button" variant="action" size="compact" onClick={onOpen}>Editar producto</Button><ButtonLink variant="action" size="compact" to={`/items/${encodeURIComponent(itemId)}/uoms`}>Configurar UOM</ButtonLink></div>
+    <div className="product-card-actions"><Button type="button" variant="action" size="compact" onClick={onOpen}>{t('catalog.product.edit')}</Button><ButtonLink variant="action" size="compact" to={`/items/${encodeURIComponent(itemId)}/uoms`}>{t('catalog.product.configureUom')}</ButtonLink></div>
   </article>
 }

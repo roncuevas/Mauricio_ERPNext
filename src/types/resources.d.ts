@@ -59,6 +59,25 @@ export default interface Resources {
       "validity": "Vigencia orientativa",
       "withoutCache": "Sin caché"
     },
+    "catalog": {
+      "product": {
+        "buying": "Compra",
+        "configureUom": "Configurar UOM",
+        "defaultPurchaseUom": "UOM de compra default",
+        "defaultSalesUom": "UOM de venta default",
+        "edit": "Editar producto",
+        "margin": "Ganancia aprox.",
+        "marginValue": "{{value}}% · {{uom}}",
+        "noConversions": "Sin conversiones registradas",
+        "noGroup": "Sin clasificación",
+        "noPrice": "Sin precio",
+        "notComparable": "Sin comparar",
+        "sameUom": "misma UOM",
+        "selling": "Venta",
+        "stockUom": "UOM de stock",
+        "uomConversions": "Conversiones UOM"
+      }
+    },
     "common": {
       "active": "Activo",
       "all": "Todos",
