@@ -403,6 +403,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-sidebar-footer-actions .app-nav-link { min-height: 2.35rem; flex: 1; padding: .55rem .7rem; font-size: .72rem; }
 .app-sidebar-footer-actions .app-nav-link::before { display: none; }
 .app-sidebar-settings-link { grid-column: 1 / -1; align-items: center; gap: .45rem; }
+.app-sidebar-settings-link, .app-sidebar-language-selector, .app-sidebar-lock { font-family: var(--app-font-family); font-size: .72rem; font-weight: 750; line-height: 1.25; }
 .app-sidebar-settings-icon { display: inline-flex; width: 1.1rem; flex: 0 0 1.1rem; align-items: center; justify-content: center; }
 .app-sidebar-settings-icon .sidebar-icon { width: 1.05rem; height: 1.05rem; }
 .app-sidebar-footer-actions .app-sidebar-theme-toggle { width: 2.65rem; min-width: 2.65rem; min-height: 2.65rem; margin: 0; }
