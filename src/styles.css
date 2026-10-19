@@ -360,12 +360,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-topbar { display: flex; justify-content: flex-end; min-height: 2.4rem; margin-bottom: .35rem; }
 .language-selector { width: 8.5rem; min-height: 2.35rem; }
 .language-selector-compact { width: 2.35rem; min-width: 2.35rem; padding-inline: .55rem; }
-.language-selector-compact svg { width: 1rem; height: 1rem; }
+.language-selector-compact svg { width: 1.05rem; height: 1.05rem; flex: 0 0 1.05rem; }
+.language-selector-compact .ui-select-chevron { display: none; }
 .mobile-language-selector { width: 2.35rem; min-width: 2.35rem; }
 .mobile-language-selector .ui-select-chevron { display: none; }
 .mobile-navigation-menu-footer { display: flex; justify-content: flex-end; margin-top: auto; padding: 1rem .75rem .35rem; }
 .desktop-navigation-stack { display: grid; gap: .55rem; }
 .navigation-home-link { align-items: center; gap: .55rem; }
+.navigation-home-link::before { display: none; }
 .navigation-home-link > .sidebar-icon { width: 1.15rem; height: 1.15rem; flex-basis: 1.15rem; }
 .app-shell-sidebar-collapsed .navigation-home-link { justify-content: center; padding-inline: .5rem; }
 .app-shell-sidebar-collapsed .navigation-home-label { display: none; }
@@ -471,10 +473,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-shell-sidebar-collapsed .app-sidebar-collapse-toggle { position: static; width: 2rem; min-height: 2rem; margin-inline: auto; }
 .app-shell-sidebar-collapsed .app-sidebar-nav { border-top: 1px solid var(--color-border-subtle); padding: .85rem .65rem; }
 .app-shell-sidebar-collapsed .app-sidebar-footer-actions { flex-direction: column; justify-content: center; gap: .45rem; }
-.app-shell-sidebar-collapsed .app-sidebar-settings-link { width: 2.75rem; flex: 0 0 2.75rem; justify-content: center; padding-inline: .5rem; }
+.app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-settings-link,
+.app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-theme-toggle,
+.app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-language-selector,
+.app-shell-sidebar-collapsed .app-sidebar-lock { width: 2.75rem; min-width: 2.75rem; height: 2.75rem; min-height: 2.75rem; flex: 0 0 2.75rem; box-sizing: border-box; justify-content: center; border: 1px solid var(--color-border); border-radius: .85rem; padding: .5rem; }
+.app-shell-sidebar-collapsed .app-sidebar-settings-link { padding-inline: .5rem; }
 .app-shell-sidebar-collapsed .app-sidebar-settings-label { display: none; }
 .app-shell-sidebar-collapsed .app-sidebar-language-selector { margin: 0; }
-.app-shell-sidebar-collapsed .app-sidebar-lock { justify-content: center; padding-inline: .55rem; }
+.app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-theme-toggle { margin: 0; }
+.app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-settings-link.app-nav-link-active { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); }
+.app-shell-sidebar-collapsed .app-sidebar-lock { justify-content: center; margin-inline: auto; color: var(--color-muted); }
+.app-shell-sidebar-collapsed .app-sidebar-lock:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
 .page-header { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
 .workspace-navigation-header { min-width: 0; }
 .workspace-navigation-copy, .workspace-navigation-description { overflow-wrap: anywhere; }
