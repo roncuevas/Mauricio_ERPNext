@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -44,6 +45,7 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
   onToggle: (name: string) => void
   onAdd: (item: VariantItem, uom: ItemUom, rate: number) => void
 }) {
+  const { t } = useTranslation()
   const children = childrenByParent.get(item.name) ?? []
   const isTemplate = Boolean(item.has_variants) || children.length > 0
   const expandedNode = expanded.has(item.name)
@@ -57,18 +59,18 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
       <div className="price-node-main">
         <div className="price-node-heading">
           <div className={`price-node-toggle${children.length ? '' : ' price-node-toggle-empty'}`}>
-            {children.length > 0 && <button className="price-expand-button" type="button" aria-label={expandedNode ? `Ocultar variantes de ${item.item_name || item.name}` : `Mostrar variantes de ${item.item_name || item.name}`} aria-expanded={expandedNode} onClick={() => onToggle(item.name)}>{expandedNode ? '▾' : '▸'}</button>}
+            {children.length > 0 && <button className="price-expand-button" type="button" aria-label={expandedNode ? t("salesOrderTree.hideVariants", { name: item.item_name || item.name }) : t("salesOrderTree.showVariants", { name: item.item_name || item.name })} aria-expanded={expandedNode} onClick={() => onToggle(item.name)}>{expandedNode ? '▾' : '▸'}</button>}
           </div>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2"><strong className="price-node-title">{item.item_name || item.name}</strong>{isTemplate && <Badge tone="info">Plantilla</Badge>}{!isTemplate && item.variant_of && <Badge tone="neutral">Variante</Badge>}</div>
-            <div className="price-node-meta"><span className="font-mono">{item.item_code || item.name}</span>{item.brand && <span>Marca: {item.brand}</span>}{item.stock_uom && <span>UOM stock: {item.stock_uom}</span>}{isTemplate ? <span>{children.length} variante(s) en caché</span> : <span>{rate > 0 ? `Precio: ${formatRate(rate, currency)}` : 'Sin precio en caché'}</span>}</div>
+            <div className="flex flex-wrap items-center gap-2"><strong className="price-node-title">{item.item_name || item.name}</strong>{isTemplate && <Badge tone="info">{t("salesOrderTree.template")}</Badge>}{!isTemplate && item.variant_of && <Badge tone="neutral">{t("salesOrderTree.variant")}</Badge>}</div>
+            <div className="price-node-meta"><span className="font-mono">{item.item_code || item.name}</span>{item.brand && <span>{t("salesOrderTree.brand", { value: item.brand })}</span>}{item.stock_uom && <span>{t("salesOrderTree.stockUom", { value: item.stock_uom })}</span>}{isTemplate ? <span>{t("salesOrderTree.cachedVariants", { count: children.length })}</span> : <span>{rate > 0 ? t("salesOrderTree.price", { value: formatRate(rate, currency) }) : t("salesOrderTree.noCachedPrice")}</span>}</div>
           </div>
         </div>
         {!isTemplate && <div className="price-entry-list">
           <div className="price-entry">
-            <div className="price-entry-top"><span className="price-kind price-kind-selling">Venta</span><span className="price-amount">{rate > 0 ? formatRate(rate, currency) : 'Tarifa editable'}</span></div>
-            <div className="price-entry-meta"><span>Lista: {priceList || 'Sin lista seleccionada'}</span><Badge tone={rate > 0 ? 'success' : 'warning'}>UOM: {uom.uom || '—'}</Badge>{rate === 0 && <span>ERPNext validará la tarifa al guardar</span>}</div>
-            {!disabled && <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-3"><Select value={uom.uom || '__none__'} onValueChange={(value) => setSelectedUom(value === '__none__' ? '' : value)}><SelectTrigger className="min-w-32" aria-label={`UOM para ${item.item_name || item.name}`}><SelectValue placeholder="Selecciona UOM" /></SelectTrigger><SelectContent>{(item.uoms?.length ? item.uoms : [defaultUom(item)]).map((candidate) => <SelectItem key={candidate.uom} value={candidate.uom}>{uomOptionLabel(item, candidate)}</SelectItem>)}</SelectContent></Select><Button type="button" size="compact" onClick={() => onAdd(item, uom, rate)}>Agregar</Button></div>}
+            <div className="price-entry-top"><span className="price-kind price-kind-selling">{t("salesOrderTree.sale")}</span><span className="price-amount">{rate > 0 ? formatRate(rate, currency) : t("salesOrderTree.editableRate")}</span></div>
+            <div className="price-entry-meta"><span>{t("salesOrderTree.list", { value: priceList || t("salesOrderTree.noList") })}</span><Badge tone={rate > 0 ? 'success' : 'warning'}>{t("salesOrderTree.uom", { value: uom.uom || '—' })}</Badge>{rate === 0 && <span>{t("salesOrderTree.validateRate")}</span>}</div>
+            {!disabled && <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-3"><Select value={uom.uom || '__none__'} onValueChange={(value) => setSelectedUom(value === '__none__' ? '' : value)}><SelectTrigger className="min-w-32" aria-label={t("salesOrderTree.uomFor", { name: item.item_name || item.name })}><SelectValue placeholder={t("salesOrderTree.selectUom")} /></SelectTrigger><SelectContent>{(item.uoms?.length ? item.uoms : [defaultUom(item)]).map((candidate) => <SelectItem key={candidate.uom} value={candidate.uom}>{uomOptionLabel(item, candidate)}</SelectItem>)}</SelectContent></Select><Button type="button" size="compact" onClick={() => onAdd(item, uom, rate)}>{t("salesOrderTree.add")}</Button></div>}
           </div>
         </div>}
       </div>
@@ -78,6 +80,7 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
 }
 
 export function SalesOrderProductTree({ items, prices, priceList, search, disabled = false, currency, onSearchChange, onAdd }: ProductTreeProps) {
+  const { t } = useTranslation()
   const tree = useMemo(() => buildVariantTree(items), [items])
   const itemByName = useMemo(() => new Map(items.map((item) => [item.name, item])), [items])
   const priceIndex = useMemo(() => buildPriceIndex(prices, priceList), [prices, priceList])
@@ -115,12 +118,12 @@ export function SalesOrderProductTree({ items, prices, priceList, search, disabl
   useEffect(() => setPage(1), [items, query])
 
   return <div className="grid gap-3">
-    <div className="relative"><span className="pointer-events-none absolute left-3 top-2.5 text-[var(--color-muted)]" aria-hidden="true">⌕</span><Input className="pl-9" value={search} disabled={disabled} onChange={(event) => onSearchChange(event.target.value)} placeholder="Buscar producto, variante, código, marca, UOM o barcode" aria-label="Buscar producto" /></div>
+    <div className="relative"><span className="pointer-events-none absolute left-3 top-2.5 text-[var(--color-muted)]" aria-hidden="true">⌕</span><Input className="pl-9" value={search} disabled={disabled} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("salesOrderTree.searchPlaceholder")} aria-label={t("salesOrderTree.searchLabel")} /></div>
     <div className="prices-tree overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
       {visibleRoots.map((item) => <ProductNode key={item.name} item={item} depth={0} childrenByParent={tree.children} visibleNames={visibleNames} expanded={effectiveExpanded} disabled={disabled} priceIndex={priceIndex} priceList={priceList} currency={currency} onToggle={(name) => setExpanded((current) => { const next = new Set(current); if (next.has(name)) next.delete(name); else next.add(name); return next })} onAdd={onAdd} />)}
-      {!roots.length && <p className="p-8 text-center text-sm text-[var(--color-muted)]">{items.length ? 'No hay productos que coincidan con la búsqueda.' : 'No hay caché de productos. Refresca Items y Variantes antes de crear la venta.'}</p>}
+      {!roots.length && <p className="p-8 text-center text-sm text-[var(--color-muted)]">{items.length ? t("salesOrderTree.noMatches") : t("salesOrderTree.noCache")}</p>}
     </div>
-    {roots.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-[var(--color-muted)]">Mostrando {Math.min(visibleRoots.length, roots.length)} de {roots.length} producto(s) raíz.</p>{visibleRoots.length < roots.length && <Button type="button" variant="secondary" onClick={() => setPage((current) => current + 1)}>Cargar más</Button>}</div>}
-    <p className="text-xs text-[var(--color-muted)]">Las plantillas agrupan variantes y no se pueden agregar directamente. Selecciona la UOM de una variante para ver su tarifa en caché antes de agregarla.</p>
+    {roots.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-[var(--color-muted)]">{t("salesOrderTree.showing", { shown: Math.min(visibleRoots.length, roots.length), total: roots.length })}</p>{visibleRoots.length < roots.length && <Button type="button" variant="secondary" onClick={() => setPage((current) => current + 1)}>{t("salesOrderTree.loadMore")}</Button>}</div>}
+    <p className="text-xs text-[var(--color-muted)]">{t("salesOrderTree.hint")}</p>
   </div>
 }

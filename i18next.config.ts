@@ -15,7 +15,6 @@ export default defineConfig({
   // translating routes, DocTypes, storage keys, query fields or CSS classes.
   lint: {
     ignore: [
-      'src/components/sales-order-product-tree.tsx',
       'src/components/ui.tsx',
       'src/pages/pos-page.tsx',
       'src/pages/quotations-page.tsx',

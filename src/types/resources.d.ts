@@ -658,6 +658,33 @@ export default interface Resources {
       "updated": "Actualizado: {{value}}",
       "view": "Vista"
     },
+    "salesOrderTree": {
+      "add": "Agregar",
+      "brand": "Marca: {{value}}",
+      "cachedVariants": "{{count}} variante(s) en caché",
+      "editableRate": "Tarifa editable",
+      "hideVariants": "Ocultar variantes de {{name}}",
+      "hint": "Las plantillas agrupan variantes y no se pueden agregar directamente. Selecciona la UOM de una variante para ver su tarifa en caché antes de agregarla.",
+      "list": "Lista: {{value}}",
+      "loadMore": "Cargar más",
+      "noCache": "No hay caché de productos. Refresca Items y Variantes antes de crear la venta.",
+      "noCachedPrice": "Sin precio en caché",
+      "noList": "Sin lista seleccionada",
+      "noMatches": "No hay productos que coincidan con la búsqueda.",
+      "price": "Precio: {{value}}",
+      "sale": "Venta",
+      "searchLabel": "Buscar producto",
+      "searchPlaceholder": "Buscar producto, variante, código, marca, UOM o barcode",
+      "selectUom": "Selecciona UOM",
+      "showVariants": "Mostrar variantes de {{name}}",
+      "showing": "Mostrando {{shown}} de {{total}} producto(s) raíz.",
+      "stockUom": "UOM stock: {{value}}",
+      "template": "Plantilla",
+      "uom": "UOM: {{value}}",
+      "uomFor": "UOM para {{name}}",
+      "validateRate": "ERPNext validará la tarifa al guardar",
+      "variant": "Variante"
+    },
     "settings": {
       "appearance": {
         "colorMode": "Modo de color",
