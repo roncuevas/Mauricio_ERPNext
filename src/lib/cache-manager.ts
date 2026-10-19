@@ -88,7 +88,7 @@ const cacheLabels: Record<ManagedCacheId, Omit<ManagedCacheOverview, 'id' | 'sta
 }
 
 const orderFields = ['name', 'customer', 'customer_name', 'company', 'transaction_date', 'delivery_date', 'status', 'docstatus', 'currency', 'selling_price_list', 'grand_total', 'total', 'modified']
-const profileFields = ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled', 'allow_rate_change', 'allow_user_to_edit_rate']
+const profileFields = ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled', 'allow_rate_change']
 const openingFields = ['name', 'user', 'pos_profile', 'company', 'status', 'period_start_date', 'period_end_date', 'posting_date', 'pos_closing_entry', 'docstatus']
 
 function now() { return new Date().toISOString() }
