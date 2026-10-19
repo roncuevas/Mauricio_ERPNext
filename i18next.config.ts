@@ -25,7 +25,6 @@ export default defineConfig({
       'src/pages/catalog-pages.tsx',
       'src/pages/editors.tsx',
       'src/pages/pos-page.tsx',
-      'src/pages/pos-shifts-page.tsx',
       'src/pages/prices-page.tsx',
       'src/pages/product-workspace-page.tsx',
       'src/pages/quotations-page.tsx',
