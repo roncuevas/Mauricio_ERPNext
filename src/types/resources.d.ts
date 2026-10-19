@@ -829,6 +829,34 @@ export default interface Resources {
       "warehouse": "Sucursal / almacén",
       "warehousePlaceholder": "Selecciona almacén",
       "warehouses": "{{count}} almacenes"
+    },
+    "variantsPage": {
+      "attributesMissing": "La caché existente todavía no contiene atributos. Pulsa “Refrescar catálogo” para revisar valores creados y faltantes por plantilla.",
+      "cachedProducts": "{{count}} productos en caché",
+      "clear": "Limpiar",
+      "collapseVariants": "Colapsar variantes",
+      "description": "Visualiza plantillas, variantes y presentaciones en una jerarquía local.",
+      "downloadProgress": "Descargando productos y variantes: {{count}}",
+      "emptyDescription": "Pulsa “Refrescar catálogo” para descargar productos, plantillas, variantes, UOM y atributos.",
+      "emptyTitle": "Aún no hay productos en la caché de variantes.",
+      "expandVariants": "Desplegar variantes",
+      "filter": "Filtro: “{{value}}”",
+      "hierarchy": "Jerarquía",
+      "newProduct": "Nuevo producto",
+      "noMatches": "No hay coincidencias para la búsqueda actual.",
+      "notDownloaded": "Catálogo sin descargar",
+      "refresh": "Refrescar catálogo",
+      "searchLabel": "Buscar variantes",
+      "searchPlaceholder": "Buscar por código, nombre o UOM...",
+      "syncComplete": "Catálogo actualizado: {{count}} productos",
+      "title": "Variantes",
+      "uom": "UOM",
+      "uomFallback": "Sin permiso para leer UOM directamente; usando los Items...",
+      "uomInfo": "Los factores se expresan contra la UOM de stock: por ejemplo, 1 Bulto = 20 Kg. El segundo valor muestra la misma equivalencia para 2 unidades.",
+      "uomMissing": "La caché existente todavía no contiene UOM. Pulsa “Refrescar catálogo” para cargar las presentaciones y sus factores de conversión.",
+      "uomProgress": "Descargando UOM: {{count}}",
+      "updated": "Actualizado: {{value}}",
+      "view": "Vista"
     }
   }
 }
