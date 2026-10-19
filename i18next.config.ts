@@ -10,12 +10,7 @@ export default defineConfig({
   secondaryLanguages: ['en'],
   defaultValue: '',
   sort: true,
-  // Legacy screens still contain user-facing Spanish and ERPNext technical
-  // literals. Keep them out of the gate until each screen is migrated without
-  // translating routes, DocTypes, storage keys, query fields or CSS classes.
   lint: {
-    ignore: [
-    ],
   },
   types: {
     input: ['src/locales/es/*.json'],
