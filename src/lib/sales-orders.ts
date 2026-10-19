@@ -1,4 +1,5 @@
 import type { SalesOrderFormState, SalesOrderItem, SalesOrderSummary } from './types'
+import i18n from './i18n'
 
 export const salesOrderStatuses = ['Todas', 'Borrador', 'Pendiente', 'En proceso', 'En espera', 'Cerrado', 'Cancelado'] as const
 
@@ -45,19 +46,19 @@ export function salesOrderTotals(items: SalesOrderItem[]) {
 }
 
 export function validateSalesOrderForm(form: SalesOrderFormState, today = localDate()) {
-  if (!form.customer) return 'Selecciona un cliente.'
-  if (!form.company) return 'Selecciona una compañía.'
-  if (!form.set_warehouse) return 'Selecciona un almacén.'
-  if (!form.selling_price_list) return 'Selecciona una lista de precios.'
-  if (!isCurrentOrPastDate(form.transaction_date, today)) return 'La fecha no puede ser futura ni inválida.'
-  if (!isValidDeliveryDate(form.delivery_date, form.transaction_date)) return 'La fecha de entrega debe ser válida y no anterior a la venta.'
-  if (!form.items.length) return 'Agrega al menos una línea.'
+  if (!form.customer) return i18n.t('salesOrdersPage.validationCustomer')
+  if (!form.company) return i18n.t('salesOrdersPage.validationCompany')
+  if (!form.set_warehouse) return i18n.t('salesOrdersPage.validationWarehouse')
+  if (!form.selling_price_list) return i18n.t('salesOrdersPage.validationPriceList')
+  if (!isCurrentOrPastDate(form.transaction_date, today)) return i18n.t('salesOrdersPage.validationTransactionDate')
+  if (!isValidDeliveryDate(form.delivery_date, form.transaction_date)) return i18n.t('salesOrdersPage.validationDeliveryDate')
+  if (!form.items.length) return i18n.t('salesOrdersPage.validationItems')
   for (const [index, item] of form.items.entries()) {
-    if (!item.item_code) return `La línea ${index + 1} requiere un producto.`
-    if (!item.uom || !Number.isFinite(Number(item.conversion_factor ?? 1)) || Number(item.conversion_factor ?? 1) <= 0) return `La UOM de la línea ${index + 1} no es válida.`
-    if (!Number.isFinite(Number(item.qty)) || Number(item.qty) <= 0) return `La cantidad de la línea ${index + 1} debe ser mayor que cero.`
-    if (!Number.isFinite(Number(item.rate)) || Number(item.rate) < 0) return `El precio de la línea ${index + 1} no es válido.`
-    if (!Number.isFinite(Number(item.discount_percentage ?? 0)) || Number(item.discount_percentage ?? 0) < 0 || Number(item.discount_percentage ?? 0) > 100) return `El descuento de la línea ${index + 1} debe estar entre 0 y 100%.`
+    if (!item.item_code) return i18n.t('salesOrdersPage.validationItemCode', { index: index + 1 })
+    if (!item.uom || !Number.isFinite(Number(item.conversion_factor ?? 1)) || Number(item.conversion_factor ?? 1) <= 0) return i18n.t('salesOrdersPage.validationUom', { index: index + 1 })
+    if (!Number.isFinite(Number(item.qty)) || Number(item.qty) <= 0) return i18n.t('salesOrdersPage.validationQuantity', { index: index + 1 })
+    if (!Number.isFinite(Number(item.rate)) || Number(item.rate) < 0) return i18n.t('salesOrdersPage.validationRate', { index: index + 1 })
+    if (!Number.isFinite(Number(item.discount_percentage ?? 0)) || Number(item.discount_percentage ?? 0) < 0 || Number(item.discount_percentage ?? 0) > 100) return i18n.t('salesOrdersPage.validationDiscount', { index: index + 1 })
   }
   return null
 }

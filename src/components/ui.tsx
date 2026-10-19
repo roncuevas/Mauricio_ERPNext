@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 export { Button, buttonVariants, type ButtonProps } from './ui/button'
 export { ButtonLink } from './ui/button'
@@ -30,11 +31,15 @@ export function RefreshButton({ label, loading = false, ...props }: Omit<ButtonP
   return <IconButton {...props} type="button" label={label} loading={loading} icon="↻" />
 }
 
-export function SearchButton({ label = 'Buscar', loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label?: string; loading?: boolean }) {
+export function SearchButton({ label, loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label?: string; loading?: boolean }) {
+  const { t } = useTranslation()
+  label ??= t('common.search')
   return <IconButton {...props} className={cn('toolbar-search-button', props.className)} type="submit" label={label} loading={loading} title={`${label} (Enter)`} icon={<svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 16 5 5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg>} />
 }
 
-export function FilterButton({ label = 'Filtros', activeCount = 0, expanded = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant'> & { label?: string; activeCount?: number; expanded?: boolean }) {
+export function FilterButton({ label, activeCount = 0, expanded = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant'> & { label?: string; activeCount?: number; expanded?: boolean }) {
+  const { t } = useTranslation()
+  label ??= t('common.filters')
   return <IconButton {...props} className={cn('toolbar-filter-button', props.className)} type="button" label={label} aria-expanded={expanded} icon={<><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg>{activeCount > 0 && <span className="filter-button-count">{activeCount}</span>}</>} />
 }
 
@@ -47,8 +52,9 @@ export function Notice({ children, tone = 'error' }: { children: ReactNode; tone
 }
 
 export function PageHeader({ title, description, action, mobileAction, toolbar, status, sticky = false, visible = true }: { title: string; description?: string; action?: ReactNode; mobileAction?: ReactNode; toolbar?: ReactNode; status?: ReactNode; sticky?: boolean; visible?: boolean }) {
+  const { t } = useTranslation()
   if (!visible) return null
-  return <header className={cn('page-header', sticky && 'page-header-sticky')}><div className="page-header-main"><div className="min-w-0"><h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>{description && <p className="mt-1 muted">{description}</p>}</div>{action && <><div className="page-header-actions desktop-actions">{action}</div>{mobileAction && <div className="page-header-mobile-primary">{mobileAction}</div>}<details className="mobile-actions"><summary>Acciones</summary><div className="mobile-actions-content">{action}</div></details></>}</div>{toolbar && <div className="page-header-toolbar">{toolbar}</div>}{status && <div className="page-header-status">{status}</div>}</header>
+  return <header className={cn('page-header', sticky && 'page-header-sticky')}><div className="page-header-main"><div className="min-w-0"><h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>{description && <p className="mt-1 muted">{description}</p>}</div>{action && <><div className="page-header-actions desktop-actions">{action}</div>{mobileAction && <div className="page-header-mobile-primary">{mobileAction}</div>}<details className="mobile-actions"><summary>{t('common.actions')}</summary><div className="mobile-actions-content">{action}</div></details></>}</div>{toolbar && <div className="page-header-toolbar">{toolbar}</div>}{status && <div className="page-header-status">{status}</div>}</header>
 }
 
 export function SegmentedControl<T extends string>({ label, value, options, onChange, className = '' }: { label: string; value: T; options: Array<{ value: T; label: string }>; onChange: (value: T) => void; className?: string }) {
