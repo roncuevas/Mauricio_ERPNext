@@ -6,6 +6,7 @@ import App from './App'
 import './styles.css'
 import { ThemeProvider, initializeTheme } from './components/theme-provider'
 import { RouteErrorBoundary } from './components/route-error-boundary'
+import './lib/i18n'
 
 initializeTheme()
 

@@ -4,6 +4,8 @@ import { IconButton } from './ui'
 import { useTheme } from './theme-provider'
 import { featureFlags } from '../lib/feature-flags'
 import { WorkspaceNavigation } from './workspace-navigation'
+import { LanguageSelector } from './language-selector'
+import { useTranslation } from 'react-i18next'
 
 type NavigationItem = { to: string; label: string }
 type NavigationGroup = { id: string; label: string; icon: string; landing: string; items: NavigationItem[] }
@@ -25,6 +27,11 @@ function visibleGroups() {
   return navigationGroups.map((group) => ({ ...group, items: group.items.filter((item) => item.to !== '/pos/cotizaciones' || featureFlags.quotationsView) })).filter((group) => group.items.length)
 }
 
+function navigationItemKey(label: string) {
+  const keys: Record<string, string> = { 'Ventas del día': 'dailySales', Turnos: 'shifts', Cotizaciones: 'quotations', Productos: 'products', Variantes: 'variants', Precios: 'prices', Inventario: 'stock', Proveedores: 'suppliers', Configuración: 'settings', DocTypes: 'doctypes' }
+  return keys[label] ?? label
+}
+
 export function NavLink({ to, children, className = '', ariaLabel }: { to: string; children: ReactNode; className?: string; ariaLabel?: string }) {
   const location = useLocation()
   const active = routeMatches(location.pathname, to)
@@ -32,6 +39,8 @@ export function NavLink({ to, children, className = '', ariaLabel }: { to: strin
 }
 
 function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: boolean; collapsed?: boolean }) {
+  const { t } = useTranslation()
+  const translate = (key: string, options?: Record<string, unknown>) => String((t as unknown as (key: string, options?: Record<string, unknown>) => unknown)(key, options))
   const location = useLocation()
   const groups = useMemo(visibleGroups, [])
   const activeGroup = groups.find((group) => group.items.some((item) => routeMatches(location.pathname, item.to)))?.id ?? null
@@ -61,16 +70,16 @@ function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: bool
       const groupLabelId = `${mobile ? 'mobile-' : 'desktop-'}navigation-group-${group.id}`
       return <section className={`navigation-group${isOpen ? ' navigation-group-open' : ''}${collapsed ? ' navigation-group-collapsed' : ''}`} key={group.id}>
         <div className="navigation-group-heading">
-          <Link className="navigation-group-link" to={group.landing} title={collapsed ? group.label : undefined} aria-current={activeGroup === group.id ? 'page' : undefined}>
+          <Link className="navigation-group-link" to={group.landing} title={collapsed ? translate(`navigation.${group.id}`) : undefined} aria-current={activeGroup === group.id ? 'page' : undefined}>
             <span className="navigation-group-icon" aria-hidden="true">{group.icon}</span>
-            <span className="navigation-group-label">{group.label}</span>
+            <span className="navigation-group-label">{translate(`navigation.${group.id}`)}</span>
           </Link>
-          <button className="navigation-group-toggle" type="button" aria-expanded={isOpen} aria-controls={groupLabelId} aria-label={`${isOpen ? 'Colapsar' : 'Expandir'} ${group.label}`} onClick={() => toggleGroup(group.id)}>
+          <button className="navigation-group-toggle" type="button" aria-expanded={isOpen} aria-controls={groupLabelId} aria-label={translate(isOpen ? 'navigation.collapse' : 'navigation.expand', { group: translate(`navigation.${group.id}`) })} onClick={() => toggleGroup(group.id)}>
             <span aria-hidden="true">{isOpen ? '⌄' : '›'}</span>
           </button>
         </div>
         <div id={groupLabelId} className="navigation-group-items" hidden={!isOpen || collapsed}>
-          {group.items.map((item) => <NavLink key={item.to} to={item.to}>{item.label}</NavLink>)}
+          {group.items.map((item) => <NavLink key={item.to} to={item.to}>{translate(`navigation.${navigationItemKey(item.label)}`)}</NavLink>)}
         </div>
       </section>
     })}
@@ -78,13 +87,17 @@ function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: bool
 }
 
 export function DesktopNavigation({ collapsed = false }: { collapsed?: boolean }) {
-  return <div className="desktop-navigation-stack"><NavLink to="/" className="navigation-home-link"><span aria-hidden="true">⌂</span><span className="navigation-home-label">Inicio</span></NavLink><NavigationGroups collapsed={collapsed} /></div>
+  const { t } = useTranslation()
+  return <div className="desktop-navigation-stack"><NavLink to="/" className="navigation-home-link"><span aria-hidden="true">⌂</span><span className="navigation-home-label">{t('navigation.home')}</span></NavLink><NavigationGroups collapsed={collapsed} /></div>
 }
 
 export function MobileNavigation({ onLock }: { onLock: () => void }) {
+  const { t } = useTranslation()
+  const translate = (key: string) => String((t as unknown as (key: string) => unknown)(key))
   const location = useLocation()
   const [open, setOpen] = useState(false)
-  const currentPage = visibleGroups().flatMap((group) => group.items).find((item) => routeMatches(location.pathname, item.to))?.label ?? 'Mauricio'
+  const currentPageItem = visibleGroups().flatMap((group) => group.items).find((item) => routeMatches(location.pathname, item.to))
+  const currentPage = currentPageItem ? translate(`navigation.${navigationItemKey(currentPageItem.label)}`) : translate('common.appName')
 
   useEffect(() => setOpen(false), [location.pathname])
   useEffect(() => {
@@ -98,31 +111,33 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
         <img className="mobile-brand-logo" src="/mauricio-logo-cropped.png" alt="Mauricio" />
         <div className="mobile-navigation-heading">
           <strong>{currentPage}</strong>
-          <span>Mauricio</span>
+          <span>{t('common.appName')}</span>
         </div>
       </div>
       <div className="mobile-navigation-actions">
         <ThemeModeToggle className="mobile-theme-toggle" />
-        <button className="menu-lock-button" type="button" aria-label="Bloquear sesión" title="Bloquear sesión" onClick={onLock}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" /></svg></button>
+        <LanguageSelector className="mobile-language-selector" />
+        <button className="menu-lock-button" type="button" aria-label={t('navigation.lock')} title={t('navigation.lock')} onClick={onLock}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" /></svg></button>
         <button className="menu-button" type="button" aria-expanded={open} aria-controls="mobile-navigation-menu" onClick={() => setOpen((current) => !current)}>
           <span className="menu-button-icon" aria-hidden="true">{open ? '×' : '☰'}</span>
-          <span>Menú</span>
+          <span>{t('navigation.menu')}</span>
         </button>
       </div>
     </div>
     {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label="Navegación principal">
-      <div className="mobile-navigation-menu-heading"><span>Ir a</span><small>Sección actual: {currentPage}</small></div>
-      <NavLink to="/" className="navigation-home-link"><span aria-hidden="true">⌂</span><span>Inicio</span></NavLink><NavigationGroups mobile />
+      <div className="mobile-navigation-menu-heading"><span>{t('navigation.goTo')}</span><small>{t('navigation.currentSection', { section: currentPage })}</small></div>
+      <NavLink to="/" className="navigation-home-link"><span aria-hidden="true">⌂</span><span>{t('navigation.home')}</span></NavLink><NavigationGroups mobile />
     </nav>}
   </div>
 }
 
 export function ThemeModeToggle({ className = 'app-sidebar-theme-toggle' }: { className?: string } = {}) {
+  const { t } = useTranslation()
   const { colorMode, toggleColorMode } = useTheme()
-  const label = colorMode === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'
+  const label = colorMode === 'dark' ? t('navigation.lightMode') : t('navigation.darkMode')
   return <IconButton className={className} type="button" label={label} title={label} onClick={toggleColorMode} icon={colorMode === 'dark' ? '☀' : '☾'} />
 }
 
 export function PageLayout({ children }: { client?: unknown; children?: ReactNode }) {
-  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><WorkspaceNavigation />{children ?? <Outlet />}</div>
+  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><div className="app-topbar"><LanguageSelector /></div><WorkspaceNavigation />{children ?? <Outlet />}</div>
 }

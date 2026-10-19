@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, Notice, RefreshButton, Spinner } from './ui'
 import { localDate } from '../lib/sales-orders'
@@ -12,17 +13,10 @@ type Client = ReturnType<typeof createErpNextClient>
 const cacheOrder: ManagedCacheId[] = ['products', 'variants', 'uom', 'prices', 'priceLists', 'stock', 'suppliers', 'customers', 'doctypes', 'posContext', 'shifts', 'salesOrders', 'quotations']
 const contextCacheIds: ManagedCacheId[] = ['salesOrders', 'quotations']
 
-function formatDate(value?: string) {
+function formatDate(value?: string, language = 'es') {
   if (!value) return 'Nunca'
   const parsed = new Date(value.replace(' ', 'T'))
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString('es-MX')
-}
-
-function statusLabel(status: ManagedCacheOverview['status']) {
-  if (status === 'fresh') return 'Actualizada'
-  if (status === 'stale') return 'Posiblemente desactualizada'
-  if (status === 'error') return 'Error parcial'
-  return 'Sin caché'
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString(language === 'en' ? 'en-US' : 'es-MX')
 }
 
 function statusTone(status: ManagedCacheOverview['status']) {
@@ -49,18 +43,21 @@ function relatedQueryKeys(profileId: string, id: ManagedCacheId) {
 }
 
 function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; busy: boolean; onRefresh: (id: ManagedCacheId) => void }) {
+  const { t, i18n } = useTranslation()
+  const statusLabel = entry.status === 'fresh' ? t('cache.updated') : entry.status === 'stale' ? t('cache.stale') : entry.status === 'error' ? t('cache.partialError') : t('cache.withoutCache')
   return <Card className="settings-cache-card">
-    <div className="settings-cache-card-header"><div><p className="settings-eyebrow">Caché local</p><h3>{entry.label}</h3></div><Badge tone={statusTone(entry.status)}>{busy ? 'Refrescando…' : statusLabel(entry.status)}</Badge></div>
+    <div className="settings-cache-card-header"><div><p className="settings-eyebrow">{t('cache.local')}</p><h3>{t(`cache.labels.${entry.id}`)}</h3></div><Badge tone={statusTone(entry.status)}>{busy ? t('cache.refreshing') : statusLabel}</Badge></div>
     <p className="settings-cache-description">{entry.description}</p>
-    <dl className="settings-cache-details"><div><dt>Último fetch</dt><dd>{formatDate(entry.updatedAt)}</dd></div><div><dt>Registros</dt><dd>{entry.count === undefined ? '—' : entry.count.toLocaleString('es-MX')}</dd></div><div><dt>Vigencia orientativa</dt><dd>{cacheTtlLabel(entry.id)}</dd></div></dl>
+    <dl className="settings-cache-details"><div><dt>{t('cache.lastFetch')}</dt><dd>{formatDate(entry.updatedAt, i18n.language)}</dd></div><div><dt>{t('cache.records')}</dt><dd>{entry.count === undefined ? '—' : entry.count.toLocaleString(i18n.language === 'en' ? 'en-US' : 'es-MX')}</dd></div><div><dt>{t('cache.validity')}</dt><dd>{cacheTtlLabel(entry.id)}</dd></div></dl>
     <div className="settings-cache-doctypes"><span>DocTypes</span><div>{entry.doctypes.map((doctype) => <span key={doctype}>{doctype}</span>)}</div></div>
-    {entry.requiresContext && !entry.updatedAt && <p className="settings-cache-hint">Usa el POS Profile activo y la fecha actual. Si no hay compañía configurada, primero define Preferencias del POS.</p>}
-    {entry.error && <p className="settings-cache-error" role="alert">Último error: {entry.error}</p>}
-    <div className="settings-cache-actions"><RefreshButton label={`Refrescar ${entry.label}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} /><span className="settings-cache-attempt">Intento: {formatDate(entry.lastAttemptAt)}</span></div>
+    {entry.requiresContext && !entry.updatedAt && <p className="settings-cache-hint">{t('cache.contextHint')}</p>}
+    {entry.error && <p className="settings-cache-error" role="alert">{entry.error}</p>}
+    <div className="settings-cache-actions"><RefreshButton label={`${t('common.refresh')} ${t(`cache.labels.${entry.id}`)}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} /><span className="settings-cache-attempt">{formatDate(entry.lastAttemptAt, i18n.language)}</span></div>
   </Card>
 }
 
 export function CacheManagerPanel({ client, profileId, activeProfile, onChanged }: { client: Client; profileId: string; activeProfile?: PosProfile; onChanged?: () => void }) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [busyIds, setBusyIds] = useState<ManagedCacheId[]>([])
   const [message, setMessage] = useState('')
@@ -73,10 +70,10 @@ export function CacheManagerPanel({ client, profileId, activeProfile, onChanged 
     await Promise.all(relatedQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' })))
   }
 
-  const refresh = useMutation({ mutationFn: async (id: ManagedCacheId) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress)), onSuccess: async (_result, id) => { await invalidateRelated(id); await overview.refetch(); onChanged?.(); setMessage(`${entries.find((entry) => entry.id === id)?.label ?? 'Caché'} actualizada.`) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : 'No se pudo actualizar la caché.'); await overview.refetch(); onChanged?.() } })
+  const refresh = useMutation({ mutationFn: async (id: ManagedCacheId) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress)), onSuccess: async (_result, id) => { await invalidateRelated(id); await overview.refetch(); onChanged?.(); setMessage(t('cache.updateMessage', { label: t(`cache.labels.${id}`) })) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : t('errors.unknown')); await overview.refetch(); onChanged?.() } })
 
   async function refreshOne(id: ManagedCacheId) {
-    if (contextCacheIds.includes(id) && !activeProfile?.company) { setError('Ventas del día y cotizaciones requieren un POS Profile con compañía activa.'); return }
+    if (contextCacheIds.includes(id) && !activeProfile?.company) { setError(t('cache.contextRequired')); return }
     setError(''); setBusyIds((current) => [...current, id])
     try { await refresh.mutateAsync(id) } finally { setBusyIds((current) => current.filter((value) => value !== id)) }
   }
@@ -84,21 +81,21 @@ export function CacheManagerPanel({ client, profileId, activeProfile, onChanged 
   async function refreshAll() {
     const refreshableIds = activeProfile?.company ? cacheOrder : cacheOrder.filter((id) => !contextCacheIds.includes(id))
     const skippedCount = cacheOrder.length - refreshableIds.length
-    setError(''); setMessage('Actualizando cachés…'); setBusyIds(refreshableIds)
+    setError(''); setMessage(t('cache.updating')); setBusyIds(refreshableIds)
     const results = await Promise.allSettled(refreshableIds.map((id) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress))))
     const failed = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
     await Promise.all(refreshableIds.map((id) => invalidateRelated(id)))
     await overview.refetch()
     onChanged?.()
     setBusyIds([])
-    const skippedMessage = skippedCount ? ` ${skippedCount} requieren POS Profile con compañía.` : ''
-    if (failed.length) { setError(`${failed.length} caché(s) no pudieron actualizarse. La información anterior se conservó.`); setMessage(`${refreshableIds.length - failed.length} caché(s) actualizadas con resultados parciales.${skippedMessage}`) } else setMessage(`${refreshableIds.length} caché(s) actualizadas.${skippedMessage}`)
+    const skippedMessage = skippedCount ? ` ${t('cache.skippedContext', { count: skippedCount })}` : ''
+    if (failed.length) { setError(t('cache.failed', { count: failed.length })); setMessage(`${t('cache.partialMessage', { count: refreshableIds.length - failed.length })}${skippedMessage}`) } else setMessage(`${t('cache.allUpdated', { count: refreshableIds.length })}${skippedMessage}`)
   }
 
   return <section className="settings-cache-panel" aria-labelledby="settings-cache-title">
-    <div className="settings-cache-toolbar"><div><p className="settings-eyebrow">Sincronización local</p><h2 id="settings-cache-title">Cachés y último fetch</h2><p className="muted">Los datos se guardan por conexión en este navegador. Los errores no eliminan la caché anterior.</p></div><Button type="button" onClick={() => void refreshAll()} disabled={busyIds.length > 0}>{busyIds.length > 0 ? <><Spinner /> Actualizando…</> : 'Refrescar todo'}</Button></div>
+    <div className="settings-cache-toolbar"><div><p className="settings-eyebrow">{t('cache.local')}</p><h2 id="settings-cache-title">{t('cache.syncTitle')}</h2><p className="muted">{t('cache.syncDescription')}</p></div><Button type="button" onClick={() => void refreshAll()} disabled={busyIds.length > 0}>{busyIds.length > 0 ? <><Spinner /> {t('cache.updating')}</> : t('cache.all')}</Button></div>
     {(message || error) && <Notice tone={error ? 'warning' : 'info'}><span role="status" aria-live="polite">{error || message}</span></Notice>}
-    {overview.isError && <Notice>{overview.error instanceof Error ? overview.error.message : 'No se pudo leer el estado de las cachés.'}</Notice>}
-    {overview.isPending ? <div className="settings-cache-loading"><Spinner /> Leyendo estado local…</div> : <div className="settings-cache-grid">{entries.map((entry) => <CacheCard key={entry.id} entry={entry} busy={busyIds.includes(entry.id)} onRefresh={(id) => void refreshOne(id)} />)}</div>}
+    {overview.isError && <Notice>{overview.error instanceof Error ? overview.error.message : t('cache.readError')}</Notice>}
+    {overview.isPending ? <div className="settings-cache-loading"><Spinner /> {t('cache.reading')}</div> : <div className="settings-cache-grid">{entries.map((entry) => <CacheCard key={entry.id} entry={entry} busy={busyIds.includes(entry.id)} onRefresh={(id) => void refreshOne(id)} />)}</div>}
   </section>
 }

@@ -15,6 +15,7 @@ import { readVariantCatalogOrItems } from './lib/variant-cache'
 import { queryKeys } from './lib/query-keys'
 import { markPerformance } from './lib/performance'
 import type { ConnectionProfile } from './lib/types'
+import { useTranslation } from 'react-i18next'
 
 const ItemEditorPage = lazy(() => import('./pages/editors').then(({ ItemEditorPage }) => ({ default: ItemEditorPage })))
 const UomEditorPage = lazy(() => import('./pages/editors').then(({ UomEditorPage }) => ({ default: UomEditorPage })))
@@ -36,6 +37,7 @@ const SettingsPage = lazy(() => import('./pages/settings-page').then(({ Settings
 const HomePage = lazy(() => import('./pages/home-page').then(({ HomePage }) => ({ default: HomePage })))
 
 function App() {
+  const { t } = useTranslation()
   const [profiles, setProfiles] = useState(readProfiles)
   const [connection, setConnection] = useState<ConnectionProfile | null>(null)
   const [restoring, setRestoring] = useState(true)
@@ -57,7 +59,7 @@ function App() {
   }
 
   if (restoring) {
-    return <main className="flex min-h-screen items-center justify-center p-4"><div className="flex items-center gap-2 muted"><Spinner /> Restaurando sesión local...</div></main>
+    return <main className="flex min-h-screen items-center justify-center p-4"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></main>
   }
 
   if (!connection) {
@@ -68,6 +70,7 @@ function App() {
 }
 
 function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
+  const { t } = useTranslation()
   const client = useMemo(() => createErpNextClient(connection), [connection])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -90,12 +93,12 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
     <LocalCachePrefetch profileId={connection.id} />
     <MobileNavigation onLock={onLock} />
     <aside className="app-sidebar border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
-      <div className="app-sidebar-brand"><img className="app-brand-logo" src="/mauricio-logo-cropped.png" alt="Mauricio" /><div className="app-sidebar-brand-copy"><p className="app-brand-name">Mauricio</p><p className="app-brand-caption">ERPNext local</p></div><IconButton className="app-sidebar-collapse-toggle" type="button" variant="secondary" label={sidebarCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral'} aria-pressed={sidebarCollapsed} onClick={() => setSidebarCollapsed((current) => !current)} icon={sidebarCollapsed ? '→' : '←'} /></div>
-      <div className="app-sidebar-profile"><span className="app-sidebar-eyebrow">Conexión activa</span><strong title={connection.label}>{connection.label}</strong><small title={connection.baseUrl}>{connection.baseUrl.replace(/^https?:\/\//, '')}</small></div>
-      <nav className="app-sidebar-nav" aria-label="Navegación principal"><DesktopNavigation collapsed={sidebarCollapsed} /></nav>
-      <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings" className="app-sidebar-settings-link" ariaLabel="Configuración"><span className="app-sidebar-settings-icon" aria-hidden="true">⚙</span><span className="app-sidebar-settings-label">Configuración</span></NavLink><ThemeModeToggle /></div><button className="app-sidebar-lock" type="button" aria-label="Bloquear sesión" onClick={onLock}><span>Bloquear sesión</span><span aria-hidden="true">↗</span></button></div>
+      <div className="app-sidebar-brand"><img className="app-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} /><div className="app-sidebar-brand-copy"><p className="app-brand-name">{t('common.appName')}</p><p className="app-brand-caption">{t('common.appCaption')}</p></div><IconButton className="app-sidebar-collapse-toggle" type="button" variant="secondary" label={sidebarCollapsed ? t('navigation.unlockSidebar') : t('navigation.lockSidebar')} aria-pressed={sidebarCollapsed} onClick={() => setSidebarCollapsed((current) => !current)} icon={sidebarCollapsed ? '→' : '←'} /></div>
+      <div className="app-sidebar-profile"><span className="app-sidebar-eyebrow">{t('navigation.activeConnection')}</span><strong title={connection.label}>{connection.label}</strong><small title={connection.baseUrl}>{connection.baseUrl.replace(/^https?:\/\//, '')}</small></div>
+      <nav className="app-sidebar-nav" aria-label={t('navigation.main')}><DesktopNavigation collapsed={sidebarCollapsed} /></nav>
+      <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings" className="app-sidebar-settings-link" ariaLabel={t('navigation.settings')}><span className="app-sidebar-settings-icon" aria-hidden="true">⚙</span><span className="app-sidebar-settings-label">{t('navigation.settings')}</span></NavLink><ThemeModeToggle /></div><button className="app-sidebar-lock" type="button" aria-label={t('navigation.lock')} onClick={onLock}><span>{t('navigation.lock')}</span><span aria-hidden="true">↗</span></button></div>
     </aside>
-    <main className="min-w-0 flex-1"><RouteErrorBoundary onLock={onLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> Cargando módulo...</div></main>}><Routes><Route element={<PageLayout client={client} />}>
+    <main className="min-w-0 flex-1"><RouteErrorBoundary onLock={onLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></main>}><Routes><Route element={<PageLayout client={client} />}>
         <Route path="/" element={<HomePage client={client} profileId={connection.id} />} />
         <Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} />
         <Route path="/pos/ventas" element={<SalesOrdersPage client={client} profileId={connection.id} />} />

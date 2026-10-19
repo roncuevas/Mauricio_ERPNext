@@ -1,4 +1,5 @@
 import type { ConnectionProfile, DocTypeMeta, ErpNextUserProfile, ListOptions, ListResult } from './types'
+import i18n from './i18n'
 
 export class ErpNextError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message) }
@@ -30,8 +31,8 @@ export function createErpNextClient(connection: ConnectionProfile) {
       return (body.data ?? body.message ?? body) as T
     } catch (error) {
       if (error instanceof ErpNextError) throw error
-      if (error instanceof DOMException && error.name === 'AbortError') throw new Error('La solicitud tardó demasiado o fue cancelada.', { cause: error })
-      throw new Error('No se pudo conectar con ERPNext. Revisa HTTPS y CORS en la instancia.', { cause: error })
+      if (error instanceof DOMException && error.name === 'AbortError') throw new Error(i18n.t('errors.timeout'), { cause: error })
+      throw new Error(i18n.t('errors.connection'), { cause: error })
     } finally { window.clearTimeout(timeout) }
   }
 
