@@ -1,3 +1,3 @@
 export function Spinner() {
-  return <span className="spinner" aria-label="Cargando" />
+  return <span data-slot="spinner" className="spinner" role="status" aria-label="Cargando" />
 }

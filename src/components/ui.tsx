@@ -4,7 +4,13 @@ export { Button, buttonVariants, type ButtonProps } from './ui/button'
 export { ButtonLink } from './ui/button'
 export { Input } from './ui/input'
 export { Textarea } from './ui/textarea'
-export { Card } from './ui/card'
+export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card'
+export { Alert, AlertDescription, AlertTitle } from './ui/alert'
+export { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from './ui/empty'
+export { Label } from './ui/label'
+export { Separator } from './ui/separator'
+export { Skeleton } from './ui/skeleton'
+export { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 export { Badge } from './ui/badge'
 export { Spinner } from './ui/spinner'
 export { Checkbox } from './ui/checkbox'
@@ -12,6 +18,9 @@ export { RadioGroup, RadioGroupItem } from './ui/radio-group'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 export { EntityCombobox } from './entity-combobox'
 import { Button, type ButtonProps } from './ui/button'
+import { Alert } from './ui/alert'
+import { Label } from './ui/label'
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 
 export function IconButton({ label, icon, loading = false, variant = 'secondary', ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; icon: ReactNode; loading?: boolean; variant?: NonNullable<ButtonProps['variant']> }) {
   return <Button {...props} variant={variant} size="icon" loading={loading} aria-label={label} title={props.title ?? label}>{icon}</Button>
@@ -30,11 +39,11 @@ export function FilterButton({ label = 'Filtros', activeCount = 0, expanded = fa
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="field"><span className="field-label">{label}</span>{children}</label>
+  return <div className="field"><Label>{label}</Label>{children}</div>
 }
 
 export function Notice({ children, tone = 'error' }: { children: ReactNode; tone?: 'error' | 'info' | 'warning' }) {
-  return <div className={`notice notice-${tone}`} role={tone === 'error' ? 'alert' : undefined}>{children}</div>
+  return <Alert className={`notice-${tone}`} role={tone === 'error' ? 'alert' : undefined}>{children}</Alert>
 }
 
 export function PageHeader({ title, description, action, mobileAction, toolbar, status, sticky = false, visible = true }: { title: string; description?: string; action?: ReactNode; mobileAction?: ReactNode; toolbar?: ReactNode; status?: ReactNode; sticky?: boolean; visible?: boolean }) {
@@ -43,7 +52,7 @@ export function PageHeader({ title, description, action, mobileAction, toolbar, 
 }
 
 export function SegmentedControl<T extends string>({ label, value, options, onChange, className = '' }: { label: string; value: T; options: Array<{ value: T; label: string }>; onChange: (value: T) => void; className?: string }) {
-  return <div className={cn('segmented-control', className)} role="group" aria-label={label}><span className="segmented-control-label">{label}</span>{options.map((option) => <button key={option.value} type="button" className={value === option.value ? 'segmented-control-active' : ''} aria-pressed={value === option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>
+  return <div className={cn('segmented-control', className)} aria-label={label}><span className="segmented-control-label">{label}</span><ToggleGroup type="single" value={value} onValueChange={(next) => { if (next) onChange(next as T) }}><div className="inline-flex items-center gap-[.15rem]">{options.map((option) => <ToggleGroupItem key={option.value} value={option.value}>{option.label}</ToggleGroupItem>)}</div></ToggleGroup></div>
 }
 
 export function SyncStatus({ children }: { children?: ReactNode }) {

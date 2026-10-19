@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import { Button, Card, Notice, Spinner } from '../ui'
+import { Button, Card, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Notice, Spinner } from '../ui'
 
 export function LoadingState({ label = 'Cargando…', compact = false }: { label?: string; compact?: boolean }) {
   return <div className={compact ? 'flex items-center gap-2 muted' : 'flex justify-center gap-2 p-12 muted'} role="status" aria-live="polite"><Spinner /> <span>{label}</span></div>
 }
 
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
-  return <Card className="p-10 text-center"><p className="font-medium text-slate-700">{title}</p>{description && <p className="mt-1 muted">{description}</p>}{action && <div className="mt-4 flex justify-center">{action}</div>}</Card>
+  return <Card className="p-0"><Empty className="border-0"><EmptyHeader><EmptyTitle>{title}</EmptyTitle>{description && <EmptyDescription>{description}</EmptyDescription>}</EmptyHeader>{action && <div className="mt-2 flex justify-center">{action}</div>}</Empty></Card>
 }
 
 export function ErrorState({ message, onRetry, onBack }: { message: string; onRetry?: () => void; onBack?: () => void }) {

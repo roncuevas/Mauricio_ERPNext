@@ -4,7 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { Spinner } from './spinner'
 
-export const buttonVariants = cva('button', {
+export const buttonVariants = cva('button inline-flex shrink-0 items-center justify-center gap-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] disabled:pointer-events-none disabled:opacity-50', {
   variants: {
     variant: {
       primary: 'button-primary',
@@ -25,7 +25,7 @@ export const buttonVariants = cva('button', {
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants> & { loading?: boolean }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({ variant = 'primary', size = 'default', fullWidth = false, loading = false, className, disabled, children, ...props }, ref) {
-  return <button ref={ref} className={cn(buttonVariants({ variant, size, fullWidth, className }))} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>{loading ? <Spinner /> : null}{children}</button>
+  return <button ref={ref} data-slot="button" data-variant={variant} data-size={size} className={cn(buttonVariants({ variant, size, fullWidth, className }))} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>{loading ? <Spinner /> : null}{children}</button>
 })
 
 export type ButtonLinkProps = LinkProps & VariantProps<typeof buttonVariants>
