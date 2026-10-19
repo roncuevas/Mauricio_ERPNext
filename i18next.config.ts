@@ -20,7 +20,6 @@ export default defineConfig({
       'src/components/ui.tsx',
       'src/components/uom-editor.tsx',
       'src/components/variant-tree.tsx',
-      'src/pages/catalog-pages.tsx',
       'src/pages/editors.tsx',
       'src/pages/pos-page.tsx',
       'src/pages/quotations-page.tsx',
