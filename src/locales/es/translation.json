@@ -15,7 +15,17 @@
     "never": "Nunca",
     "noResults": "No hay coincidencias.",
     "status": "Estado",
-    "language": "Idioma"
+    "language": "Idioma",
+    "all": "Todos",
+    "company": "Empresa",
+    "brand": "Marca",
+    "itemGroup": "Grupo de artículos",
+    "supplier": "Proveedor",
+    "priceList": "Lista de precios",
+    "uom": "UOM",
+    "type": "Tipo",
+    "product": "Producto",
+    "searchEntity": "Buscar {{entity}}…"
   },
   "language": {
     "spanish": "Español",
@@ -140,6 +150,16 @@
     "posAccessDescription": "Abre el POS para vender, cobrar y revisar tu turno.",
     "openPrices": "Ir a precios",
     "openPos": "Abrir POS"
+  },
+  "pos": {
+    "missingPrice": { "title": "Producto sin precio de venta", "description": "{{itemName}} no tiene un precio válido para la UOM {{uom}}. El producto no se agregó al carrito. Puedes capturar el precio ahora; tu carrito actual quedará guardado.", "selectedUom": "seleccionada", "add": "Agregar precio ahora" },
+    "customPrice": { "title": "Precio personalizado", "description": "{{itemName}}. El precio original permanece como referencia de la lista.", "listPrice": "Precio de lista", "salePrice": "Precio de venta", "customSalePrice": "Precio de venta personalizado", "difference": "{{value}}% frente al precio de lista", "positive": "Captura un precio mayor que cero.", "apply": "Aplicar precio" }
+  },
+  "prices": {
+    "filters": "Filtros de precios", "filtersTitle": "Filtros de precios", "filtersDescription": "Combina filtros sin volver a descargar datos.", "minPrice": "Precio mínimo", "maxPrice": "Precio máximo", "buyingAndSelling": "Compra y venta", "buying": "Compra", "selling": "Venta", "activeAndDisabled": "Activos y deshabilitados", "clearFilters": "Limpiar filtros"
+  },
+  "stock": {
+    "filters": "Filtros de inventario", "filtersTitle": "Filtros de inventario", "filtersDescription": "Filtra existencias por empresa, almacén y producto.", "allCompanies": "Todas las empresas", "warehouse": "Sucursal / almacén", "allWarehouses": "Todos los almacenes", "codeOrName": "Código o nombre", "applyFilters": "Aplicar filtros"
   },
   "cache": {
     "labels": {

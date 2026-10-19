@@ -61,21 +61,31 @@ export default interface Resources {
     },
     "common": {
       "active": "Activo",
+      "all": "Todos",
       "appCaption": "ERPNext local",
       "appName": "Mauricio",
       "back": "Volver",
+      "brand": "Marca",
       "cancel": "Cancelar",
       "close": "Cerrar",
+      "company": "Empresa",
       "disabled": "Deshabilitado",
+      "itemGroup": "Grupo de artículos",
       "language": "Idioma",
       "loading": "Cargando…",
       "never": "Nunca",
       "noResults": "No hay coincidencias.",
+      "priceList": "Lista de precios",
+      "product": "Producto",
       "refresh": "Refrescar",
       "retry": "Reintentar",
       "save": "Guardar",
       "search": "Buscar",
-      "status": "Estado"
+      "searchEntity": "Buscar {{entity}}…",
+      "status": "Estado",
+      "supplier": "Proveedor",
+      "type": "Tipo",
+      "uom": "UOM"
     },
     "connection": {
       "apiKey": "API Key",
@@ -214,6 +224,36 @@ export default interface Resources {
       "unlockSidebar": "Expandir barra lateral",
       "variants": "Variantes"
     },
+    "pos": {
+      "customPrice": {
+        "apply": "Aplicar precio",
+        "customSalePrice": "Precio de venta personalizado",
+        "description": "{{itemName}}. El precio original permanece como referencia de la lista.",
+        "difference": "{{value}}% frente al precio de lista",
+        "listPrice": "Precio de lista",
+        "positive": "Captura un precio mayor que cero.",
+        "salePrice": "Precio de venta",
+        "title": "Precio personalizado"
+      },
+      "missingPrice": {
+        "add": "Agregar precio ahora",
+        "description": "{{itemName}} no tiene un precio válido para la UOM {{uom}}. El producto no se agregó al carrito. Puedes capturar el precio ahora; tu carrito actual quedará guardado.",
+        "selectedUom": "seleccionada",
+        "title": "Producto sin precio de venta"
+      }
+    },
+    "prices": {
+      "activeAndDisabled": "Activos y deshabilitados",
+      "buying": "Compra",
+      "buyingAndSelling": "Compra y venta",
+      "clearFilters": "Limpiar filtros",
+      "filters": "Filtros de precios",
+      "filtersDescription": "Combina filtros sin volver a descargar datos.",
+      "filtersTitle": "Filtros de precios",
+      "maxPrice": "Precio máximo",
+      "minPrice": "Precio mínimo",
+      "selling": "Venta"
+    },
     "settings": {
       "appearance": {
         "colorMode": "Modo de color",
@@ -315,6 +355,16 @@ export default interface Resources {
         "type": "Tipo de usuario",
         "username": "Usuario"
       }
+    },
+    "stock": {
+      "allCompanies": "Todas las empresas",
+      "allWarehouses": "Todos los almacenes",
+      "applyFilters": "Aplicar filtros",
+      "codeOrName": "Código o nombre",
+      "filters": "Filtros de inventario",
+      "filtersDescription": "Filtra existencias por empresa, almacén y producto.",
+      "filtersTitle": "Filtros de inventario",
+      "warehouse": "Sucursal / almacén"
     }
   }
 }

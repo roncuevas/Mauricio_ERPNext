@@ -15,7 +15,17 @@
     "never": "Never",
     "noResults": "No matches.",
     "status": "Status",
-    "language": "Language"
+    "language": "Language",
+    "all": "All",
+    "company": "Company",
+    "brand": "Brand",
+    "itemGroup": "Item group",
+    "supplier": "Supplier",
+    "priceList": "Price list",
+    "uom": "UOM",
+    "type": "Type",
+    "product": "Product",
+    "searchEntity": "Search {{entity}}…"
   },
   "language": {
     "spanish": "Español",
@@ -140,6 +150,16 @@
     "posAccessDescription": "Open the POS to sell, collect payments and review your shift.",
     "openPrices": "Go to prices",
     "openPos": "Open POS"
+  },
+  "pos": {
+    "missingPrice": { "title": "Product has no sale price", "description": "{{itemName}} has no valid price for UOM {{uom}}. The product was not added to the cart. You can enter the price now; your current cart will be kept.", "selectedUom": "selected", "add": "Add price now" },
+    "customPrice": { "title": "Custom price", "description": "{{itemName}}. The original price remains as the list reference.", "listPrice": "List price", "salePrice": "Sale price", "customSalePrice": "Custom sale price", "difference": "{{value}}% versus list price", "positive": "Enter a price greater than zero.", "apply": "Apply price" }
+  },
+  "prices": {
+    "filters": "Price filters", "filtersTitle": "Price filters", "filtersDescription": "Combine filters without downloading data again.", "minPrice": "Minimum price", "maxPrice": "Maximum price", "buyingAndSelling": "Buying and selling", "buying": "Buying", "selling": "Selling", "activeAndDisabled": "Active and disabled", "clearFilters": "Clear filters"
+  },
+  "stock": {
+    "filters": "Inventory filters", "filtersTitle": "Inventory filters", "filtersDescription": "Filter stock by company, warehouse and product.", "allCompanies": "All companies", "warehouse": "Branch / warehouse", "allWarehouses": "All warehouses", "codeOrName": "Code or name", "applyFilters": "Apply filters"
   },
   "cache": {
     "labels": {
