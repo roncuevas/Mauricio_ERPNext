@@ -411,6 +411,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-sidebar-settings-icon .sidebar-icon { width: 1.05rem; height: 1.05rem; }
 .app-sidebar-footer-actions .app-sidebar-theme-toggle { width: 2.65rem; min-width: 2.65rem; min-height: 2.65rem; margin: 0; }
 .app-sidebar-footer-actions .app-sidebar-language-selector { width: 100%; min-width: 0; min-height: 2.65rem; }
+.app-sidebar-footer-actions > .app-sidebar-lock { grid-column: 1 / -1; }
 .stock-controls { margin-bottom: 1rem; padding: 1rem 1.25rem; }
 .stock-filter-grid { display: grid; align-items: end; gap: .85rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stock-filter-grid > .field { min-width: 0; }
