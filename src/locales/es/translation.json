@@ -25,6 +25,9 @@
     "uom": "UOM",
     "type": "Tipo",
     "product": "Producto",
+    "customer": "Cliente",
+    "suppliers": "Proveedores",
+    "edit": "Editar",
     "searchEntity": "Buscar {{entity}}…"
   },
   "language": {
@@ -160,6 +163,10 @@
   },
   "prices": {
     "filters": "Filtros de precios", "filtersTitle": "Filtros de precios", "filtersDescription": "Combina filtros sin volver a descargar datos.", "minPrice": "Precio mínimo", "maxPrice": "Precio máximo", "buyingAndSelling": "Compra y venta", "buying": "Compra", "selling": "Venta", "activeAndDisabled": "Activos y deshabilitados", "clearFilters": "Limpiar filtros"
+  },
+  "pricesPage": {
+    "uomLabel": "UOM:",
+    "noComparablePurchase": "Sin compra comparable", "marginHelp": "Margen bruto: no incluye impuestos, flete ni otros costos", "generalSupplier": "Proveedor general", "gain": "Ganancia", "cost": "Costo", "requiredPrice": "Lista de precios y precio son obligatorios.", "saveError": "No se pudo guardar el precio.", "editPrice": "Editar precio", "addPrice": "Agregar precio", "buying": "Compra", "selling": "Venta", "priceListRequired": "Lista de precios *", "selectPriceList": "Selecciona una lista", "current": "actual", "priceRequired": "Precio *", "currency": "Moneda", "stockUom": "UOM de stock", "customerPlaceholder": "Opcional: precio específico para un cliente", "supplierPlaceholder": "Opcional: precio específico por proveedor", "savePrice": "Guardar precio", "hideItem": "Ocultar {{name}}", "showItem": "Mostrar {{name}}", "template": "Plantilla", "priceCount": "{{count}} precios", "noList": "Sin lista", "general": "General", "title": "Precios por producto", "description": "Jerarquía de plantillas, variantes y precios por UOM o proveedor.", "refresh": "Refrescar precios", "refreshVariantsHint": "Primero refresca el catálogo en Variantes para cargar la jerarquía plantilla → variante.", "goToVariants": "Ir a Variantes", "notDownloaded": "Precios sin descargar.", "downloadHint": "Pulsa “Refrescar precios” para cargar Item Price.", "downloading": "Descargando precios: {{count}}", "updatedCount": "Precios actualizados: {{count}}", "searchPlaceholder": "Buscar plantilla, variante o código…", "searchLabel": "Buscar precios por producto", "updatedAt": "Actualizado: {{date}}", "noDate": "sin fecha", "noSearchResults": "No hay productos para la búsqueda actual.", "cacheUpdateError": "ERPNext guardó el precio, pero no se pudo actualizar la caché local.", "savedFor": "Precio guardado para {{item}}", "productNotFound": "No se encontró el producto en la caché de Variantes.", "backToPrices": "Volver a Precios", "managementDescription": "{{item}} · administra listas, UOM y cliente/proveedor según el tipo.", "existingPrices": "Precios existentes", "addAnother": "Agregar otro precio", "currentPrices": "Precios y clientes/proveedores actuales", "noSavedPrices": "Todavía no hay precios guardados para este producto.", "priceListsError": "No se pudieron cargar las listas de precios; solo se conservará la lista actual del registro."
   },
   "stock": {
     "filters": "Filtros de inventario", "filtersTitle": "Filtros de inventario", "filtersDescription": "Filtra existencias por empresa, almacén y producto.", "allCompanies": "Todas las empresas", "warehouse": "Sucursal / almacén", "allWarehouses": "Todos los almacenes", "codeOrName": "Código o nombre", "applyFilters": "Aplicar filtros"

@@ -25,6 +25,9 @@
     "uom": "UOM",
     "type": "Type",
     "product": "Product",
+    "customer": "Customer",
+    "suppliers": "Suppliers",
+    "edit": "Edit",
     "searchEntity": "Search {{entity}}…"
   },
   "language": {
@@ -160,6 +163,10 @@
   },
   "prices": {
     "filters": "Price filters", "filtersTitle": "Price filters", "filtersDescription": "Combine filters without downloading data again.", "minPrice": "Minimum price", "maxPrice": "Maximum price", "buyingAndSelling": "Buying and selling", "buying": "Buying", "selling": "Selling", "activeAndDisabled": "Active and disabled", "clearFilters": "Clear filters"
+  },
+  "pricesPage": {
+    "uomLabel": "UOM:",
+    "noComparablePurchase": "No comparable purchase", "marginHelp": "Gross margin: excludes taxes, freight and other costs", "generalSupplier": "General supplier", "gain": "Gain", "cost": "Cost", "requiredPrice": "Price list and price are required.", "saveError": "Could not save the price.", "editPrice": "Edit price", "addPrice": "Add price", "buying": "Buying", "selling": "Selling", "priceListRequired": "Price list *", "selectPriceList": "Select a list", "current": "current", "priceRequired": "Price *", "currency": "Currency", "stockUom": "Stock UOM", "customerPlaceholder": "Optional: customer-specific price", "supplierPlaceholder": "Optional: supplier-specific price", "savePrice": "Save price", "hideItem": "Hide {{name}}", "showItem": "Show {{name}}", "template": "Template", "priceCount": "{{count}} prices", "noList": "No list", "general": "General", "title": "Prices by product", "description": "Hierarchy of templates, variants and prices by UOM or supplier.", "refresh": "Refresh prices", "refreshVariantsHint": "First refresh the catalog in Variants to load the template → variant hierarchy.", "goToVariants": "Go to Variants", "notDownloaded": "Prices not downloaded.", "downloadHint": "Press “Refresh prices” to load Item Price.", "downloading": "Downloading prices: {{count}}", "updatedCount": "Prices updated: {{count}}", "searchPlaceholder": "Search template, variant or code…", "searchLabel": "Search prices by product", "updatedAt": "Updated: {{date}}", "noDate": "no date", "noSearchResults": "No products for the current search.", "cacheUpdateError": "ERPNext saved the price, but the local cache could not be updated.", "savedFor": "Price saved for {{item}}", "productNotFound": "Product was not found in the Variants cache.", "backToPrices": "Back to Prices", "managementDescription": "{{item}} · manage lists, UOM and customer/supplier by type.", "existingPrices": "Existing prices", "addAnother": "Add another price", "currentPrices": "Current prices and customers/suppliers", "noSavedPrices": "No prices have been saved for this product yet.", "priceListsError": "Could not load price lists; only the current record's list will be kept."
   },
   "stock": {
     "filters": "Inventory filters", "filtersTitle": "Inventory filters", "filtersDescription": "Filter stock by company, warehouse and product.", "allCompanies": "All companies", "warehouse": "Branch / warehouse", "allWarehouses": "All warehouses", "codeOrName": "Code or name", "applyFilters": "Apply filters"
