@@ -133,7 +133,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   useEffect(() => { if (customers.data && customer && !customers.data.some((entry) => entry.name === customer)) { setCustomer(''); setMessage('El cliente predeterminado ya no está disponible; selecciona otro cliente.') } }, [customer, customers.data])
   useEffect(() => { setOpeningBalances(paymentLines(paymentMethods)); setClosingBalances(paymentLines(paymentMethods)) }, [paymentMethods])
   useEffect(() => { if (!cartFeedback) return; const timer = window.setTimeout(() => setCartFeedback(null), 1800); return () => window.clearTimeout(timer) }, [cartFeedback])
-  useEffect(() => { const onScroll = () => { setShowScrollTop(window.scrollY > 420); setShowMobileTabs(window.scrollY > 240) }; onScroll(); window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll) }, [])
+  useEffect(() => { const onScroll = () => { setShowScrollTop(mobileView === 'products' && window.scrollY > 420); setShowMobileTabs(window.scrollY > 240) }; onScroll(); window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll) }, [mobileView])
   useEffect(() => {
     const existing = openEntries.data?.[0]
     if (!existing || shift || !selectedProfile) return

@@ -102,7 +102,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
         </div>
       </div>
       <div className="mobile-navigation-actions">
-        <button className="menu-lock-button" type="button" onClick={onLock}>Bloquear</button>
+        <button className="menu-lock-button" type="button" aria-label="Bloquear sesión" title="Bloquear sesión" onClick={onLock}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" /></svg></button>
         <button className="menu-button" type="button" aria-expanded={open} aria-controls="mobile-navigation-menu" onClick={() => setOpen((current) => !current)}>
           <span className="menu-button-icon" aria-hidden="true">{open ? '×' : '☰'}</span>
           <span>Menú</span>
