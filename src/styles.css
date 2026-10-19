@@ -728,6 +728,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .menu-button, .menu-lock-button { min-height: 2.65rem; border-radius: .55rem; padding: .45rem .65rem; font-size: .76rem; font-weight: 800; }
   .menu-button { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
   .menu-button-icon { width: 1rem; font-size: 1.05rem; line-height: 1; text-align: center; }
+  .mobile-theme-toggle { display: inline-flex; width: 2.65rem; min-width: 2.65rem; min-height: 2.65rem; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: #64748b; font-size: 1rem; }
+  .mobile-theme-toggle:hover { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
   .menu-lock-button { display: inline-flex; width: 2.65rem; min-width: 2.65rem; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: #64748b; }
   .menu-lock-button svg { width: 1.1rem; height: 1.1rem; }
   .menu-lock-button:hover { border-color: #fecaca; background: #fff1f2; color: #be123c; }
