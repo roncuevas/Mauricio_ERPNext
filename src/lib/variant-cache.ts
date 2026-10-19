@@ -59,13 +59,14 @@ export function getVariantAttributeCoverage(template: VariantItem, variants: Var
 
 export function buildVariantTree(items: VariantItem[]) {
   const children = new Map<string, VariantItem[]>()
+  const itemNames = new Set(items.map((item) => item.name))
   for (const item of items) {
     if (!item.variant_of) continue
     const group = children.get(item.variant_of) ?? []
     group.push(item)
     children.set(item.variant_of, group)
   }
-  const roots = items.filter((item) => !item.variant_of || !items.some((candidate) => candidate.name === item.variant_of))
+  const roots = items.filter((item) => !item.variant_of || !itemNames.has(item.variant_of))
   return { roots, children }
 }
 

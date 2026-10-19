@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultUom, priceForUom, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, priceForUom, priceForUomFromIndex, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -11,5 +11,16 @@ describe('POS catalog helpers', () => {
 
   it('formats a variant price range', () => {
     expect(variantPriceRange([{ name: 'A' }, { name: 'B' }], [{ name: 'P1', item_code: 'A', selling: 1, price_list_rate: 50 }, { name: 'P2', item_code: 'B', selling: 1, price_list_rate: 100 }], undefined, 'MXN')).toContain('50.00')
+  })
+
+  it('indexes selling prices by list and resolves a UOM without scanning the catalog', () => {
+    const index = buildPriceIndex([
+      { name: 'P1', item_code: 'ITEM-1', selling: 1, price_list: 'Standard Selling', price_list_rate: 500, uom: 'Bulto' },
+      { name: 'P2', item_code: 'ITEM-1', selling: 1, price_list: 'Wholesale', price_list_rate: 400, uom: 'Bulto' },
+    ], 'Standard Selling')
+
+    expect(priceForUomFromIndex(item, 'Bulto', index)).toBe(500)
+    expect(index.has('ITEM-1')).toBe(true)
+    expect(index.get('ITEM-1')).toHaveLength(1)
   })
 })

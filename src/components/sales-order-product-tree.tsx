@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { defaultUom, priceForUom } from '../lib/pos-catalog'
+import { buildPriceIndex, defaultUom, priceForUomFromIndex, type PriceIndex } from '../lib/pos-catalog'
 import { buildVariantTree } from '../lib/variant-cache'
 import { searchScore } from '../lib/search'
 import type { ItemPrice, ItemUom, VariantItem } from '../lib/types'
@@ -19,6 +19,8 @@ type ProductTreeProps = {
   onAdd: (item: VariantItem, uom: ItemUom, rate: number) => void
 }
 
+const PAGE_SIZE = 50
+
 function matchesItem(item: VariantItem, query: string) {
   if (!query) return true
   const values = [item.name, item.item_code, item.item_name, item.brand, item.item_group, item.stock_uom, item.sales_uom, ...(((item as { barcodes?: string[] }).barcodes) ?? [])]
@@ -29,14 +31,14 @@ function formatRate(rate: number, currency: string) {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(rate)
 }
 
-function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, disabled, prices, priceList, currency, onToggle, onAdd }: {
+function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, disabled, priceIndex, priceList, currency, onToggle, onAdd }: {
   item: VariantItem
   depth: number
   childrenByParent: Map<string, VariantItem[]>
   visibleNames: Set<string>
   expanded: Set<string>
   disabled: boolean
-  prices: ItemPrice[]
+  priceIndex: PriceIndex
   priceList?: string
   currency: string
   onToggle: (name: string) => void
@@ -47,7 +49,7 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
   const expandedNode = expanded.has(item.name)
   const [selectedUom, setSelectedUom] = useState(() => defaultUom(item).uom)
   const uom = item.uoms?.find((candidate) => candidate.uom === selectedUom) ?? defaultUom(item)
-  const rate = priceForUom(item, uom.uom, prices, priceList)
+  const rate = priceForUomFromIndex(item, uom.uom, priceIndex)
   const visibleChildren = children.filter((child) => visibleNames.has(child.name))
 
   return <div className="price-node">
@@ -71,13 +73,16 @@ function ProductNode({ item, depth, childrenByParent, visibleNames, expanded, di
         </div>}
       </div>
     </div>
-    {expandedNode && visibleChildren.map((child) => <ProductNode key={child.name} item={child} depth={depth + 1} childrenByParent={childrenByParent} visibleNames={visibleNames} expanded={expanded} disabled={disabled} prices={prices} priceList={priceList} currency={currency} onToggle={onToggle} onAdd={onAdd} />)}
+    {expandedNode && visibleChildren.map((child) => <ProductNode key={child.name} item={child} depth={depth + 1} childrenByParent={childrenByParent} visibleNames={visibleNames} expanded={expanded} disabled={disabled} priceIndex={priceIndex} priceList={priceList} currency={currency} onToggle={onToggle} onAdd={onAdd} />)}
   </div>
 }
 
 export function SalesOrderProductTree({ items, prices, priceList, search, disabled = false, currency, onSearchChange, onAdd }: ProductTreeProps) {
   const tree = useMemo(() => buildVariantTree(items), [items])
+  const itemByName = useMemo(() => new Map(items.map((item) => [item.name, item])), [items])
+  const priceIndex = useMemo(() => buildPriceIndex(prices, priceList), [prices, priceList])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [page, setPage] = useState(1)
   const query = search.trim()
   const visibleNames = useMemo(() => {
     const visible = new Set<string>()
@@ -98,20 +103,24 @@ export function SalesOrderProductTree({ items, prices, priceList, search, disabl
     const expandAncestors = (item: VariantItem) => {
       if (!item.variant_of) return
       result.add(item.variant_of)
-      const parent = items.find((candidate) => candidate.name === item.variant_of)
+      const parent = itemByName.get(item.variant_of)
       if (parent) expandAncestors(parent)
     }
     items.filter((item) => matchesItem(item, query)).forEach(expandAncestors)
     return result
-  }, [expanded, items, query])
+  }, [expanded, itemByName, items, query])
   const roots = tree.roots.filter((item) => visibleNames.has(item.name))
+  const visibleRoots = roots.slice(0, page * PAGE_SIZE)
+
+  useEffect(() => setPage(1), [items, query])
 
   return <div className="grid gap-3">
     <div className="relative"><span className="pointer-events-none absolute left-3 top-2.5 text-[var(--color-muted)]" aria-hidden="true">⌕</span><Input className="pl-9" value={search} disabled={disabled} onChange={(event) => onSearchChange(event.target.value)} placeholder="Buscar producto, variante, código, marca, UOM o barcode" aria-label="Buscar producto" /></div>
     <div className="prices-tree overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-      {roots.map((item) => <ProductNode key={item.name} item={item} depth={0} childrenByParent={tree.children} visibleNames={visibleNames} expanded={effectiveExpanded} disabled={disabled} prices={prices} priceList={priceList} currency={currency} onToggle={(name) => setExpanded((current) => { const next = new Set(current); if (next.has(name)) next.delete(name); else next.add(name); return next })} onAdd={onAdd} />)}
+      {visibleRoots.map((item) => <ProductNode key={item.name} item={item} depth={0} childrenByParent={tree.children} visibleNames={visibleNames} expanded={effectiveExpanded} disabled={disabled} priceIndex={priceIndex} priceList={priceList} currency={currency} onToggle={(name) => setExpanded((current) => { const next = new Set(current); if (next.has(name)) next.delete(name); else next.add(name); return next })} onAdd={onAdd} />)}
       {!roots.length && <p className="p-8 text-center text-sm text-[var(--color-muted)]">{items.length ? 'No hay productos que coincidan con la búsqueda.' : 'No hay caché de productos. Refresca Items y Variantes antes de crear la venta.'}</p>}
     </div>
+    {roots.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-[var(--color-muted)]">Mostrando {Math.min(visibleRoots.length, roots.length)} de {roots.length} producto(s) raíz.</p>{visibleRoots.length < roots.length && <Button type="button" variant="secondary" onClick={() => setPage((current) => current + 1)}>Cargar más</Button>}</div>}
     <p className="text-xs text-[var(--color-muted)]">Las plantillas agrupan variantes y no se pueden agregar directamente. Selecciona la UOM de una variante para ver su tarifa en caché antes de agregarla.</p>
   </div>
 }

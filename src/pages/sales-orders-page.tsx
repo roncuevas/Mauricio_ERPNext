@@ -86,14 +86,13 @@ export function SalesOrdersPage({ client, profileId }: { client: Client; profile
   const selectedProfile = profiles.data?.find((row) => row.company === form.company) || profiles.data?.[0]
   useEffect(() => { if (profiles.data?.[0] && !form.company) setForm((current) => ({ ...current, company: profiles.data![0].company || '', currency: profiles.data![0].currency || current.currency, selling_price_list: profiles.data![0].selling_price_list || '', set_warehouse: profiles.data![0].warehouse || '' })) }, [profiles.data, form.company])
   const customers = useQuery({ queryKey: queryKeys.salesOrders.customers(profileId), queryFn: () => readCustomerCatalog(profileId) })
-  const items = useQuery(catalogQueryOptions.item(profileId))
   const variants = useQuery(catalogQueryOptions.variant(profileId))
   const prices = useQuery(catalogQueryOptions.price(profileId))
-  const priceLists = useQuery({ queryKey: queryKeys.prices.lists(profileId), queryFn: async () => (await client.listDocuments<PriceList>('Price List', { fields: ['name', 'selling', 'buying', 'enabled'], pageLength: 200 })).data })
-  const salesCache = useQuery({ queryKey: ['sales-orders-cache', profileId], queryFn: () => readSalesOrderCatalog(profileId) })
-  const orders = useQuery({ queryKey: queryKeys.salesOrders.list(profileId, form.company, date), enabled: Boolean(form.company), queryFn: async () => { const cache = await readSalesOrderCatalog(profileId); return salesOrderBucket(cache, form.company, date)?.salesOrders.map(normalizeSalesOrder) ?? null } })
+  const priceLists = useQuery({ queryKey: queryKeys.prices.lists(profileId), enabled: false, queryFn: async () => (await client.listDocuments<PriceList>('Price List', { fields: ['name', 'selling', 'buying', 'enabled'], pageLength: 200 })).data })
+  const salesCache = useQuery({ queryKey: ['sales-orders-cache', profileId], enabled: !editorRoute, queryFn: () => readSalesOrderCatalog(profileId) })
+  const orders = useQuery({ queryKey: queryKeys.salesOrders.list(profileId, form.company, date), enabled: !editorRoute && Boolean(form.company), queryFn: async () => { const cache = await readSalesOrderCatalog(profileId); return salesOrderBucket(cache, form.company, date)?.salesOrders.map(normalizeSalesOrder) ?? null } })
 
-  const selectedItems = variants.data?.items?.length ? variants.data.items : items.data?.items ?? []
+  const selectedItems = variants.data?.items ?? []
   const visible = useMemo(() => filterSalesOrders(orders.data ?? [], search, status, customerFilter), [orders.data, search, status, customerFilter])
   const totals = salesOrderTotals(form.items)
   const readOnly = form.docstatus === 1 || form.docstatus === 2

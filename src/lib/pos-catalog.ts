@@ -1,12 +1,33 @@
 import { formatMoney } from './pos'
 import type { CachedItem, ItemPrice, ItemUom } from './types'
 
+export type PriceIndex = Map<string, ItemPrice[]>
+
+export function buildPriceIndex(prices: ItemPrice[], priceList?: string): PriceIndex {
+  const index: PriceIndex = new Map()
+  prices.filter((price) => price.selling && (!priceList || price.price_list === priceList)).forEach((price) => {
+    const key = price.item_code || ''
+    if (!key) return
+    index.set(key, [...(index.get(key) ?? []), price])
+  })
+  return index
+}
+
 export function defaultUom(item: CachedItem): ItemUom {
   return item.uoms?.find((uom) => uom.uom === item.sales_uom) ?? item.uoms?.find((uom) => uom.uom === item.stock_uom) ?? { uom: item.stock_uom || item.sales_uom || '', conversion_factor: 1 }
 }
 
 export function priceForUom(item: CachedItem, uom: string, prices: ItemPrice[], priceList?: string) {
   const matches = prices.filter((price) => [item.name, item.item_code].includes(price.item_code) && price.selling && (!priceList || price.price_list === priceList))
+  return priceForUomFromMatches(item, uom, matches)
+}
+
+export function priceForUomFromIndex(item: CachedItem, uom: string, index: PriceIndex) {
+  const matches = [item.name, item.item_code].flatMap((code) => code ? index.get(code) ?? [] : [])
+  return priceForUomFromMatches(item, uom, matches)
+}
+
+function priceForUomFromMatches(item: CachedItem, uom: string, matches: ItemPrice[]) {
   const exact = matches.find((price) => (price.uom || item.stock_uom) === uom)
   if (exact) return Number(exact.price_list_rate ?? 0)
   if (uom === item.stock_uom) return Number(matches.find((price) => !price.uom)?.price_list_rate ?? matches[0]?.price_list_rate ?? 0)
