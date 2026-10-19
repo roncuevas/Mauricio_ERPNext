@@ -63,6 +63,7 @@ export default interface Resources {
       "active": "Activo",
       "appCaption": "ERPNext local",
       "appName": "Mauricio",
+      "back": "Volver",
       "cancel": "Cancelar",
       "close": "Cerrar",
       "disabled": "Deshabilitado",
@@ -71,6 +72,7 @@ export default interface Resources {
       "never": "Nunca",
       "noResults": "No hay coincidencias.",
       "refresh": "Refrescar",
+      "retry": "Reintentar",
       "save": "Guardar",
       "search": "Buscar",
       "status": "Estado"

@@ -3,6 +3,8 @@
     "appName": "Mauricio",
     "appCaption": "ERPNext local",
     "loading": "Cargando…",
+    "retry": "Reintentar",
+    "back": "Volver",
     "close": "Cerrar",
     "cancel": "Cancelar",
     "save": "Guardar",

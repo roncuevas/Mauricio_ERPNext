@@ -15,7 +15,6 @@ export default defineConfig({
   // translating routes, DocTypes, storage keys, query fields or CSS classes.
   lint: {
     ignore: [
-      'src/components/cache-manager-panel.tsx',
       'src/components/metadata-editor.tsx',
       'src/components/pos-drafts-sheet.tsx',
       'src/components/pos-missing-price-dialog.tsx',
@@ -30,8 +29,6 @@ export default defineConfig({
       'src/components/sales-order-product-tree.tsx',
       'src/components/stock-filter-sheet.tsx',
       'src/components/ui.tsx',
-      'src/components/ui/spinner.tsx',
-      'src/components/ui/states.tsx',
       'src/components/uom-editor.tsx',
       'src/components/variant-tree.tsx',
       'src/pages/catalog-pages.tsx',

@@ -14,7 +14,7 @@ const cacheOrder: ManagedCacheId[] = ['products', 'variants', 'uom', 'prices', '
 const contextCacheIds: ManagedCacheId[] = ['salesOrders', 'quotations']
 
 function formatDate(value?: string, language = 'es') {
-  if (!value) return 'Nunca'
+  if (!value) return ''
   const parsed = new Date(value.replace(' ', 'T'))
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString(language === 'en' ? 'en-US' : 'es-MX')
 }
@@ -48,7 +48,8 @@ function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; bu
   return <Card className="settings-cache-card">
     <div className="settings-cache-card-header"><div><p className="settings-eyebrow">{t('cache.local')}</p><h3>{t(`cache.labels.${entry.id}`)}</h3></div><Badge tone={statusTone(entry.status)}>{busy ? t('cache.refreshing') : statusLabel}</Badge></div>
     <p className="settings-cache-description">{entry.description}</p>
-    <dl className="settings-cache-details"><div><dt>{t('cache.lastFetch')}</dt><dd>{formatDate(entry.updatedAt, i18n.language)}</dd></div><div><dt>{t('cache.records')}</dt><dd>{entry.count === undefined ? '—' : entry.count.toLocaleString(i18n.language === 'en' ? 'en-US' : 'es-MX')}</dd></div><div><dt>{t('cache.validity')}</dt><dd>{cacheTtlLabel(entry.id)}</dd></div></dl>
+    <dl className="settings-cache-details"><div><dt>{t('cache.lastFetch')}</dt><dd>{formatDate(entry.updatedAt, i18n.language) || t('common.never')}</dd></div><div><dt>{t('cache.records')}</dt><dd>{entry.count === undefined ? '—' : entry.count.toLocaleString(i18n.language === 'en' ? 'en-US' : 'es-MX')}</dd></div><div><dt>{t('cache.validity')}</dt><dd>{cacheTtlLabel(entry.id)}</dd></div></dl>
+    {/* i18next-instrument-ignore-next-line */}
     <div className="settings-cache-doctypes"><span>DocTypes</span><div>{entry.doctypes.map((doctype) => <span key={doctype}>{doctype}</span>)}</div></div>
     {entry.requiresContext && !entry.updatedAt && <p className="settings-cache-hint">{t('cache.contextHint')}</p>}
     {entry.error && <p className="settings-cache-error" role="alert">{entry.error}</p>}
