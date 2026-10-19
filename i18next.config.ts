@@ -26,7 +26,6 @@ export default defineConfig({
       'src/pages/product-workspace-page.tsx',
       'src/pages/quotations-page.tsx',
       'src/pages/sales-orders-page.tsx',
-      'src/pages/stock-page.tsx',
     ],
   },
   types: {
