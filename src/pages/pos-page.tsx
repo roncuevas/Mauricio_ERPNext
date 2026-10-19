@@ -47,6 +47,7 @@ function ProductPicker({ items, prices, priceList, currency, lines, variantsByTe
 }
 
 export function PosPage({ client, profileId }: { client: Client; profileId: string }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [posPreferences] = useState(() => readPosPreferences(profileId))
   const [profileName, setProfileName] = useState(posPreferences.profileName)
@@ -132,7 +133,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const drafts = useQuery({ queryKey: queryKeys.pos.drafts(profileId, selectedProfile?.name, invoiceMode), enabled: Boolean(shift && selectedProfile && showDrafts && !posSettings.isPending), queryFn: async () => (await client.listDocuments<PosDraftSummary>(invoiceMode, { fields: ['name', 'customer', 'grand_total', 'modified', 'posting_date', 'docstatus'], filters: [['docstatus', '=', 0], ['is_pos', '=', 1], ['pos_profile', '=', selectedProfile!.name]], pageLength: 100, orderBy: 'modified desc' })).data })
 
   useEffect(() => { if (profiles.data?.length && (!profileName || !profiles.data.some((profile) => profile.name === profileName))) setProfileName(profiles.data.find((profile) => profile.name === posPreferences.profileName)?.name ?? profiles.data[0].name) }, [profileName, profiles.data, posPreferences.profileName])
-  useEffect(() => { if (customers.data && customer && !customers.data.some((entry) => entry.name === customer)) { setCustomer(''); setMessage('El cliente predeterminado ya no está disponible; selecciona otro cliente.') } }, [customer, customers.data])
+  useEffect(() => { if (customers.data && customer && !customers.data.some((entry) => entry.name === customer)) { setCustomer(''); setMessage(t('pos.messages.defaultCustomerMissing')) } }, [customer, customers.data, t])
   useEffect(() => { setOpeningBalances(paymentLines(paymentMethods)); setClosingBalances(paymentLines(paymentMethods)) }, [paymentMethods])
   useEffect(() => { if (!cartFeedback) return; const timer = window.setTimeout(() => setCartFeedback(null), 1800); return () => window.clearTimeout(timer) }, [cartFeedback])
   useEffect(() => { const onScroll = () => { setShowScrollTop(mobileView === 'products' && window.scrollY > 420); setShowMobileTabs(window.scrollY > 240) }; onScroll(); window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll) }, [mobileView])
@@ -141,23 +142,23 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     if (!existing || shift || !selectedProfile) return
     client.getCurrentUser().then((currentUser) => {
       if (existing.user && existing.user !== currentUser) {
-        setMessage(`Hay un turno abierto (${existing.name}) para ${existing.user}. Inicia sesión con ese usuario o ciérralo desde ERPNext.`)
+        setMessage(t('pos.messages.shiftOwnedBy', { name: existing.name, user: existing.user }))
         return
       }
       const next = { name: existing.name, profileName: existing.pos_profile || selectedProfile.name, user: currentUser }
-      setShift(next); localStorage.setItem(storageKey(profileId), JSON.stringify(next)); setMessage(`Turno abierto detectado: ${existing.name}`)
-    }).catch(() => setMessage('No se pudo verificar el usuario actual en ERPNext.'))
-  }, [client, openEntries.data, profileId, selectedProfile, shift])
+      setShift(next); localStorage.setItem(storageKey(profileId), JSON.stringify(next)); setMessage(t('pos.messages.shiftDetected', { name: existing.name }))
+    }).catch(() => setMessage(t('pos.messages.userCheckError')))
+  }, [client, openEntries.data, profileId, selectedProfile, shift, t])
   useEffect(() => {
     if (!shift) return
     Promise.all([client.getDocument<{ name: string; status?: string; user?: string }>('POS Opening Entry', shift.name), client.getCurrentUser()]).then(([entry, currentUser]) => {
       if (entry.status && entry.status !== 'Open') {
-        localStorage.removeItem(storageKey(profileId)); setShift(null); setMessage('El turno ya no está abierto en ERPNext.')
+        localStorage.removeItem(storageKey(profileId)); setShift(null); setMessage(t('pos.messages.shiftNoLongerOpen'))
       } else if (entry.user && entry.user !== currentUser) {
-        localStorage.removeItem(storageKey(profileId)); setShift(null); setMessage(`El turno ${entry.name} pertenece a ${entry.user}, no al usuario actual (${currentUser}).`)
+        localStorage.removeItem(storageKey(profileId)); setShift(null); setMessage(t('pos.messages.shiftWrongUser', { name: entry.name, owner: entry.user, user: currentUser }))
       }
-    }).catch(() => { localStorage.removeItem(storageKey(profileId)); setShift(null); setMessage('No se pudo verificar el turno en ERPNext.') })
-  }, [client, profileId, shift])
+    }).catch(() => { localStorage.removeItem(storageKey(profileId)); setShift(null); setMessage(t('pos.messages.shiftCheckError')) })
+  }, [client, profileId, shift, t])
 
   useEffect(() => {
     try {
@@ -175,9 +176,9 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     const rate = priceForUom(pendingPriceResume.item, pendingPriceResume.uom.uom, prices.data.prices, selectedProfile?.selling_price_list)
     if (rate > 0) {
       addConfiguredItem(pendingPriceResume.item, pendingPriceResume.uom, rate)
-      setMessage(`${pendingPriceResume.item.item_name || pendingPriceResume.item.name} agregado con el nuevo precio.`)
+      setMessage(t('pos.messages.itemAddedWithPrice', { item: pendingPriceResume.item.item_name || pendingPriceResume.item.name }))
     } else {
-      setMessage('El precio guardado todavía no coincide con la lista o UOM del POS.')
+      setMessage(t('pos.messages.savedPriceMismatch'))
     }
     setPendingPriceResume(null)
   // The callback is declared below to keep the POS handlers grouped together.
@@ -220,7 +221,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       const result = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled'], filters: [['variant_of', '=', template.name], ['disabled', '=', 0]], pageLength: 100, orderBy: 'item_name asc' })
       const details = await Promise.all(result.data.map(async (item) => { try { return await client.getDocument<CachedItem>('Item', item.name) } catch { return item } }))
       setVariantOptions(details.length ? details : [templateDetail])
-    } catch (error) { setVariantError(error instanceof Error ? error.message : 'No se pudieron cargar las variantes.') } finally { setVariantLoading(false) }
+    } catch (error) { setVariantError(error instanceof Error ? error.message : t('pos.variant.loadError')) } finally { setVariantLoading(false) }
   }
 
   function closeTemplate() { setVariantTemplate(null); setVariantOptions([]); setVariantError('') }
@@ -228,26 +229,26 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   function setActiveShift(next: ActiveShift | null) { setShift(next); if (!next) setMobileView('products'); if (next) localStorage.setItem(storageKey(profileId), JSON.stringify(next)); else localStorage.removeItem(storageKey(profileId)) }
 
   async function openShift() {
-    if (!selectedProfile) return setMessage('Selecciona un POS Profile.')
-    if (methods.isPending || openEntries.isPending) return setMessage('Espera a que carguen los datos del turno.')
-    if (methods.isError || !paymentMethods.length) return setMessage('El POS Profile no tiene métodos de pago válidos. Configúralos en ERPNext antes de abrir.')
+    if (!selectedProfile) return setMessage(t('pos.messages.selectProfile'))
+    if (methods.isPending || openEntries.isPending) return setMessage(t('pos.messages.waitShiftData'))
+    if (methods.isError || !paymentMethods.length) return setMessage(t('pos.messages.noValidPaymentMethods'))
     if (openEntries.data?.[0]) {
       const existing = openEntries.data[0]
       const currentUser = await client.getCurrentUser()
-      if (existing.user && existing.user !== currentUser) return setMessage(`Hay un turno abierto (${existing.name}) para ${existing.user}. Inicia sesión con ese usuario o ciérralo desde ERPNext.`)
+      if (existing.user && existing.user !== currentUser) return setMessage(t('pos.messages.shiftOwnedBy', { name: existing.name, user: existing.user }))
       const next = { name: existing.name, profileName: existing.pos_profile || selectedProfile.name, user: currentUser }
       setActiveShift(next)
-      return setMessage(`Turno abierto detectado: ${existing.name}`)
+      return setMessage(t('pos.messages.shiftDetected', { name: existing.name }))
     }
     setBusy(true); setMessage('')
-    try { const user = await client.getCurrentUser(); const current = currentDateTime(); const balances = openingBalances.length ? openingBalances : paymentLines(paymentMethods); const created = await client.createDocument<{ name: string }>('POS Opening Entry', openingPayload({ profile: selectedProfile, user, openingAt: current.at, balances })); await client.submitDocument('POS Opening Entry', created.name); setActiveShift({ name: created.name, profileName: selectedProfile.name, user }); setPayments(paymentLines(paymentMethods, 0)); setMessage(`Turno abierto: ${created.name}`) } catch (error) { await openEntries.refetch(); setMessage(error instanceof Error ? error.message : 'No se pudo abrir el turno.') } finally { setBusy(false) }
+    try { const user = await client.getCurrentUser(); const current = currentDateTime(); const balances = openingBalances.length ? openingBalances : paymentLines(paymentMethods); const created = await client.createDocument<{ name: string }>('POS Opening Entry', openingPayload({ profile: selectedProfile, user, openingAt: current.at, balances })); await client.submitDocument('POS Opening Entry', created.name); setActiveShift({ name: created.name, profileName: selectedProfile.name, user }); setPayments(paymentLines(paymentMethods, 0)); setMessage(t('pos.messages.shiftOpened', { name: created.name })) } catch (error) { await openEntries.refetch(); setMessage(error instanceof Error ? error.message : t('pos.messages.openShiftError')) } finally { setBusy(false) }
   }
 
   async function prepareClose() {
     if (!selectedProfile || !shift || busy || closingLoading) return
     setShowClosing(true); setClosingLoading(true); setClosingError(''); setMessage('')
     try {
-      if (lines.length) throw new Error('No puedes cerrar el turno con una venta pendiente en el carrito.')
+      if (lines.length) throw new Error(t('pos.messages.pendingCartClose'))
       const user = await client.getCurrentUser()
       const current = currentDateTime()
       const opening = await client.getDocument<PreparedClosing['opening'] & { balance_details?: Array<{ mode_of_payment?: string; opening_amount?: number }> }>('POS Opening Entry', shift.name)
@@ -258,7 +259,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       setPreparedClosing({ opening, periodEndAt: current.at, user, openingBalances: persistedOpeningBalances, invoices: normalized.invoices, payments: normalized.payments, taxes: normalized.taxes })
       setClosingError('')
     } catch (error) {
-      const next = error instanceof Error ? error.message : 'No se pudo preparar el cierre.'
+      const next = error instanceof Error ? error.message : t('pos.messages.prepareCloseError')
       setClosingError(next); setMessage(next)
       if (next.includes('ya no está abierto')) { setActiveShift(null); setShowClosing(false) }
     } finally { setClosingLoading(false) }
@@ -270,7 +271,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     let createdName = closingDocument?.name
     try {
       if (closingDocument?.status === 'Submitted') {
-        setActiveShift(null); setLines([]); setPayments([]); setPreparedClosing(null); setShowClosing(false); setMessage(`Turno cerrado: ${closingDocument.name}`)
+        setActiveShift(null); setLines([]); setPayments([]); setPreparedClosing(null); setShowClosing(false); setMessage(t('pos.messages.shiftClosed', { name: closingDocument.name }))
         return
       }
       validateClosingInput({ profile: selectedProfile, user: preparedClosing.user, opening: preparedClosing.opening, periodEndAt: preparedClosing.periodEndAt, balances: closingBalances, invoices: preparedClosing.invoices, payments: preparedClosing.payments, cartLines: lines })
@@ -280,10 +281,10 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       setClosingDocument({ name: createdName, status: 'Draft' })
       await client.submitDocument('POS Closing Entry', createdName)
       const closed = await client.getDocument<{ status?: string; docstatus?: number }>('POS Closing Entry', createdName)
-      if (closed.status !== 'Submitted' && closed.docstatus !== 1) throw new Error(`El cierre quedó en estado ${closed.status || 'desconocido'}. Revisa POS Closing Entry ${createdName}.`)
-      setClosingDocument({ name: createdName, status: 'Submitted' }); setActiveShift(null); setLines([]); setPayments([]); setPreparedClosing(null); setShowClosing(false); setMessage(`Turno cerrado: ${createdName}`)
+      if (closed.status !== 'Submitted' && closed.docstatus !== 1) throw new Error(t('pos.messages.closingStateError', { status: closed.status || 'desconocido', name: createdName }))
+      setClosingDocument({ name: createdName, status: 'Submitted' }); setActiveShift(null); setLines([]); setPayments([]); setPreparedClosing(null); setShowClosing(false); setMessage(t('pos.messages.shiftClosed', { name: createdName }))
     } catch (error) {
-      const next = error instanceof Error ? error.message : 'No se pudo cerrar el turno.'
+      const next = error instanceof Error ? error.message : t('pos.messages.closeShiftError')
       setClosingError(createdName ? `${next} POS Closing Entry: ${createdName}.` : next); setMessage(next)
       if (createdName) {
         try { const status = await client.getDocument<{ status?: string; docstatus?: number }>('POS Closing Entry', createdName); setClosingDocument({ name: createdName, status: status.status || (status.docstatus === 1 ? 'Submitted' : 'Desconocido') }) } catch { setClosingDocument({ name: createdName, status: 'Desconocido' }) }
@@ -293,41 +294,41 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
 
   function beginPayment() {
     if (!lines.length) return
-    if (!customer) return setMessage('Selecciona un cliente antes de cobrar.')
+    if (!customer) return setMessage(t('pos.messages.selectCustomerToCharge'))
     setShowPayment(true)
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
   async function submitSale() {
-    if (!selectedProfile || !shift) return setMessage('Abre un turno antes de cobrar.')
-    if (!customer) return setMessage('Selecciona un cliente antes de cobrar.')
+    if (!selectedProfile || !shift) return setMessage(t('pos.messages.openShiftToCharge'))
+    if (!customer) return setMessage(t('pos.messages.selectCustomerToCharge'))
     setBusy(true); setMessage('')
-    try { const current = currentDateTime(); const payload = salesInvoicePayload({ profile: selectedProfile, customer, postingDate: current.date, postingTime: current.time, lines, payments, taxes: taxRows, posOpeningEntry: shift.name, invoiceMode }); const name = activeDraftName ?? (await client.createDocument<{ name: string }>(invoiceMode, payload)).name; if (activeDraftName) await client.updateDocument(invoiceMode, activeDraftName, payload); await client.submitDocument(invoiceMode, name); const confirmed = await client.getDocument<{ docstatus?: number }>(invoiceMode, name); if (confirmed.docstatus !== undefined && confirmed.docstatus !== 1) throw new Error(`La venta ${name} no quedó enviada.`); setLines([]); setPayments(paymentLines(paymentMethods)); setShowPayment(false); setActiveDraftName(null); if (!posPreferences.rememberCustomer) setCustomer(''); setMessage(`Venta confirmada: ${name}`); setShowHistory(true); await drafts.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : 'No se pudo confirmar la venta.') } finally { setBusy(false) }
+    try { const current = currentDateTime(); const payload = salesInvoicePayload({ profile: selectedProfile, customer, postingDate: current.date, postingTime: current.time, lines, payments, taxes: taxRows, posOpeningEntry: shift.name, invoiceMode }); const name = activeDraftName ?? (await client.createDocument<{ name: string }>(invoiceMode, payload)).name; if (activeDraftName) await client.updateDocument(invoiceMode, activeDraftName, payload); await client.submitDocument(invoiceMode, name); const confirmed = await client.getDocument<{ docstatus?: number }>(invoiceMode, name); if (confirmed.docstatus !== undefined && confirmed.docstatus !== 1) throw new Error(t('pos.messages.saleNotSubmitted', { name })); setLines([]); setPayments(paymentLines(paymentMethods)); setShowPayment(false); setActiveDraftName(null); if (!posPreferences.rememberCustomer) setCustomer(''); setMessage(t('pos.messages.saleConfirmed', { name })); setShowHistory(true); await drafts.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : t('pos.messages.confirmSaleError')) } finally { setBusy(false) }
   }
 
   async function saveDraft() {
-    if (!selectedProfile || !shift) return setMessage('Abre un turno antes de guardar el carrito.')
-    if (!customer) return setMessage('Selecciona un cliente antes de guardar el carrito.')
-    if (!lines.length) return setMessage('Agrega al menos un producto antes de guardar el carrito.')
+    if (!selectedProfile || !shift) return setMessage(t('pos.messages.openShiftToSave'))
+    if (!customer) return setMessage(t('pos.messages.selectCustomerToSave'))
+    if (!lines.length) return setMessage(t('pos.messages.addProductToSave'))
     setBusy(true); setMessage('')
-    try { const current = currentDateTime(); const payload = draftInvoicePayload({ profile: selectedProfile, customer, postingDate: current.date, postingTime: current.time, lines, taxes: taxRows, posOpeningEntry: shift.name, invoiceMode }); const saved = activeDraftName ? { name: activeDraftName } : await client.createDocument<{ name: string }>(invoiceMode, payload); if (activeDraftName) await client.updateDocument(invoiceMode, activeDraftName, payload); setLines([]); setPayments(paymentLines(paymentMethods)); setShowPayment(false); setActiveDraftName(null); if (!posPreferences.rememberCustomer) setCustomer(''); setMessage(`Carrito guardado como ${saved.name}.`); setShowDrafts(false); await drafts.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : 'No se pudo guardar el carrito.') } finally { setBusy(false) }
+    try { const current = currentDateTime(); const payload = draftInvoicePayload({ profile: selectedProfile, customer, postingDate: current.date, postingTime: current.time, lines, taxes: taxRows, posOpeningEntry: shift.name, invoiceMode }); const saved = activeDraftName ? { name: activeDraftName } : await client.createDocument<{ name: string }>(invoiceMode, payload); if (activeDraftName) await client.updateDocument(invoiceMode, activeDraftName, payload); setLines([]); setPayments(paymentLines(paymentMethods)); setShowPayment(false); setActiveDraftName(null); if (!posPreferences.rememberCustomer) setCustomer(''); setMessage(t('pos.messages.cartSaved', { name: saved.name })); setShowDrafts(false); await drafts.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : t('pos.messages.saveCartError')) } finally { setBusy(false) }
   }
 
   async function resumeDraft(summary: PosDraftSummary) {
-    if (lines.length) return setMessage('Cancela o guarda la venta actual antes de abrir otra.')
+    if (lines.length) return setMessage(t('pos.messages.clearBeforeResume'))
     setBusy(true); setMessage('')
-    try { const draft = await client.getDocument<PosDraftDocument>(invoiceMode, summary.name); if (!draft.items?.length) throw new Error('El borrador no tiene productos.'); setLines(draftToCartLines(draft.items)); setCustomer(draft.customer || ''); setSearchCustomer(''); setPayments(paymentLines(paymentMethods)); setActiveDraftName(draft.name); setShowPayment(false); setShowDrafts(false); setMessage(`Borrador ${draft.name} cargado.`) } catch (error) { setMessage(error instanceof Error ? error.message : 'No se pudo cargar el borrador.') } finally { setBusy(false) }
+    try { const draft = await client.getDocument<PosDraftDocument>(invoiceMode, summary.name); if (!draft.items?.length) throw new Error(t('pos.messages.draftNoItems')); setLines(draftToCartLines(draft.items)); setCustomer(draft.customer || ''); setSearchCustomer(''); setPayments(paymentLines(paymentMethods)); setActiveDraftName(draft.name); setShowPayment(false); setShowDrafts(false); setMessage(t('pos.messages.draftLoaded', { name: draft.name })) } catch (error) { setMessage(error instanceof Error ? error.message : t('pos.messages.loadDraftError')) } finally { setBusy(false) }
   }
 
   async function deleteDraft(draft: PosDraftSummary) {
     setBusy(true); setMessage('')
-    try { await client.deleteDocument(invoiceMode, draft.name); setMessage(`Borrador ${draft.name} descartado.`); await drafts.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : 'No se pudo descartar el borrador.') } finally { setBusy(false) }
+    try { await client.deleteDocument(invoiceMode, draft.name); setMessage(t('pos.messages.draftDiscarded', { name: draft.name })); await drafts.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : t('pos.messages.discardDraftError')) } finally { setBusy(false) }
   }
 
   async function returnSale(name: string) {
-    if (!window.confirm(`¿Crear devolución para ${name}?`)) return
+    if (!window.confirm(t('pos.messages.returnConfirm', { name }))) return
     setBusy(true); setMessage('')
-    try { const invoice = await client.getDocument<{ name: string; customer: string; company: string; pos_profile?: string; items: Array<{ item_code: string; item_name?: string; qty: number; rate: number; uom?: string; warehouse?: string }> }>(invoiceMode, name); const created = await client.createDocument<{ name: string }>(invoiceMode, returnInvoicePayload({ ...invoice, doctype: invoiceMode })); await client.submitDocument(invoiceMode, created.name); setMessage(`Devolución confirmada: ${created.name}`); await history.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : 'No se pudo crear la devolución.') } finally { setBusy(false) }
+    try { const invoice = await client.getDocument<{ name: string; customer: string; company: string; pos_profile?: string; items: Array<{ item_code: string; item_name?: string; qty: number; rate: number; uom?: string; warehouse?: string }> }>(invoiceMode, name); const created = await client.createDocument<{ name: string }>(invoiceMode, returnInvoicePayload({ ...invoice, doctype: invoiceMode })); await client.submitDocument(invoiceMode, created.name); setMessage(t('pos.messages.returnConfirmed', { name: created.name })); await history.refetch() } catch (error) { setMessage(error instanceof Error ? error.message : t('pos.messages.returnError')) } finally { setBusy(false) }
   }
 
   const resolvePosPrice = useCallback(async (item: CachedItem, uom: ItemUom) => {
@@ -351,7 +352,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   }
 
   function PosClosingPanel(props: PosClosingPanelProps) {
-    return <BasePosClosingPanel {...props} open={showClosing} paymentMethods={closingPaymentMethods} summary={preparedSummary} busy={busy || closingLoading} error={closingError || (closingLoading ? 'Consultando turno, facturas y pagos en ERPNext…' : undefined)} onSubmit={props.onClose ?? closeShift} onOpenChange={setShowClosing} />
+    return <BasePosClosingPanel {...props} open={showClosing} paymentMethods={closingPaymentMethods} summary={preparedSummary} busy={busy || closingLoading} error={closingError || (closingLoading ? t('pos.messages.closingLoading') : undefined)} onSubmit={props.onClose ?? closeShift} onOpenChange={setShowClosing} />
   }
 
   return <><section className="pos-workspace"><PageHeader title="POS" description="Caja rápida para turnos, ventas, pagos e inventario." status={<><span>{shift ? `Turno: ${shift.name}` : 'Sin turno abierto'}</span>{selectedProfile && <span>{selectedProfile.name} · {selectedProfile.company} · {selectedProfile.warehouse}</span>}{message && <span className="font-medium text-blue-700">{message}</span>}</>} /><div className="pos-toolbar card"><div className="pos-toolbar-main"><Field label="POS Profile"><Select value={selectedProfile?.name ?? undefined} onValueChange={(value) => { setProfileName(value); setCustomer(posPreferences.defaultCustomer); setSearchCustomer('') }} disabled={Boolean(shift)}><SelectTrigger aria-label="POS Profile" className="pos-shift-selector"><SelectValue placeholder="Selecciona perfil" /></SelectTrigger><SelectContent align="start">{(profiles.data ?? []).map((item) => <SelectItem value={item.name} key={item.name}>{item.name}</SelectItem>)}</SelectContent></Select></Field><PosCustomerPicker enabled={Boolean(shift)} value={selectedCustomer?.customer_name || customer} search={searchCustomer} customers={customers.data ?? []} onSearch={(value) => { setCustomer(""); setSearchCustomer(value) }} onSelect={(name) => { setCustomer(name); setSearchCustomer("") }} /></div><div className="pos-toolbar-actions">{!shift ? <Button onClick={openShift} disabled={busy || !selectedProfile || !paymentMethods.length || methods.isPending || openEntries.isPending}>{busy ? <><Spinner /> Abriendo</> : methods.isPending ? <><Spinner /> Cargando pagos</> : 'Abrir turno'}</Button> : <Button variant="danger" onClick={prepareClose} disabled={busy}>{busy ? <><Spinner /> Cerrando</> : 'Preparar cierre'}</Button>}<Button variant="secondary" onClick={() => setShowHistory((current) => !current)} disabled={!shift}>{showHistory ? 'Ocultar historial' : 'Historial del turno'}</Button><Button variant="secondary" onClick={() => setShowDrafts(true)} disabled={!shift}>Ventas retenidas</Button><Button variant="secondary" onClick={() => navigate('/pos/cotizaciones?profile=' + encodeURIComponent(selectedProfile?.name ?? ''))}>Cotizaciones</Button></div></div>{!profiles.isPending && !profiles.data?.length && <Notice>No hay POS Profiles activos. Configura uno en ERPNext antes de usar la caja.</Notice>}{methods.isError && <Notice>{methods.error instanceof Error ? methods.error.message : 'No se pudieron cargar las formas de pago.'}</Notice>}{!methods.isPending && !methods.data?.length && <Notice tone="warning">ERPNext no devolvió métodos válidos para este POS Profile. Configúralos antes de abrir.</Notice>}{(!methods.isPending && !paymentMethods.length) && <Notice tone="warning">El POS Profile no tiene métodos de pago válidos o no se pudieron leer sus filas. Configúralos en ERPNext antes de abrir.</Notice>}{posSettings.isError && <Notice tone="warning">No se pudo leer POS Settings; se usará Sales Invoice solo como modo compatible.</Notice>}{!catalog.data && <Notice tone="warning">Catálogo sin caché. Ve a Productos y refresca antes de vender.</Notice>}{shift && <PosMobileTabs value={mobileView} count={cartCount} fixed={showMobileTabs} onChange={setMobileView} onOpenDrafts={() => setShowDrafts(true)} onOpenQuotations={() => navigate('/pos/cotizaciones?profile=' + encodeURIComponent(selectedProfile?.name ?? ''))} />}{showScrollTop && <button type="button" className="pos-scroll-top is-visible" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Subir al inicio">↑</button>}{cartFeedback && <div className="pos-cart-feedback" role="status" aria-live="polite">{cartFeedback.text}</div>}{shift && <div className="pos-layout"><div className={`pos-mobile-products ${mobileView === 'products' ? 'is-visible' : ''}`}><ProductPicker items={posItems} prices={prices.data?.prices ?? []} priceList={selectedProfile?.selling_price_list} currency={currency} lines={lines} variantsByTemplate={variantsByTemplate} autoFocus={posPreferences.autoFocusProductSearch} onAdd={addItem} onDecrease={decreaseItem} onOpenTemplate={openTemplate} /></div><div className={`pos-mobile-cart ${mobileView === 'cart' ? 'is-visible' : ''}`}><div className="pos-sale-column"><Cart lines={lines} taxRows={taxRows} currency={currency} canEditRate={canEditRate} onEditPrice={(index) => { setPriceLineIndex(index); setShowPriceSheet(true) }} onChange={(index, patch) => setLines((current) => current.map((line, lineIndex) => lineIndex === index ? { ...line, ...patch } : line))} onRemove={(index) => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))} />{showPayment && <Payments methods={paymentMethods} payments={payments} total={totals.total} currency={currency} onChange={updatePayment} />}<div className="pos-sale-actions">{showPayment ? <Button fullWidth onClick={submitSale} disabled={busy || !lines.length}>{busy ? <><Spinner /> Confirmando</> : `Confirmar cobro ${money(totals.total, currency)}`}</Button> : <Button fullWidth onClick={beginPayment} disabled={busy || !lines.length}>Cobrar {money(totals.total, currency)}</Button>}<Button fullWidth onClick={saveDraft} disabled={busy || !lines.length}>{activeDraftName ? 'Guardar cambios' : 'Guardar carrito'}</Button><Button fullWidth variant="secondary" onClick={() => { setLines([]); setPayments([]); setShowPayment(false); setActiveDraftName(null) }} disabled={!lines.length}>Cancelar venta</Button></div></div></div></div>}{variantTemplate && <PosVariantSheet template={variantTemplate} variants={variantOptions} prices={prices.data?.prices ?? []} priceList={selectedProfile?.selling_price_list} currency={currency} open={Boolean(variantTemplate)} loading={variantLoading} error={variantError} onClose={closeTemplate} onAdd={(item, uom, rate) => { addConfiguredItem(item, uom, rate); closeTemplate() }} resolvePrice={resolvePosPrice} onMissingPrice={(item, uom) => setMissingPrice({ item, uom })} />}{showClosing && shift && <PosClosingPanel paymentMethods={paymentMethods} balances={closingBalances} busy={busy} onChange={setClosingBalances} onClose={closeShift} />}{showHistory && shift && <SaleHistory sales={history.data ?? []} loading={history.isPending} error={history.error instanceof Error ? history.error.message : undefined} currency={currency} onRefresh={() => history.refetch()} onReturn={returnSale} />}{!shift && selectedProfile && <section className="pos-opening card"><div className="pos-section-heading"><div><h2>Apertura de turno</h2><span>{selectedProfile.company} · {selectedProfile.warehouse}</span></div><span>Fondo inicial</span></div><div className="pos-opening-lines">{paymentMethods.map((method) => <Field label={method.mode_of_payment} key={method.mode_of_payment}><Input type="number" min="0" step="0.01" value={openingBalances.find((line) => line.modeOfPayment === method.mode_of_payment)?.amount ?? 0} onChange={(event) => setOpeningBalances((current) => paymentMethods.map((candidate) => ({ modeOfPayment: candidate.mode_of_payment, amount: candidate.mode_of_payment === method.mode_of_payment ? Number(event.target.value) : current.find((line) => line.modeOfPayment === candidate.mode_of_payment)?.amount ?? 0 })))} /></Field>)}</div><p className="muted">ERPNext controla el turno y la conciliación. El cobro permanece bloqueado hasta abrirlo.</p></section>}</section>{shift && selectedProfile && <PosDraftsSheet drafts={drafts.data ?? []} open={showDrafts} loading={drafts.isPending || busy} error={drafts.error instanceof Error ? drafts.error.message : undefined} currency={currency} onOpenChange={setShowDrafts} onResume={resumeDraft} onDelete={deleteDraft} />}<PosPriceSheet line={priceLine} currency={currency} canEdit={canEditRate} open={showPriceSheet} onClose={() => setShowPriceSheet(false)} onApply={applyManualRate} /><PosMissingPriceDialog itemName={missingPrice?.item.item_name || missingPrice?.item.name || ''} uom={missingPrice?.uom.uom || ''} open={Boolean(missingPrice)} onOpenChange={(open) => { if (!open) setMissingPrice(null) }} onAddPrice={addMissingPrice} /></>
