@@ -366,8 +366,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .mobile-language-selector .ui-select-chevron { display: none; }
 .mobile-navigation-menu-footer { display: flex; justify-content: flex-end; margin-top: auto; padding: 1rem .75rem .35rem; }
 .desktop-navigation-stack { display: grid; gap: .55rem; }
-.navigation-home-link { align-items: center; gap: .55rem; }
+.navigation-home-link { display: flex; min-width: 0; align-items: center; gap: .55rem; border: 1px solid transparent; border-radius: .65rem; padding: .55rem .65rem; color: var(--color-muted); font-size: .68rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; transition: background .15s ease, border-color .15s ease, color .15s ease; }
 .navigation-home-link::before { display: none; }
+.navigation-home-link:hover { border-color: var(--color-border-subtle); background: var(--color-surface-muted); color: var(--color-heading); }
+.navigation-home-link[aria-current="page"] { border-color: var(--color-accent); background: var(--color-primary-soft); color: var(--color-primary-hover); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 8%, transparent); }
+.navigation-home-link > .sidebar-icon { color: var(--color-primary); }
 .navigation-home-link > .sidebar-icon { width: 1.15rem; height: 1.15rem; flex-basis: 1.15rem; }
 .app-shell-sidebar-collapsed .navigation-home-link { justify-content: center; padding-inline: .5rem; }
 .app-shell-sidebar-collapsed .navigation-home-label { display: none; }
