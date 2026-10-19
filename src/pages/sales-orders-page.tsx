@@ -73,11 +73,13 @@ export function SalesOrdersPage({ client, profileId }: { client: Client; profile
 
   function navigateToEditor(name?: string) {
     const suffix = name ? `/${encodeURIComponent(name)}/editar` : '/nueva'
+    setPanelOpen(false)
     navigate(`${suffix === '/nueva' ? '/pos/ventas/nueva' : `/pos/ventas${suffix}`}?date=${encodeURIComponent(date)}&returnTo=${encodeURIComponent(listUrl())}`)
   }
 
   function leaveEditor() {
-    navigate(returnTo ? decodeURIComponent(returnTo) : '/pos/ventas')
+    setPanelOpen(false)
+    navigate(returnTo || '/pos/ventas')
   }
 
   const profiles = useQuery({ queryKey: queryKeys.salesOrders.profiles(profileId), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'disabled'], pageLength: 100 })).data.filter((row) => !row.disabled) })
@@ -105,10 +107,8 @@ export function SalesOrdersPage({ client, profileId }: { client: Client; profile
     setProductSearch('')
     if (!routeName) {
       setForm(blankForm(selectedProfile, new URLSearchParams(location.search).get('date') || date))
-      setPanelOpen(true)
       return
     }
-    setPanelOpen(true)
     void client.getDocument<SalesOrderSummary>('Sales Order', decodeURIComponent(routeName)).then((document) => {
       const normalized = normalizeSalesOrder(document)
       setForm({ ...blankForm(selectedProfile, normalized.transaction_date), ...normalized, items: normalized.items ?? [] })
