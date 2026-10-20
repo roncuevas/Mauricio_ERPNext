@@ -149,7 +149,7 @@
     "cacheFetch": "Caches and fetch",
     "quickActions": "Quick actions",
     "quickActionsDescription": "Update data from the cache tab whenever needed.",
-    "updateStats": "Refresh stats",
+    "updateStats": "Refresh stats", "newSale": "New sale", "openShift": "Open shift", "managePrices": "Manage prices",
     "noCaches": "No caches have been downloaded yet. Open “Caches and fetch” and press “Refresh all”."
     ,"pricesAccessTitle": "Prices",
     "pricesAccessDescription": "Review and manage catalog prices.",
@@ -239,6 +239,7 @@
     "updated": "Updated",
     "stale": "Possibly stale",
     "partialError": "Partial error",
+    "retryErrors": "Retry errors",
     "removedField": "omitted field",
     "withoutCache": "No cache",
     "all": "Refresh all",
@@ -259,6 +260,8 @@
     "failed_other": "{{count}} caches could not be updated. Previous data was kept.",
     "readError": "Could not read cache status."
   },
+  "connectionStatus": { "checking": "Checking connection", "online": "Connected", "offline": "Offline" },
+  "globalSearch": { "open": "Search", "shortcut": "⌘K", "title": "Search local cache", "description": "Products, prices, customers and sales available without network.", "placeholder": "Type to search…", "noResults": "No matches.", "noCache": "No local data available.", "products": "Product", "price": "Price", "prices": "Price", "customers": "Customer", "sales": "Sale", "unknownCustomer": "Unnamed customer" },
   "settings": {
     "title": "Settings",
     "description": "Manage your connection and customize the application.",

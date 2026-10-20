@@ -94,6 +94,7 @@ export type ItemPrice = {
   supplier?: string
   valid_from?: string
   valid_upto?: string
+  modified?: string
 }
 
 export type ItemPriceCatalogCache = {

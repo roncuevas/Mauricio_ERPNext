@@ -51,7 +51,7 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
     </>}
     <Tabs defaultValue="summary" className="home-tabs">
       <TabsList aria-label={t('home.summary')}><TabsTrigger value="summary">{t('home.summary')}</TabsTrigger><TabsTrigger value="caches">{t('home.cacheFetch')}</TabsTrigger></TabsList>
-      <TabsContent value="summary"><Card><Empty className="home-quick-actions border-0"><EmptyHeader><EmptyTitle>{t('home.quickActions')}</EmptyTitle><EmptyDescription>{t('home.quickActionsDescription')}</EmptyDescription></EmptyHeader><div className="home-quick-links"><Button type="button" variant="secondary" onClick={() => { void queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }) }}>{t('home.updateStats')}</Button></div></Empty></Card></TabsContent>
+      <TabsContent value="summary"><Card><Empty className="home-quick-actions border-0"><EmptyHeader><EmptyTitle>{t('home.quickActions')}</EmptyTitle><EmptyDescription>{t('home.quickActionsDescription')}</EmptyDescription></EmptyHeader><div className="home-quick-links"><ButtonLink to="/pos/ventas/nueva">{t('home.newSale')}</ButtonLink><ButtonLink to="/pos/turnos" variant="secondary">{t('home.openShift')}</ButtonLink><ButtonLink to="/prices" variant="secondary">{t('home.managePrices')}</ButtonLink><Button type="button" variant="secondary" onClick={() => { void queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }) }}>{t('home.updateStats')}</Button></div></Empty></Card></TabsContent>
       <TabsContent value="caches"><CacheManagerPanel client={client} profileId={profileId} onChanged={refreshSummary} /></TabsContent>
     </Tabs>
     {!hasCache && !query.isPending && <Notice tone="info">{t('home.noCaches')}</Notice>}

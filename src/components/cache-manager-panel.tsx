@@ -42,7 +42,7 @@ function relatedQueryKeys(profileId: string, id: ManagedCacheId) {
   return keys
 }
 
-function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; busy: boolean; onRefresh: (id: ManagedCacheId) => void }) {
+function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; busy: boolean; onRefresh: (id: ManagedCacheId, retryOnly?: boolean) => void }) {
   const { t, i18n } = useTranslation()
   const statusLabel = entry.status === 'fresh' ? t('cache.updated') : entry.status === 'stale' ? t('cache.stale') : entry.status === 'error' ? t('cache.partialError') : t('cache.withoutCache')
   return <Card className="settings-cache-card">
@@ -53,7 +53,7 @@ function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; bu
     <div className="settings-cache-doctypes"><span>DocTypes</span><div>{entry.doctypes.map((doctype) => <span key={doctype}>{doctype}</span>)}</div></div>
     {entry.requiresContext && !entry.updatedAt && <p className="settings-cache-hint">{t('cache.contextHint')}</p>}
     {entry.error && <div className="settings-cache-error" role="alert"><p>{entry.error}</p>{entry.issues?.map((issue, index) => <p key={`${issue.doctype}-${issue.operation}-${index}`}><strong>{issue.doctype}</strong>: {issue.message}{issue.field ? ` (${t('cache.removedField')}: ${issue.field})` : ''}</p>)}</div>}
-    <div className="settings-cache-actions"><RefreshButton label={`${t('common.refresh')} ${t(`cache.labels.${entry.id}`)}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} /><span className="settings-cache-attempt">{formatDate(entry.lastAttemptAt, i18n.language)}</span></div>
+    <div className="settings-cache-actions"><RefreshButton label={`${t('common.refresh')} ${t(`cache.labels.${entry.id}`)}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} />{entry.error && entry.issues?.length ? <Button type="button" variant="secondary" size="compact" disabled={busy} onClick={() => onRefresh(entry.id, true)}>{t('cache.retryErrors')}</Button> : null}<span className="settings-cache-attempt">{formatDate(entry.lastAttemptAt, i18n.language)}</span></div>
   </Card>
 }
 
@@ -71,12 +71,12 @@ export function CacheManagerPanel({ client, profileId, activeProfile, onChanged 
     await Promise.all(relatedQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' })))
   }
 
-  const refresh = useMutation({ mutationFn: async (id: ManagedCacheId) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress)), onSuccess: async (_result, id) => { await invalidateRelated(id); await overview.refetch(); onChanged?.(); setMessage(t('cache.updateMessage', { label: t(`cache.labels.${id}`) })) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : t('errors.unknown')); await overview.refetch(); onChanged?.() } })
+  const refresh = useMutation({ mutationFn: async ({ id, retryOnly }: { id: ManagedCacheId; retryOnly?: boolean }) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress), retryOnly), onSuccess: async (_result, variables) => { await invalidateRelated(variables.id); await overview.refetch(); onChanged?.(); setMessage(t('cache.updateMessage', { label: t(`cache.labels.${variables.id}`) })) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : t('errors.unknown')); await overview.refetch(); onChanged?.() } })
 
-  async function refreshOne(id: ManagedCacheId) {
+  async function refreshOne(id: ManagedCacheId, retryOnly = false) {
     if (contextCacheIds.includes(id) && !activeProfile?.company) { setError(t('cache.contextRequired')); return }
     setError(''); setBusyIds((current) => [...current, id])
-    try { await refresh.mutateAsync(id) } finally { setBusyIds((current) => current.filter((value) => value !== id)) }
+    try { await refresh.mutateAsync({ id, retryOnly }) } finally { setBusyIds((current) => current.filter((value) => value !== id)) }
   }
 
   async function refreshAll() {

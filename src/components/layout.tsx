@@ -5,6 +5,8 @@ import { useTheme } from './theme-provider'
 import { featureFlags } from '../lib/feature-flags'
 import { WorkspaceNavigation } from './workspace-navigation'
 import { LanguageSelector } from './language-selector'
+import { ConnectionStatus } from './connection-status'
+import type { createErpNextClient } from '../lib/erpnext'
 import { useTranslation } from 'react-i18next'
 import { Boxes, ChevronDown, ChevronLeft, ChevronRight, House, LayoutDashboard, LockKeyhole, LogOut, Menu, Moon, Settings, Sun, Warehouse, X, type LucideIcon } from 'lucide-react'
 
@@ -100,7 +102,7 @@ export function DesktopNavigation({ collapsed = false }: { collapsed?: boolean }
   return <div className="desktop-navigation-stack"><NavLink to="/" className="navigation-home-link"><SidebarIcon name="home" /><span className="navigation-home-label">{t('navigation.home')}</span></NavLink><NavigationGroups collapsed={collapsed} /></div>
 }
 
-export function MobileNavigation({ onLock }: { onLock: () => void }) {
+export function MobileNavigation({ onLock, client }: { onLock: () => void; client: ReturnType<typeof createErpNextClient> }) {
   const { t } = useTranslation()
   const translate = (key: string) => String((t as unknown as (key: string) => unknown)(key))
   const location = useLocation()
@@ -121,6 +123,7 @@ export function MobileNavigation({ onLock }: { onLock: () => void }) {
         <div className="mobile-navigation-heading">
           <strong>{currentPage}</strong>
           <span>{t('common.appName')}</span>
+          <ConnectionStatus client={client} />
         </div>
       </div>
       <div className="mobile-navigation-actions">

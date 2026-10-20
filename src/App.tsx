@@ -5,6 +5,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button, IconButton, Spinner } from './components/ui'
 import { DesktopNavigation, MobileNavigation, NavLink, PageLayout, SidebarIcon, ThemeModeToggle } from './components/layout'
 import { ConnectionScreen } from './components/connection-screen'
+import { ConnectionStatus } from './components/connection-status'
+import { GlobalSearch } from './components/global-search'
 import { LanguageSelector } from './components/language-selector'
 import { RouteErrorBoundary } from './components/route-error-boundary'
 import { createErpNextClient } from './lib/erpnext'
@@ -97,14 +99,14 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
   const lockSession = () => { setConfirmLock(false); onLock() }
   return <div className={`min-h-screen lg:flex${sidebarCollapsed ? ' app-shell-sidebar-collapsed' : ''}`}>
     <LocalCachePrefetch profileId={connection.id} />
-    <MobileNavigation onLock={requestLock} />
+    <MobileNavigation onLock={requestLock} client={client} />
     <aside className="app-sidebar border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
       <div className="app-sidebar-brand"><img className="app-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} /><div className="app-sidebar-brand-copy"><p className="app-brand-name">{t('common.appName')}</p><p className="app-brand-caption">{t('common.appCaption')}</p></div><IconButton className="app-sidebar-collapse-toggle" type="button" variant="secondary" label={sidebarCollapsed ? t('navigation.unlockSidebar') : t('navigation.lockSidebar')} aria-pressed={sidebarCollapsed} onClick={() => setAppPreferences(writeAppPreferences({ ...appPreferences, sidebarCollapsed: !sidebarCollapsed }))} icon={<SidebarIcon name={sidebarCollapsed ? 'chevronRight' : 'chevronLeft'} />} /></div>
-      <div className="app-sidebar-profile"><span className="app-sidebar-eyebrow">{t('navigation.activeConnection')}</span><strong title={connection.label}>{connection.label}</strong><small title={connection.baseUrl}>{connection.baseUrl.replace(/^https?:\/\//, '')}</small></div>
+      <div className="app-sidebar-profile"><span className="app-sidebar-eyebrow">{t('navigation.activeConnection')}</span><strong title={connection.label}>{connection.label}</strong><small title={connection.baseUrl}>{connection.baseUrl.replace(/^https?:\/\//, '')}</small><ConnectionStatus client={client} /></div>
       <nav className="app-sidebar-nav" aria-label={t('navigation.main')}><DesktopNavigation collapsed={sidebarCollapsed} /></nav>
       <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings" className="app-sidebar-settings-link" ariaLabel={t('navigation.settings')}><span className="app-sidebar-settings-icon"><SidebarIcon name="settings" /></span><span className="app-sidebar-settings-label">{t('navigation.settings')}</span></NavLink><ThemeModeToggle /><LanguageSelector compact={sidebarCollapsed} className="app-sidebar-language-selector" /><button className="app-sidebar-lock" type="button" aria-label={t('navigation.lock')} onClick={requestLock}><span>{t('navigation.lock')}</span><SidebarIcon name="logout" /></button></div></div>
     </aside>
-    <main className="min-w-0 flex-1"><RouteErrorBoundary onLock={requestLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></main>}><Routes><Route element={<PageLayout client={client} />}>
+    <main className="min-w-0 flex-1"><GlobalSearch profileId={connection.id} /><RouteErrorBoundary onLock={requestLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></main>}><Routes><Route element={<PageLayout client={client} />}>
         <Route path="/" element={<DefaultLandingPage client={client} profileId={connection.id} route={appPreferences.landingRoute} />} />
         <Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} />
         <Route path="/pos/ventas" element={<SalesOrdersPage client={client} profileId={connection.id} />} />

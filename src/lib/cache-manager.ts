@@ -164,18 +164,21 @@ async function safeRead<T>(reader: () => Promise<T | null>) {
   try { return await reader() } catch { return null }
 }
 
-async function loadItems(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void): Promise<ItemCatalogCache> {
+async function loadItems(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void, since?: string, existingItems: CachedItem[] = []): Promise<ItemCatalogCache> {
   const items: CachedItem[] = []
   let start = 0
   while (true) {
     onProgress?.(`Descargando productos: ${items.length}`)
-    const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled'], start, pageLength: 500, orderBy: 'modified desc' })
+    const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'modified'], ...(since ? { filters: [['modified', '>', since] as [string, string, unknown]] } : {}), start, pageLength: 500, orderBy: 'modified desc' })
     items.push(...batch.data)
     if (batch.data.length < 500) break
     start += batch.data.length
   }
   const details = await readItemSearchDetails(client, items, (message) => onProgress?.(message))
-  return { profileId, updatedAt: now(), items: items.map((item) => ({ ...item, ...(details[item.name] ?? { barcodes: [] }) })) }
+  const changed = items.map((item) => ({ ...item, ...(details[item.name] ?? { barcodes: [] }) }))
+  const byName = new Map(existingItems.map((item) => [item.name, item]))
+  changed.forEach((item) => byName.set(item.name, { ...byName.get(item.name), ...item }))
+  return { profileId, updatedAt: now(), items: Array.from(byName.values()) }
 }
 
 async function loadVariants(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void): Promise<VariantCatalogCache> {
@@ -251,7 +254,8 @@ export async function readHomeCacheData(profileId: string): Promise<HomeCacheDat
 }
 
 async function refreshProducts(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void) {
-  const next = await loadItems(client, profileId, onProgress)
+  const cached = await readItemCatalog(profileId)
+  const next = await loadItems(client, profileId, onProgress, cached?.updatedAt, cached?.items)
   await writeItemCatalog(next)
   const variantCache = await readVariantCatalog(profileId)
   if (!variantCache?.items.length) await writeVariantCatalog({ profileId, updatedAt: next.updatedAt, items: next.items as VariantItem[] })
@@ -259,8 +263,11 @@ async function refreshProducts(client: ErpNextClient, profileId: string, onProgr
 }
 
 async function refreshPrices(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void) {
-  const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => onProgress?.(`Descargando precios: ${count}`))
-  const next: ItemPriceCatalogCache = { profileId, updatedAt: now(), prices }
+  const cached = await readItemPriceCatalog(profileId)
+  const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto', 'modified'], ...(cached ? { filters: [['modified', '>', cached.updatedAt] as [string, string, unknown]] } : {}), orderBy: 'item_code asc, price_list asc' }, (count) => onProgress?.(`${cached ? 'Sincronizando' : 'Descargando'} precios: ${count}`))
+  const byName = new Map((cached?.prices ?? []).map((price) => [price.name, price]))
+  prices.forEach((price) => byName.set(price.name, { ...byName.get(price.name), ...price }))
+  const next: ItemPriceCatalogCache = { profileId, updatedAt: now(), prices: Array.from(byName.values()) }
   return writeItemPriceCatalog(next)
 }
 
@@ -269,24 +276,26 @@ async function refreshPriceLists(client: ErpNextClient, profileId: string) {
   return priceListStore.write({ profileId, updatedAt: now(), data: { lists } })
 }
 
-async function refreshPosContext(client: ErpNextClient, profileId: string): Promise<CacheRefreshOutcome> {
+async function refreshPosContext(client: ErpNextClient, profileId: string, retryOnly = false): Promise<CacheRefreshOutcome> {
   const previous = await readSnapshot(posContextStore, profileId)
   const issues: CacheIssue[] = []
-  const profileResult = await listWithFieldFallback<PosProfile>(client, 'POS Profile', profileFields, { pageLength: 100, orderBy: 'name asc' })
+  const targets = new Set(previous?.data.issues?.map((issue) => issue.doctype) ?? [])
+  const profileResult = retryOnly && previous && !targets.has('POS Profile') ? { data: previous.data.profiles, issues: [] } : await listWithFieldFallback<PosProfile>(client, 'POS Profile', profileFields, { pageLength: 100, orderBy: 'name asc' })
   issues.push(...profileResult.issues)
   const profiles = activeRows(profileResult.data.length ? profileResult.data : previous?.data.profiles ?? [])
   let settings = previous?.data.settings ?? {}
-  try { settings = await client.getDocument<{ invoice_type?: 'Sales Invoice' | 'POS Invoice' }>('POS Settings', 'POS Settings') } catch (error) { issues.push({ doctype: 'POS Settings', operation: 'read', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: false }) }
+  if (!retryOnly || targets.has('POS Settings') || !previous) { try { settings = await client.getDocument<{ invoice_type?: 'Sales Invoice' | 'POS Invoice' }>('POS Settings', 'POS Settings') } catch (error) { issues.push({ doctype: 'POS Settings', operation: 'read', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: false }) } }
   const paymentMethods: Record<string, PosPaymentMethod[]> = {}
   const taxTemplates: Record<string, PosTaxTemplate> = {}
   for (const profile of profiles) {
     const previousPayments = previous?.data.paymentMethods[profile.name] ?? []
-    try {
+    if (retryOnly && previous && !targets.has('POS Payment Method')) paymentMethods[profile.name] = previousPayments
+    else try {
       const full = await client.getDocument<PosProfile>('POS Profile', profile.name)
       if (full.payments?.length) paymentMethods[profile.name] = full.payments
       else paymentMethods[profile.name] = (await client.listDocuments<PosPaymentMethod>('POS Payment Method', { fields: ['name', 'parent', 'parenttype', 'parentfield', 'mode_of_payment', 'default', 'allow_in_returns'], filters: [['parent', '=', profile.name], ['parenttype', '=', 'POS Profile'], ['parentfield', '=', 'payments']], pageLength: 100, orderBy: 'idx asc' })).data
     } catch (error) { paymentMethods[profile.name] = previousPayments; issues.push({ doctype: 'POS Payment Method', operation: `read:${profile.name}`, message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
-    if (profile.taxes_and_charges) {
+    if (profile.taxes_and_charges && (!retryOnly || targets.has('Sales Taxes and Charges Template') || !previous)) {
       try { taxTemplates[profile.taxes_and_charges] = await client.getDocument<PosTaxTemplate>('Sales Taxes and Charges Template', profile.taxes_and_charges) } catch (error) { const previousTax = previous?.data.taxTemplates[profile.taxes_and_charges]; if (previousTax) taxTemplates[profile.taxes_and_charges] = previousTax; issues.push({ doctype: 'Sales Taxes and Charges Template', operation: `read:${profile.taxes_and_charges}`, message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
     }
   }
@@ -295,21 +304,22 @@ async function refreshPosContext(client: ErpNextClient, profileId: string): Prom
   return { issues: issues.length ? issues : undefined }
 }
 
-async function refreshShifts(client: ErpNextClient, profileId: string): Promise<CacheRefreshOutcome> {
+async function refreshShifts(client: ErpNextClient, profileId: string, retryOnly = false): Promise<CacheRefreshOutcome> {
   const previous = await readSnapshot(shiftStore, profileId)
   const issues: CacheIssue[] = []
+  const targets = new Set(previous?.data.issues?.map((issue) => issue.doctype) ?? [])
   let user = previous?.data.user ?? ''
-  try { user = await client.getCurrentUser() } catch (error) { issues.push({ doctype: 'User', operation: 'current', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
-  const profileResult = await listWithFieldFallback<PosProfile>(client, 'POS Profile', profileFields, { pageLength: 100, orderBy: 'name asc' })
+  if (!retryOnly || targets.has('User') || !previous) { try { user = await client.getCurrentUser() } catch (error) { issues.push({ doctype: 'User', operation: 'current', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) } }
+  const profileResult = retryOnly && previous && !targets.has('POS Profile') ? { data: previous.data.profiles, issues: [] } : await listWithFieldFallback<PosProfile>(client, 'POS Profile', profileFields, { pageLength: 100, orderBy: 'name asc' })
   issues.push(...profileResult.issues)
   const profiles = activeRows(profileResult.data.length ? profileResult.data : previous?.data.profiles ?? [])
   let openings = previous?.data.openings ?? []
-  try { openings = (await client.listDocuments<PosOpeningEntry>('POS Opening Entry', { fields: openingFields, pageLength: 100, orderBy: 'creation desc' })).data.filter((entry) => entry.status === 'Open') } catch (error) { issues.push({ doctype: 'POS Opening Entry', operation: 'list', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
+  if (!retryOnly || targets.has('POS Opening Entry') || !previous) { try { openings = (await client.listDocuments<PosOpeningEntry>('POS Opening Entry', { fields: openingFields, pageLength: 100, orderBy: 'creation desc' })).data.filter((entry) => entry.status === 'Open') } catch (error) { issues.push({ doctype: 'POS Opening Entry', operation: 'list', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) } }
   await shiftStore.write({ profileId, updatedAt: now(), data: { user, profiles, openings, issues: issues.length ? issues : undefined } })
   return { issues: issues.length ? issues : undefined }
 }
 
-export async function refreshManagedCache(id: ManagedCacheId, context: ManagedRefreshContext, onProgress?: (message: string) => void) {
+export async function refreshManagedCache(id: ManagedCacheId, context: ManagedRefreshContext, onProgress?: (message: string) => void, retryOnly = false) {
   const { profileId, activeProfile, date } = context
   switch (id) {
     case 'products': return refreshProducts(context.client, profileId, onProgress)
@@ -328,8 +338,8 @@ export async function refreshManagedCache(id: ManagedCacheId, context: ManagedRe
       const cache = await readSalesOrderCatalog(profileId)
       return writeSalesOrderCatalog(upsertSalesOrderBucket(cache, { company: activeProfile.company, date, updatedAt: now(), salesOrders: normalized }, profileId))
     }
-    case 'posContext': return refreshPosContext(context.client, profileId)
-    case 'shifts': return refreshShifts(context.client, profileId)
+    case 'posContext': return refreshPosContext(context.client, profileId, retryOnly)
+    case 'shifts': return refreshShifts(context.client, profileId, retryOnly)
     case 'quotations': {
       if (!activeProfile?.company) throw new Error('Selecciona o configura un POS Profile con compañía para refrescar cotizaciones.')
       const quotations = (await context.client.listDocuments<QuotationSummary>('Quotation', { fields: ['name', 'docstatus', 'quotation_to', 'party_name', 'customer_name', 'company', 'transaction_date', 'delivery_date', 'valid_till', 'status', 'currency', 'grand_total', 'modified'], filters: [['company', '=', activeProfile.company], ['docstatus', 'in', [0, 1]],], pageLength: 500, orderBy: 'modified desc' })).data
@@ -340,11 +350,11 @@ export async function refreshManagedCache(id: ManagedCacheId, context: ManagedRe
 
 export type ManagedRefreshContext = ManagedCacheContext & { client: ErpNextClient }
 
-export async function runManagedCacheRefresh(id: ManagedCacheId, context: ManagedRefreshContext, onProgress?: (message: string) => void) {
+export async function runManagedCacheRefresh(id: ManagedCacheId, context: ManagedRefreshContext, onProgress?: (message: string) => void, retryOnly = false) {
   const attemptAt = now()
   writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastError: undefined, issues: undefined })
   try {
-    const result = await refreshManagedCache(id, context, onProgress)
+    const result = await refreshManagedCache(id, context, onProgress, retryOnly)
     const outcome = result as CacheRefreshOutcome | undefined
     writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastSuccessAt: now(), lastError: outcome?.issues?.length ? `${outcome.issues.length} subconsultas con error` : undefined, issues: outcome?.issues })
     return result

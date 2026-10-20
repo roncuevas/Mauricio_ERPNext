@@ -50,6 +50,7 @@ export default interface Resources {
       "records": "Registros",
       "refreshing": "Refrescando…",
       "removedField": "campo omitido",
+      "retryErrors": "Reintentar errores",
       "skippedContext_one": "{{count}} requiere POS Profile con compañía.",
       "skippedContext_other": "{{count}} requieren POS Profile con compañía.",
       "stale": "Posiblemente desactualizada",
@@ -173,6 +174,11 @@ export default interface Resources {
       "url": "URL de ERPNext",
       "urlPlaceholder": "https://erp.example.com"
     },
+    "connectionStatus": {
+      "checking": "Comprobando conexión",
+      "offline": "Sin conexión",
+      "online": "Conectado"
+    },
     "docTypesPage": {
       "cached": "{{count}} DocTypes en caché",
       "description": "Usa la caché local; ERPNext solo se consulta al actualizarla.",
@@ -225,6 +231,21 @@ export default interface Resources {
       "timeout": "La solicitud tardó demasiado o fue cancelada.",
       "unknown": "Error desconocido"
     },
+    "globalSearch": {
+      "customers": "Cliente",
+      "description": "Productos, precios, clientes y ventas disponibles sin red.",
+      "noCache": "No hay datos locales disponibles.",
+      "noResults": "No hay coincidencias.",
+      "open": "Buscar",
+      "placeholder": "Escribe para buscar…",
+      "price": "Precio",
+      "prices": "Precio",
+      "products": "Producto",
+      "sales": "Venta",
+      "shortcut": "⌘K",
+      "title": "Buscar en la caché local",
+      "unknownCustomer": "Cliente sin nombre"
+    },
     "home": {
       "cacheFetch": "Cachés y fetch",
       "cacheHealth": "Salud de cachés",
@@ -236,13 +257,16 @@ export default interface Resources {
       "itemPrice": "Item Price",
       "localCache": "Cache local",
       "localStatus": "Estado local",
+      "managePrices": "Gestionar precios",
       "missing": "sin caché",
       "negativeStock_one": "{{count}} negativa",
       "negativeStock_other": "{{count}} negativas",
+      "newSale": "Nueva venta",
       "noCaches": "Aún no hay cachés descargadas. Abre “Cachés y fetch” y pulsa “Refrescar todo”.",
       "noRecentErrors": "Sin errores recientes",
       "openPos": "Abrir POS",
       "openPrices": "Ir a precios",
+      "openShift": "Abrir turno",
       "openShifts": "Turnos abiertos",
       "ordersToday": "Pedidos de hoy",
       "posAccessDescription": "Abre el POS para vender, cobrar y revisar tu turno.",
