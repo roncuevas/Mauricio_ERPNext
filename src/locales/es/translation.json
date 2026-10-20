@@ -147,7 +147,7 @@
     "sourceNote": "Las métricas se calculan desde los datos disponibles en este navegador. ERPNext sigue siendo la fuente de verdad.",
     "summary": "Resumen",
     "cacheFetch": "Cachés y fetch",
-    "quickActions": "Acciones rápidas",
+    "quickActions": "Acciones rápidas", "shortcutsEyebrow": "Atajos", "operationalStats": "Catálogo e inventario", "activityStats": "Actividad de hoy", "summaryDescription": "Consulta indicadores locales arriba o abre Cachés para actualizar datos desde ERPNext.",
     "quickActionsDescription": "Actualiza los datos desde la pestaña de cachés cuando lo necesites.",
     "updateStats": "Actualizar stats", "newSale": "Nueva venta", "openShift": "Abrir turno", "managePrices": "Gestionar precios",
     "noCaches": "Aún no hay cachés descargadas. Abre “Cachés y fetch” y pulsa “Refrescar todo”."

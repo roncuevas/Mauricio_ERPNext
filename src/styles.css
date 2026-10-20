@@ -548,16 +548,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .settings-cache-actions .button { min-height: 2.5rem; }
 .settings-cache-attempt { color: var(--color-muted); font-size: .62rem; text-align: right; }
 .settings-cache-loading { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 12rem; color: var(--color-muted); }
-.home-workspace { display: grid; min-width: 0; gap: 1rem; }
+.home-workspace { display: grid; min-width: 0; gap: 1.25rem; }
+.home-workspace > .page-header { margin-bottom: .25rem; }
 .home-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
-.home-stat-card { display: grid; min-width: 0; gap: .75rem; padding: 1rem; }
+.home-dashboard-section { display: grid; gap: .65rem; }
+.home-dashboard-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-inline: .15rem; }
+.home-dashboard-section-heading h2 { margin: 0; color: var(--color-heading); font-size: 1rem; letter-spacing: -.02em; }
+.home-dashboard-section-heading span { color: var(--color-muted); font-size: .7rem; }
+.home-stat-card { display: grid; min-width: 0; gap: .75rem; padding: 1rem; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.home-stat-card:hover { border-color: var(--color-accent); box-shadow: var(--shadow-card); transform: translateY(-1px); }
 .home-stat-heading, .home-section-heading { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: .75rem; }
 .home-stat-heading > span { color: var(--color-muted); font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .home-stat-card > strong { overflow-wrap: anywhere; color: var(--color-heading); font-size: clamp(1.35rem, 2vw, 1.8rem); line-height: 1; }
 .home-stat-skeleton { min-height: 6rem; }
 .home-access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.home-access-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .9rem; padding: 1rem; }
-.home-access-icon { display: grid; width: 2.7rem; height: 2.7rem; place-items: center; border: 1px solid var(--color-border); border-radius: .75rem; background: var(--color-surface-muted); color: var(--color-primary); font-size: 1.15rem; font-weight: 900; }
+.home-access-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1rem; min-height: 7.5rem; padding: 1.25rem; }
+.home-access-card:first-child { border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border)); background: color-mix(in srgb, var(--color-primary-soft) 60%, var(--color-surface)); }
+.home-access-icon { display: grid; width: 3.1rem; height: 3.1rem; place-items: center; border: 1px solid var(--color-accent); border-radius: .9rem; background: var(--color-surface); color: var(--color-primary); }
+.home-access-icon svg { width: 1.45rem; height: 1.45rem; }
 .home-access-copy { min-width: 0; }
 .home-access-copy h2 { margin: 0; color: var(--color-heading); font-size: 1rem; }
 .home-access-copy p { margin: .25rem 0 0; color: var(--color-muted); font-size: .75rem; }
@@ -569,8 +577,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-health-card .muted { margin: 0; font-size: .75rem; }
 .home-tabs { display: grid; gap: 1rem; }
 .home-tabs > [role="tablist"] { width: fit-content; max-width: 100%; overflow-x: auto; }
-.home-quick-actions { min-height: 10rem; }
-.home-quick-links { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
+.home-quick-actions { display: grid; gap: 1rem; padding: 1.25rem; }
+.home-quick-actions .home-section-heading { align-items: center; }
+.home-quick-actions .muted { margin: .3rem 0 0; font-size: .76rem; }
+.home-section-icon { width: 1.25rem; height: 1.25rem; color: var(--color-primary); }
+.home-quick-links { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .5rem; }
+.home-summary-note { padding: .5rem; }
 .global-search-trigger { position: sticky; z-index: 20; top: .5rem; display: flex; width: fit-content; align-items: center; gap: .45rem; margin: .5rem 1rem 0 auto; box-shadow: var(--shadow-card); }
 .global-search-trigger kbd { border: 1px solid currentColor; border-radius: .3rem; padding: .05rem .25rem; font-size: .65rem; opacity: .65; }
 .global-search-dialog { width: min(42rem, calc(100% - 2rem)); }
@@ -1263,6 +1275,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .home-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-access-grid { grid-template-columns: 1fr; }
   .home-health-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-access-card { min-height: 6.5rem; padding: 1rem; }
+  .home-quick-actions { padding: 1rem; }
+  .home-quick-links > * { flex: 1 1 calc(50% - .5rem); }
   .pos-toolbar { align-items: stretch; flex-direction: column; }
   .pos-toolbar-actions { justify-content: flex-start; }
   .pos-layout { grid-template-columns: minmax(0, 1fr); }
