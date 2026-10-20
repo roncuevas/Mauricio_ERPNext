@@ -19,6 +19,17 @@ export type ManagedCacheId = 'products' | 'variants' | 'uom' | 'prices' | 'price
 
 export type ManagedCacheStatus = CacheStatus | 'error'
 
+export type CacheIssue = {
+  doctype: string
+  operation: string
+  message: string
+  field?: string
+  status?: number
+  recoverable: boolean
+}
+
+type CacheRefreshOutcome = { issues?: CacheIssue[] }
+
 export type CacheSnapshot<T> = {
   profileId: string
   updatedAt: string
@@ -26,8 +37,8 @@ export type CacheSnapshot<T> = {
 }
 
 export type PriceListCacheData = { lists: PriceList[] }
-export type PosContextCacheData = { profiles: PosProfile[]; settings: { invoice_type?: 'Sales Invoice' | 'POS Invoice' }; paymentMethods: Record<string, PosPaymentMethod[]>; taxTemplates: Record<string, PosTaxTemplate> }
-export type ShiftCacheData = { user: string; profiles: PosProfile[]; openings: PosOpeningEntry[] }
+export type PosContextCacheData = { profiles: PosProfile[]; settings: { invoice_type?: 'Sales Invoice' | 'POS Invoice' }; paymentMethods: Record<string, PosPaymentMethod[]>; taxTemplates: Record<string, PosTaxTemplate>; issues?: CacheIssue[] }
+export type ShiftCacheData = { user: string; profiles: PosProfile[]; openings: PosOpeningEntry[]; issues?: CacheIssue[] }
 export type QuotationCacheData = { company: string; quotations: QuotationSummary[] }
 
 const managementConfig = {
@@ -60,6 +71,7 @@ export type ManagedCacheOverview = {
   lastSuccessAt?: string
   count?: number
   error?: string
+  issues?: CacheIssue[]
   requiresContext?: boolean
 }
 
@@ -82,9 +94,9 @@ const cacheLabels: Record<ManagedCacheId, Omit<ManagedCacheOverview, 'id' | 'sta
   customers: { label: 'Clientes', description: 'Clientes activos usados por POS y Sales Orders.', doctypes: ['Customer'], kind: 'customers' },
   doctypes: { label: 'DocTypes', description: 'Catálogo de DocTypes disponibles en ERPNext.', doctypes: ['DocType'], kind: 'doctypes' },
   salesOrders: { label: 'Ventas del día', description: 'Sales Orders de la compañía activa y fecha actual.', doctypes: ['Sales Order'], kind: 'salesOrders', requiresContext: true },
-  posContext: { label: 'Configuración POS', description: 'POS Profiles, métodos de pago, impuestos y POS Settings.', doctypes: ['POS Profile', 'POS Payment Method', 'Sales Taxes and Charges Template', 'POS Settings'], kind: 'catalog' },
-  shifts: { label: 'Turnos', description: 'Usuario actual, perfiles y aperturas de caja.', doctypes: ['User', 'POS Profile', 'POS Opening Entry'], kind: 'catalog' },
-  quotations: { label: 'Cotizaciones', description: 'Cotizaciones de la compañía activa.', doctypes: ['Quotation'], kind: 'catalog', requiresContext: true },
+  posContext: { label: 'Configuración POS', description: 'POS Profiles, métodos de pago, impuestos y POS Settings.', doctypes: ['POS Profile', 'POS Payment Method', 'Sales Taxes and Charges Template', 'POS Settings'], kind: 'posContext' },
+  shifts: { label: 'Turnos', description: 'Usuario actual, perfiles y aperturas de caja.', doctypes: ['User', 'POS Profile', 'POS Opening Entry'], kind: 'shifts' },
+  quotations: { label: 'Cotizaciones', description: 'Cotizaciones de la compañía activa.', doctypes: ['Quotation'], kind: 'quotations', requiresContext: true },
 }
 
 const orderFields = ['name', 'customer', 'customer_name', 'company', 'transaction_date', 'delivery_date', 'status', 'docstatus', 'currency', 'selling_price_list', 'grand_total', 'total', 'modified']
@@ -102,7 +114,7 @@ function countSnapshot(snapshot: unknown) {
   return arrays.reduce((total, rows) => total + rows.length, 0) || undefined
 }
 
-type SyncMetadata = { lastAttemptAt?: string; lastSuccessAt?: string; lastError?: string }
+type SyncMetadata = { lastAttemptAt?: string; lastSuccessAt?: string; lastError?: string; issues?: CacheIssue[] }
 
 function metadataKey(profileId: string) { return `mauricio-erpnext:cache-sync:${profileId}` }
 
@@ -117,6 +129,31 @@ function writeSyncMetadata(profileId: string, id: ManagedCacheId, patch: SyncMet
   const current = readSyncMetadata(profileId)
   current[id] = { ...current[id], ...patch }
   localStorage.setItem(metadataKey(profileId), JSON.stringify(current))
+}
+
+function errorMessage(error: unknown) { return error instanceof Error ? error.message : 'Error desconocido' }
+
+function forbiddenField(error: unknown) {
+  return errorMessage(error).match(/Field not permitted in query:\s*([A-Za-z0-9_]+)/i)?.[1]
+}
+
+async function listWithFieldFallback<T>(client: ErpNextClient, doctype: string, fields: string[], options: { filters?: Array<[string, string, unknown]>; orderBy?: string; pageLength?: number }) {
+  let remaining = [...fields]
+  const issues: CacheIssue[] = []
+  while (remaining.length) {
+    try {
+      return { data: (await client.listDocuments<T>(doctype, { ...options, fields: remaining })).data, issues }
+    } catch (error) {
+      const field = forbiddenField(error)
+      if (!field || !remaining.includes(field)) {
+        issues.push({ doctype, operation: 'list', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: false })
+        return { data: [] as T[], issues }
+      }
+      remaining = remaining.filter((candidate) => candidate !== field)
+      issues.push({ doctype, operation: 'list', field, message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true })
+    }
+  }
+  return { data: [] as T[], issues }
 }
 
 async function readSnapshot<T>(store: ReturnType<typeof createCacheStore<CacheSnapshot<T>>>, profileId: string) {
@@ -195,8 +232,10 @@ export async function readManagedCacheOverviews(profileId: string): Promise<Mana
   return (Object.keys(cacheLabels) as ManagedCacheId[]).map((id) => {
     const sync = metadata[id]
     const error = sync?.lastError
-    const hasFailedAttempt = Boolean(error && sync?.lastAttemptAt && (!sync.lastSuccessAt || sync.lastAttemptAt > sync.lastSuccessAt))
-    return { id, ...cacheLabels[id], updatedAt: snapshots[id].updatedAt, lastAttemptAt: sync?.lastAttemptAt, lastSuccessAt: sync?.lastSuccessAt ?? snapshots[id].updatedAt, count: snapshots[id].count, error, status: hasFailedAttempt ? 'error' : snapshots[id].updatedAt ? getCacheStatus(cacheLabels[id].kind, { updatedAt: snapshots[id].updatedAt }) : 'missing' }
+    const snapshot = id === 'posContext' ? posContext : id === 'shifts' ? shifts : undefined
+    const issues = sync?.issues ?? (snapshot?.data as { issues?: CacheIssue[] } | undefined)?.issues
+    const hasFailedAttempt = Boolean(error)
+    return { id, ...cacheLabels[id], updatedAt: snapshots[id].updatedAt, lastAttemptAt: sync?.lastAttemptAt, lastSuccessAt: sync?.lastSuccessAt ?? snapshots[id].updatedAt, count: snapshots[id].count, error, issues, status: hasFailedAttempt ? 'error' : snapshots[id].updatedAt ? getCacheStatus(cacheLabels[id].kind, { updatedAt: snapshots[id].updatedAt }) : 'missing' }
   })
 }
 
@@ -230,28 +269,44 @@ async function refreshPriceLists(client: ErpNextClient, profileId: string) {
   return priceListStore.write({ profileId, updatedAt: now(), data: { lists } })
 }
 
-async function refreshPosContext(client: ErpNextClient, profileId: string) {
-  const profiles = activeRows((await client.listDocuments<PosProfile>('POS Profile', { fields: profileFields, pageLength: 100, orderBy: 'name asc' })).data)
-  const settings = await client.getDocument<{ invoice_type?: 'Sales Invoice' | 'POS Invoice' }>('POS Settings', 'POS Settings')
+async function refreshPosContext(client: ErpNextClient, profileId: string): Promise<CacheRefreshOutcome> {
+  const previous = await readSnapshot(posContextStore, profileId)
+  const issues: CacheIssue[] = []
+  const profileResult = await listWithFieldFallback<PosProfile>(client, 'POS Profile', profileFields, { pageLength: 100, orderBy: 'name asc' })
+  issues.push(...profileResult.issues)
+  const profiles = activeRows(profileResult.data.length ? profileResult.data : previous?.data.profiles ?? [])
+  let settings = previous?.data.settings ?? {}
+  try { settings = await client.getDocument<{ invoice_type?: 'Sales Invoice' | 'POS Invoice' }>('POS Settings', 'POS Settings') } catch (error) { issues.push({ doctype: 'POS Settings', operation: 'read', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: false }) }
   const paymentMethods: Record<string, PosPaymentMethod[]> = {}
   const taxTemplates: Record<string, PosTaxTemplate> = {}
-  await Promise.all(profiles.map(async (profile) => {
-    const full = await client.getDocument<PosProfile>('POS Profile', profile.name).catch(() => profile)
-    const configured = full.payments?.length ? full.payments : (await client.listDocuments<PosPaymentMethod>('POS Payment Method', { fields: ['name', 'parent', 'parenttype', 'parentfield', 'mode_of_payment', 'default', 'allow_in_returns'], filters: [['parent', '=', profile.name], ['parenttype', '=', 'POS Profile'], ['parentfield', '=', 'payments']], pageLength: 100, orderBy: 'idx asc' }).catch(() => ({ data: [] }))).data
-    paymentMethods[profile.name] = configured.map((item) => ({ ...item, mode_of_payment: item.mode_of_payment || (item as PosPaymentMethod & { name?: string }).name || '' })).filter((item) => item.mode_of_payment)
-    if (profile.taxes_and_charges) taxTemplates[profile.taxes_and_charges] = await client.getDocument<PosTaxTemplate>('Sales Taxes and Charges Template', profile.taxes_and_charges)
-  }))
-  const data = { profiles, settings, paymentMethods, taxTemplates }
-  return posContextStore.write({ profileId, updatedAt: now(), data })
+  for (const profile of profiles) {
+    const previousPayments = previous?.data.paymentMethods[profile.name] ?? []
+    try {
+      const full = await client.getDocument<PosProfile>('POS Profile', profile.name)
+      if (full.payments?.length) paymentMethods[profile.name] = full.payments
+      else paymentMethods[profile.name] = (await client.listDocuments<PosPaymentMethod>('POS Payment Method', { fields: ['name', 'parent', 'parenttype', 'parentfield', 'mode_of_payment', 'default', 'allow_in_returns'], filters: [['parent', '=', profile.name], ['parenttype', '=', 'POS Profile'], ['parentfield', '=', 'payments']], pageLength: 100, orderBy: 'idx asc' })).data
+    } catch (error) { paymentMethods[profile.name] = previousPayments; issues.push({ doctype: 'POS Payment Method', operation: `read:${profile.name}`, message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
+    if (profile.taxes_and_charges) {
+      try { taxTemplates[profile.taxes_and_charges] = await client.getDocument<PosTaxTemplate>('Sales Taxes and Charges Template', profile.taxes_and_charges) } catch (error) { const previousTax = previous?.data.taxTemplates[profile.taxes_and_charges]; if (previousTax) taxTemplates[profile.taxes_and_charges] = previousTax; issues.push({ doctype: 'Sales Taxes and Charges Template', operation: `read:${profile.taxes_and_charges}`, message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
+    }
+  }
+  const data = { profiles, settings, paymentMethods: { ...previous?.data.paymentMethods, ...paymentMethods }, taxTemplates: { ...previous?.data.taxTemplates, ...taxTemplates }, issues: issues.length ? issues : undefined }
+  await posContextStore.write({ profileId, updatedAt: now(), data })
+  return { issues: issues.length ? issues : undefined }
 }
 
-async function refreshShifts(client: ErpNextClient, profileId: string) {
-  const [user, profiles, openings] = await Promise.all([
-    client.getCurrentUser(),
-    client.listDocuments<PosProfile>('POS Profile', { fields: profileFields, pageLength: 100, orderBy: 'name asc' }).then((result) => activeRows(result.data)),
-    client.listDocuments<PosOpeningEntry>('POS Opening Entry', { fields: openingFields, pageLength: 100, orderBy: 'creation desc' }).then((result) => result.data.filter((entry) => entry.status === 'Open')),
-  ])
-  return shiftStore.write({ profileId, updatedAt: now(), data: { user, profiles, openings } })
+async function refreshShifts(client: ErpNextClient, profileId: string): Promise<CacheRefreshOutcome> {
+  const previous = await readSnapshot(shiftStore, profileId)
+  const issues: CacheIssue[] = []
+  let user = previous?.data.user ?? ''
+  try { user = await client.getCurrentUser() } catch (error) { issues.push({ doctype: 'User', operation: 'current', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
+  const profileResult = await listWithFieldFallback<PosProfile>(client, 'POS Profile', profileFields, { pageLength: 100, orderBy: 'name asc' })
+  issues.push(...profileResult.issues)
+  const profiles = activeRows(profileResult.data.length ? profileResult.data : previous?.data.profiles ?? [])
+  let openings = previous?.data.openings ?? []
+  try { openings = (await client.listDocuments<PosOpeningEntry>('POS Opening Entry', { fields: openingFields, pageLength: 100, orderBy: 'creation desc' })).data.filter((entry) => entry.status === 'Open') } catch (error) { issues.push({ doctype: 'POS Opening Entry', operation: 'list', message: errorMessage(error), status: error instanceof ErpNextError ? error.status : undefined, recoverable: true }) }
+  await shiftStore.write({ profileId, updatedAt: now(), data: { user, profiles, openings, issues: issues.length ? issues : undefined } })
+  return { issues: issues.length ? issues : undefined }
 }
 
 export async function refreshManagedCache(id: ManagedCacheId, context: ManagedRefreshContext, onProgress?: (message: string) => void) {
@@ -287,13 +342,14 @@ export type ManagedRefreshContext = ManagedCacheContext & { client: ErpNextClien
 
 export async function runManagedCacheRefresh(id: ManagedCacheId, context: ManagedRefreshContext, onProgress?: (message: string) => void) {
   const attemptAt = now()
-  writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastError: undefined })
+  writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastError: undefined, issues: undefined })
   try {
     const result = await refreshManagedCache(id, context, onProgress)
-    writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastSuccessAt: now(), lastError: undefined })
+    const outcome = result as CacheRefreshOutcome | undefined
+    writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastSuccessAt: now(), lastError: outcome?.issues?.length ? `${outcome.issues.length} subconsultas con error` : undefined, issues: outcome?.issues })
     return result
   } catch (error) {
-    writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastError: error instanceof Error ? error.message : 'Error desconocido' })
+    writeSyncMetadata(context.profileId, id, { lastAttemptAt: attemptAt, lastError: errorMessage(error), issues: undefined })
     throw error
   }
 }

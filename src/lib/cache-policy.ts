@@ -1,4 +1,4 @@
-export type CacheKind = 'catalog' | 'prices' | 'stock' | 'suppliers' | 'doctypes' | 'uom' | 'customers' | 'salesOrders'
+export type CacheKind = 'catalog' | 'prices' | 'stock' | 'suppliers' | 'doctypes' | 'uom' | 'customers' | 'salesOrders' | 'posContext' | 'shifts' | 'quotations'
 export type CacheStatus = 'missing' | 'fresh' | 'stale'
 export type TimestampedCache = { updatedAt?: string }
 
@@ -11,6 +11,9 @@ export const CACHE_TTL_MS: Record<CacheKind, number> = {
   uom: 24 * 60 * 60 * 1000,
   customers: 60 * 60 * 1000,
   salesOrders: 5 * 60 * 1000,
+  posContext: 30 * 60 * 1000,
+  shifts: 5 * 60 * 1000,
+  quotations: 5 * 60 * 1000,
 }
 
 export function getCacheStatus(kind: CacheKind, cache: TimestampedCache | null | undefined, now = Date.now()): CacheStatus {

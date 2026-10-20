@@ -40,6 +40,7 @@ export default interface Resources {
         "variants": "Variantes y atributos"
       },
       "lastFetch": "Último fetch",
+      "lastSuccess": "Último éxito",
       "local": "Caché local",
       "partialError": "Error parcial",
       "partialMessage_one": "{{count}} caché actualizada con resultados parciales.",
@@ -48,6 +49,7 @@ export default interface Resources {
       "reading": "Leyendo estado local…",
       "records": "Registros",
       "refreshing": "Refrescando…",
+      "removedField": "campo omitido",
       "skippedContext_one": "{{count}} requiere POS Profile con compañía.",
       "skippedContext_other": "{{count}} requieren POS Profile con compañía.",
       "stale": "Posiblemente desactualizada",
