@@ -261,7 +261,7 @@
     "readError": "Could not read cache status."
   },
   "connectionStatus": { "checking": "Checking connection", "online": "Connected", "offline": "Offline" },
-  "globalSearch": { "open": "Search", "shortcut": "⌘K", "title": "Search local cache", "description": "Products, prices, customers and sales available without network.", "placeholder": "Type to search…", "noResults": "No matches.", "noCache": "No local data available.", "products": "Product", "price": "Price", "prices": "Price", "customers": "Customer", "sales": "Sale", "unknownCustomer": "Unnamed customer" },
+  "globalSearch": { "open": "Search", "shortcut": "⌘K", "title": "Search local cache", "description": "Products, prices, suppliers, customers and sales available without network.", "placeholder": "Type to search…", "noResults": "No matches.", "noCache": "No local data available.", "products": "Product", "price": "Price", "prices": "Price", "suppliers": "Supplier", "customers": "Customer", "sales": "Sale", "unknownCustomer": "Unnamed customer" },
   "settings": {
     "title": "Settings",
     "description": "Manage your connection and customize the application.",

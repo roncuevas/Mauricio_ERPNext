@@ -261,7 +261,7 @@
     "readError": "No se pudo leer el estado de las cachés."
   },
   "connectionStatus": { "checking": "Comprobando conexión", "online": "Conectado", "offline": "Sin conexión" },
-  "globalSearch": { "open": "Buscar", "shortcut": "⌘K", "title": "Buscar en la caché local", "description": "Productos, precios, clientes y ventas disponibles sin red.", "placeholder": "Escribe para buscar…", "noResults": "No hay coincidencias.", "noCache": "No hay datos locales disponibles.", "products": "Producto", "price": "Precio", "prices": "Precio", "customers": "Cliente", "sales": "Venta", "unknownCustomer": "Cliente sin nombre" },
+  "globalSearch": { "open": "Buscar", "shortcut": "⌘K", "title": "Buscar en la caché local", "description": "Productos, precios, proveedores, clientes y ventas disponibles sin red.", "placeholder": "Escribe para buscar…", "noResults": "No hay coincidencias.", "noCache": "No hay datos locales disponibles.", "products": "Producto", "price": "Precio", "prices": "Precio", "suppliers": "Proveedor", "customers": "Cliente", "sales": "Venta", "unknownCustomer": "Cliente sin nombre" },
   "settings": {
     "title": "Configuración",
     "description": "Administra tu conexión y personaliza la aplicación.",

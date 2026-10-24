@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { readItemCatalog } from '../lib/item-cache'
 import { readItemPriceCatalog } from '../lib/price-cache'
 import { readCustomerCatalog, readSalesOrderCatalog } from '../lib/sales-order-cache'
+import { readSupplierCatalog } from '../lib/supplier-cache'
+import { searchScore } from '../lib/search'
 
 type SearchResult = { id: string; title: string; detail: string; kind: string; href: string }
 
@@ -30,11 +32,12 @@ export function GlobalSearch({ profileId }: { profileId: string }) {
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    void Promise.all([readItemCatalog(profileId), readItemPriceCatalog(profileId), readCustomerCatalog(profileId), readSalesOrderCatalog(profileId)]).then(([items, prices, customers, orders]) => {
+    void Promise.all([readItemCatalog(profileId), readItemPriceCatalog(profileId), readSupplierCatalog(profileId), readCustomerCatalog(profileId), readSalesOrderCatalog(profileId)]).then(([items, prices, suppliers, customers, orders]) => {
       if (cancelled) return
       const next: SearchResult[] = []
       items?.items.forEach((item) => next.push({ id: `item-${item.name}`, title: item.item_name || item.name, detail: `${item.item_code || item.name} · ${t('globalSearch.products')}`, kind: 'product', href: `/items/${encodeURIComponent(item.name)}` }))
       prices?.prices.forEach((price) => next.push({ id: `price-${price.name}`, title: price.item_code || price.name, detail: `${price.price_list || t('globalSearch.price')} · ${t('globalSearch.prices')}`, kind: 'price', href: `/prices/manage/${encodeURIComponent(price.item_code || price.name)}` }))
+      suppliers?.suppliers.forEach((supplier) => next.push({ id: `supplier-${supplier.name}`, title: supplier.supplier_name || supplier.name, detail: `${supplier.name} · ${t('globalSearch.suppliers')}`, kind: 'supplier', href: '/suppliers' }))
       customers?.customers.forEach((customer) => next.push({ id: `customer-${customer.name}`, title: customer.customer_name || customer.name, detail: `${customer.name} · ${t('globalSearch.customers')}`, kind: 'customer', href: `/pos/ventas` }))
       orders?.buckets.flatMap((bucket) => bucket.salesOrders).forEach((order) => next.push({ id: `order-${order.name}`, title: order.name, detail: `${order.customer_name || order.customer || t('globalSearch.unknownCustomer')} · ${t('globalSearch.sales')}`, kind: 'order', href: `/pos/ventas/${encodeURIComponent(order.name)}/editar` }))
       setResults(next)
@@ -43,9 +46,8 @@ export function GlobalSearch({ profileId }: { profileId: string }) {
   }, [open, profileId, t])
 
   const filtered = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase()
-    if (!query) return results.slice(0, 20)
-    return results.filter((result) => `${result.title} ${result.detail}`.toLocaleLowerCase().includes(query)).slice(0, 20)
+    if (!search.trim()) return results.slice(0, 20)
+    return results.map((result, index) => ({ result, index, match: searchScore(search, [{ value: result.title, weight: 5 }, { value: result.detail, weight: 2 }]) })).filter((entry) => entry.match).sort((left, right) => (right.match?.score ?? 0) - (left.match?.score ?? 0) || left.index - right.index).slice(0, 20).map((entry) => entry.result)
   }, [results, search])
 
   function select(result: SearchResult) {

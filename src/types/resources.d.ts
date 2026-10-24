@@ -233,7 +233,7 @@ export default interface Resources {
     },
     "globalSearch": {
       "customers": "Cliente",
-      "description": "Productos, precios, clientes y ventas disponibles sin red.",
+      "description": "Productos, precios, proveedores, clientes y ventas disponibles sin red.",
       "noCache": "No hay datos locales disponibles.",
       "noResults": "No hay coincidencias.",
       "open": "Buscar",
@@ -243,6 +243,7 @@ export default interface Resources {
       "products": "Producto",
       "sales": "Venta",
       "shortcut": "⌘K",
+      "suppliers": "Proveedor",
       "title": "Buscar en la caché local",
       "unknownCustomer": "Cliente sin nombre"
     },
