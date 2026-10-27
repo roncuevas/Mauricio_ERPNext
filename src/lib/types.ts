@@ -375,6 +375,23 @@ export type PosCartLine = {
   rateOverride?: boolean
 }
 
+export type LocalPosCart = {
+  id: string
+  name: string
+  lines: PosCartLine[]
+  customer: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type LocalPosCartsCache = {
+  profileId: string
+  schemaVersion: 1
+  activeCartId: string | null
+  current: { lines: PosCartLine[]; customer: string }
+  carts: LocalPosCart[]
+}
+
 export type PosPaymentLine = {
   modeOfPayment: string
   amount: number

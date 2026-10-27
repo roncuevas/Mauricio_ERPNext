@@ -420,6 +420,27 @@ export default interface Resources {
         "resume": "Continuar",
         "title": "Ventas retenidas"
       },
+      "localCarts": {
+        "delete": "Borrar",
+        "deleteDescription": "Se borrará {{name}} solo de este dispositivo.",
+        "deleteTitle": "¿Borrar carrito local?",
+        "deleted": "Carrito borrado: {{name}}.",
+        "description": "Guarda y recupera carritos solo en este dispositivo.",
+        "empty": "No hay carritos locales guardados.",
+        "lines": "líneas",
+        "loaded": "Carrito recuperado: {{name}}.",
+        "nameLabel": "Nombre del carrito",
+        "namePlaceholder": "Ej. Cliente o pedido",
+        "rename": "Renombrar",
+        "renameTitle": "Renombrar carrito",
+        "replaceConfirm": "El carrito actual se reemplazará. ¿Continuar?",
+        "resume": "Recuperar",
+        "save": "Guardar carrito",
+        "saved": "Carrito guardado: {{name}}.",
+        "storageError": "No se pudo guardar el carrito local en este dispositivo.",
+        "title": "Carritos locales",
+        "updated": "Actualizado {{date}}"
+      },
       "messages": {
         "addProductToSave": "Agrega al menos un producto antes de guardar.",
         "cartSaved": "Carrito guardado: {{name}}.",
