@@ -119,7 +119,7 @@ export function MobileNavigation({ onLock, client }: { onLock: () => void; clien
   return <div className={`mobile-navigation${open ? ' mobile-navigation-open' : ''}`}>
     <div className="mobile-navigation-bar">
       <div className="mobile-navigation-brand">
-        <img className="mobile-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} />
+        <img className="mobile-brand-logo" src="/icon-192.png" alt={t('common.appName')} />
         <div className="mobile-navigation-heading">
           <strong>{currentPage}</strong>
           <span>{t('common.appName')}</span>

@@ -81,7 +81,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
     <main className="connection-screen flex min-h-screen items-center justify-center p-4 sm:p-6">
       <div className="connection-shell w-full">
         <header className="connection-branding">
-          <img className="connection-brand-logo" src="/mauricio-logo-cropped.png" alt={t('common.appName')} />
+          <img className="connection-brand-logo" src="/icon-192.png" alt={t('common.appName')} />
           <div><p className="connection-brand-name">{t('common.appName')}</p><p className="connection-brand-caption">{t('common.appCaption')}</p></div>
         </header>
         <Card className="connection-card p-6 sm:p-8">
