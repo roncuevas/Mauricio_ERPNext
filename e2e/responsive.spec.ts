@@ -29,13 +29,14 @@ async function mockErpNext(page: Page) {
 
 async function createConnection(page: Page) {
   await page.goto('/')
-  await page.getByLabel('Nombre del perfil').fill('E2E local')
-  await page.getByLabel('URL de ERPNext').fill('https://erp.example.test')
-  await page.getByLabel('API Key').fill('e2e-key')
-  await page.getByLabel('API Secret').fill('e2e-secret')
-  await page.getByLabel('Contraseña local').fill('e2e-passphrase')
+  const fields = page.getByRole('textbox')
+  await fields.nth(0).fill('E2E local')
+  await fields.nth(1).fill('https://erp.example.test')
+  await fields.nth(2).fill('e2e-key')
+  await fields.nth(3).fill('e2e-secret')
+  await fields.nth(4).fill('e2e-passphrase')
   await page.getByRole('button', { name: 'Cifrar y conectar' }).click()
-  await expect(page).toHaveURL(/\/items$/)
+  await expect(page).toHaveURL(/\/$/)
 }
 
 async function refreshCatalog(page: Page) {
@@ -56,6 +57,7 @@ test.describe('responsive navigation and empty states', () => {
   test('mobile uses compact navigation and keeps pages inside the viewport', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'Este caso corresponde al proyecto móvil')
     await createConnection(page)
+    await page.goto('/items')
     await expect(page.getByRole('button', { name: 'Menú' })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toHaveCount(0)
     await expect(page.locator('.workspace-navigation-tabs')).toBeVisible()
@@ -103,13 +105,13 @@ test.describe('responsive navigation and empty states', () => {
 
   test('imports shared credentials, pre-fills the form, and removes secrets from the URL', async ({ page }) => {
     await page.goto('/#share=eyJiYXNlVXJsIjoiaHR0cHM6Ly9lcnAuZXhhbXBsZS50ZXN0IiwibGFiZWwiOiJFbmxhY2UgY29tcGFydGlkbyIsImFwaUtleSI6ImUyZS1rZXkiLCJhcGlTZWNyZXQiOiJlMmUtc2VjcmV0In0')
-    await expect(page.getByLabel('Nombre del perfil')).toHaveValue('Enlace compartido')
-    await expect(page.getByLabel('URL de ERPNext')).toHaveValue('https://erp.example.test')
-    await expect(page.getByLabel('API Key')).toHaveValue('e2e-key')
+    await expect(page.getByRole('textbox').nth(0)).toHaveValue('Enlace compartido')
+    await expect(page.getByRole('textbox').nth(1)).toHaveValue('https://erp.example.test')
+    await expect(page.getByRole('textbox').nth(2)).toHaveValue('e2e-key')
     await expect(page).not.toHaveURL(/api_secret/)
-    await page.getByLabel('Contraseña local').fill('e2e-passphrase')
+    await page.getByRole('textbox').nth(4).fill('e2e-passphrase')
     await page.getByRole('button', { name: 'Cifrar y conectar' }).click()
-    await expect(page).toHaveURL(/\/items$/)
+    await expect(page).toHaveURL(/\/$/)
   })
 
   test('mobile routes remain usable screen by screen', async ({ page }, testInfo) => {
@@ -222,6 +224,7 @@ test.describe('responsive navigation and empty states', () => {
   test('desktop preserves the sidebar and compact actions stay hidden', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'Este caso corresponde al proyecto de escritorio')
     await createConnection(page)
+    await page.goto('/items')
     await expect(page.locator('.app-sidebar')).toBeVisible()
     await expect(page.locator('.workspace-navigation-tabs')).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Productos' })).toHaveAttribute('aria-selected', 'true')

@@ -51,9 +51,32 @@ npm run lint
 npm run test:e2e
 ```
 
-La suite E2E usa datos mockeados y valida navegación responsive en móvil y escritorio.
-Requiere un Chrome local compatible con Playwright; no necesita credenciales ni una
-instancia ERPNext real.
+La suite `npm run test:e2e` usa datos mockeados y valida navegación responsive en móvil
+y escritorio. Para probar la integración real, `npm run test:e2e:erpnext` levanta un
+ERPNext local desechable en Docker, borra sus volúmenes, crea fixtures funcionales por
+REST y ejecuta la suite en móvil, tablet y escritorio. Requiere Docker, Node y un
+Chrome local compatible con Playwright.
+
+## E2E real con ERPNext
+
+```bash
+cp .env.erpnext.example .env.erpnext.local # opcional: los defaults son locales
+npm run erpnext:up
+npm run erpnext:health
+npm run test:e2e:erpnext
+```
+
+`test:e2e:erpnext` hace reset automático del entorno local antes de sembrar los datos.
+Los accesos API se generan después del seed y se guardan únicamente en el archivo
+ignorado `.env.erpnext.local`. El stack usa la imagen oficial `frappe/erpnext` y queda
+disponible en `http://127.0.0.1:8080`. Para destruirlo manualmente:
+
+```bash
+npm run erpnext:reset
+```
+
+El reset elimina solamente los volúmenes del proyecto Docker `mauricio-erpnext-e2e`.
+No uses estos scripts contra una instancia remota o de producción.
 
 La instancia ERPNext debe permitir CORS desde el dominio donde se despliega la SPA.
 En producción se aceptan URLs HTTPS; HTTP queda limitado a `localhost` para desarrollo.
