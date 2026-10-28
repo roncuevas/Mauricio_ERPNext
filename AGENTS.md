@@ -41,6 +41,8 @@ Use Vitest for unit tests. Name files `*.test.ts` or `*.test.tsx` and test obser
 
 Use atomic Conventional Commits: `feat:`, `fix:`, `test:`, `docs:`, or `chore:` followed by an imperative description, for example `feat: add DocType metadata editor`. Pull requests should describe behavior changes, include validation commands, call out ERPNext/CORS assumptions, and include screenshots for meaningful UI changes. Never include API keys, secrets, or real ERPNext data.
 
+Do not add AI attribution to commits, tags, or pull requests: no `Co-Authored-By` trailers for AI assistants and no "Generated with" lines. The repository owner is the sole author.
+
 ## Security & Configuration
 
 Credentials must remain browser-local and encrypted with Web Crypto. Do not log authorization headers, persist decrypted credentials, add a default ERPNext URL, or place secrets in environment files or the bundle. Production connections must use HTTPS; CORS is configured on each user’s ERPNext instance.
