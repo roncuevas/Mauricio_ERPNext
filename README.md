@@ -112,3 +112,10 @@ Las cachés locales se mantienen en IndexedDB por perfil. Las ediciones exitosas
 
 La jerarquía de variantes virtualiza sus raíces cuando la búsqueda produce más de 200 nodos; con catálogos pequeños conserva el render normal para mantener una interacción sencilla y accesible.
 
+
+## Licencia
+
+Este proyecto se distribuye bajo [CC BY-NC-SA 4.0](./LICENSE). Puedes usarlo, estudiarlo
+y modificarlo sin fines comerciales, dando crédito al autor. Cualquier versión modificada
+que compartas debe publicarse bajo la misma licencia. El uso comercial requiere permiso
+explícito del autor.
