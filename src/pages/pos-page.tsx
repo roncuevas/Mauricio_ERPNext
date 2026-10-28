@@ -16,12 +16,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { filterItems } from '../lib/item-cache'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftToCartLines, formatMoney, normalizeClosingResponse, openingPayload, paymentLines, returnInvoicePayload, salesInvoicePayload, validateClosingInput } from '../lib/pos'
-import type { CachedItem, ItemPrice, ItemUom, LocalPosCart, LocalPosCartsCache, PosCartLine, PosDraftDocument, PosDraftSummary, PosPaymentLine, PosPaymentMethod, PosProfile, PosSaleSummary, PosTaxRow, PosTaxTemplate } from '../lib/types'
+import type { CachedItem, ItemPrice, ItemUom, LocalPosCart, PosCartLine, PosDraftDocument, PosDraftSummary, PosPaymentLine, PosPaymentMethod, PosProfile, PosSaleSummary, PosTaxRow, PosTaxTemplate } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
 import { queryKeys } from '../lib/query-keys'
 import { defaultPrice, defaultUom, priceForUom, variantPriceRange } from '../lib/pos-catalog'
 import { readPosPreferences } from '../lib/pos-preferences'
-import { emptyLocalCarts, localCartsScope, readLocalPosCarts, writeLocalPosCarts } from '../lib/pos-local-carts'
+import { localCartsScope, readLocalPosCarts, writeLocalPosCarts } from '../lib/pos-local-carts'
 
 type Client = ReturnType<typeof createErpNextClient>
 type ActiveShift = { name: string; profileName: string; user: string }
@@ -158,12 +158,12 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     const timer = window.setTimeout(() => {
       const scope = localCartsScope(profileId, selectedProfile.name)
       const current = { lines, customer }
-      const nextCarts = localCarts.map((cart) => cart.id === activeLocalCartId ? { ...cart, ...current, updatedAt: new Date().toISOString() } : cart)
+      const nextCarts = localCarts.map((cart) => cart.id === activeLocalCartId && (cart.lines !== lines || cart.customer !== customer) ? { ...cart, ...current, updatedAt: new Date().toISOString() } : cart)
       void writeLocalPosCarts({ profileId: scope, schemaVersion: 1, activeCartId: activeLocalCartId, current, carts: nextCarts }).catch(() => setMessage(t('pos.localCarts.storageError')))
-      if (activeLocalCartId && nextCarts.some((cart) => cart.id === activeLocalCartId)) setLocalCarts(nextCarts)
+      if (nextCarts.some((cart, index) => cart !== localCarts[index])) setLocalCarts(nextCarts)
     }, 250)
     return () => window.clearTimeout(timer)
-  }, [activeLocalCartId, customer, lines, localCartsHydrated, profileId, selectedProfile?.name, t])
+  }, [activeLocalCartId, customer, lines, localCarts, localCartsHydrated, profileId, selectedProfile?.name, t])
   useEffect(() => { if (customers.data && customer && !customers.data.some((entry) => entry.name === customer)) { setCustomer(''); setMessage(t('pos.messages.defaultCustomerMissing')) } }, [customer, customers.data, t])
   useEffect(() => { setOpeningBalances(paymentLines(paymentMethods)); setClosingBalances(paymentLines(paymentMethods)) }, [paymentMethods])
   useEffect(() => { if (!cartFeedback) return; const timer = window.setTimeout(() => setCartFeedback(null), 1800); return () => window.clearTimeout(timer) }, [cartFeedback])
