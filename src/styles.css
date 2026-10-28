@@ -1081,7 +1081,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-toolbar-main .control:hover:not(:disabled) { border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border)); }
 .pos-toolbar-actions { width: 100%; align-items: center; border-top: 1px solid var(--color-border-subtle); padding-top: .8rem; }
 .pos-toolbar-actions .button { min-width: 9rem; }
-.pos-customer-results { position: absolute; z-index: 5; top: calc(100% + .25rem); right: 0; left: 32%; display: grid; overflow: hidden; border: 1px solid var(--color-border); border-radius: .65rem; background: var(--color-surface); box-shadow: var(--shadow-card); }
+.pos-customer-results { display: grid; overflow: hidden; border: 1px solid var(--color-border); border-radius: .65rem; background: var(--color-surface); box-shadow: var(--shadow-card); }
 .pos-customer-results button { border: 0; border-bottom: 1px solid var(--color-border-subtle); background: transparent; padding: .65rem .75rem; color: var(--color-heading); text-align: left; }
 .pos-customer-results button:hover { background: var(--color-primary-soft); }
 .pos-layout { display: grid; align-items: start; gap: 1rem; grid-template-columns: minmax(0, 1.35fr) minmax(22rem, .8fr); }
@@ -1293,7 +1293,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .pos-layout { grid-template-columns: minmax(0, 1fr); }
   .pos-sale-column { position: static; }
   .pos-product-grid { max-height: none; }
-  .pos-customer-results { left: 0; }
 }
 
 @media (max-width: 640px) {

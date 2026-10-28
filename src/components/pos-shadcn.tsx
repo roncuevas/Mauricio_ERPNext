@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog'
 import { Button, Field, Input } from './ui'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
-import { Popover, PopoverContent } from './ui/popover'
+import { Popover, PopoverAnchor, PopoverContent } from './ui/popover'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
@@ -14,7 +14,7 @@ import type { PosPaymentLine, PosPaymentMethod } from '../lib/types'
 export function PosCustomerPicker({ enabled, value, search, customers, onSearch, onSelect }: { enabled: boolean; value: string; search: string; customers: Array<{ name: string; customer_name?: string }>; onSearch: (value: string) => void; onSelect: (name: string) => void }) {
   const { t } = useTranslation()
   const matches = customers.filter((item) => `${item.name} ${item.customer_name ?? ''}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).slice(0, 8)
-  return <Popover open={Boolean(enabled && search)}><Field label={t('pos.customer.label')}><Input value={search || value} onChange={(event) => onSearch(event.target.value)} placeholder={t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></Field><PopoverContent className="pos-customer-results" align="start"><Command><CommandInput placeholder={t('pos.customer.search')} value={search} onValueChange={onSearch} aria-label={t('pos.customer.filter')} /><CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={`${item.name} ${item.customer_name ?? ''}`} onSelect={() => onSelect(item.name)}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent></Popover>
+  return <Popover open={Boolean(enabled && search)}><Field label={t('pos.customer.label')}><PopoverAnchor asChild><Input value={search || value} onChange={(event) => onSearch(event.target.value)} placeholder={t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></PopoverAnchor></Field><PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start"><Command><CommandInput placeholder={t('pos.customer.search')} value={search} onValueChange={onSearch} aria-label={t('pos.customer.filter')} /><CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={`${item.name} ${item.customer_name ?? ''}`} onSelect={() => onSelect(item.name)}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent></Popover>
 }
 
 export function PosMobileTabs({ value, count, fixed, onChange, onOpenDrafts, onOpenQuotations, onOpenLocalCarts }: { value: 'products' | 'cart'; count: number; fixed: boolean; onChange: (value: 'products' | 'cart') => void; onOpenDrafts: () => void; onOpenQuotations: () => void; onOpenLocalCarts: () => void }) {
