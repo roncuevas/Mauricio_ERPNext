@@ -49,11 +49,16 @@ los componentes a ese proveedor. Consulta `.env.example` para los nombres dispon
 ## Verificación
 
 ```bash
-npm run build
-npm test
 npm run lint
+npm run i18n:lint && npm run i18n:status
+npm run build
+npm run check:bundle
+npm test
 npm run test:e2e
 ```
+
+Estos mismos pasos corren en GitHub Actions (`.github/workflows/ci.yml`) en cada push a
+`main` y en cada pull request.
 
 La suite `npm run test:e2e` usa datos mockeados y valida navegación responsive en móvil
 y escritorio. Para probar la integración real, `npm run test:e2e:erpnext` levanta un
@@ -84,6 +89,13 @@ No uses estos scripts contra una instancia remota o de producción.
 
 La instancia ERPNext debe permitir CORS desde el dominio donde se despliega la SPA.
 En producción se aceptan URLs HTTPS; HTTP queda limitado a `localhost` para desarrollo.
+
+## Despliegue
+
+`npm run build` genera archivos estáticos en `dist/`. Sirve esa carpeta desde cualquier
+hosting estático con HTTPS y configura un fallback de rutas a `index.html`, porque la
+SPA usa rutas del navegador (`/items`, `/pos`, etc.). Los feature flags `VITE_FF_*` se
+fijan en el build; no hay variables de entorno en tiempo de ejecución.
 
 ## Rutas principales
 
