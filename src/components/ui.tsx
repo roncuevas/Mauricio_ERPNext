@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { cloneElement, isValidElement, useId, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 export { Button, buttonVariants, type ButtonProps } from './ui/button'
@@ -44,7 +44,10 @@ export function FilterButton({ label, activeCount = 0, expanded = false, ...prop
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="field"><Label>{label}</Label>{children}</div>
+  const generatedId = useId()
+  const control = isValidElement<{ id?: string }>(children) ? children : null
+  const id = control?.props.id ?? generatedId
+  return <div className="field"><Label htmlFor={control ? id : undefined}>{label}</Label>{control && !control.props.id ? cloneElement(control, { id }) : children}</div>
 }
 
 export function Notice({ children, tone = 'error' }: { children: ReactNode; tone?: 'error' | 'info' | 'warning' }) {
