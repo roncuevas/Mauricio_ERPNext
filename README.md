@@ -4,30 +4,36 @@
 
 # Mauricio_ERPNext
 
-Cliente local y agnóstico para administrar instancias ERPNext desde el navegador.
+A local-first, instance-agnostic browser client for managing ERPNext.
 
-## Alcance
+## Scope
 
-La SPA se conecta directamente a ERPNext mediante REST; no existe backend propio ni se almacenan datos en el servidor de este proyecto. La conexión se configura en el navegador por perfil. Las credenciales se cifran con Web Crypto y la sesión local dura temporalmente para sobrevivir a refreshes.
+The SPA talks to ERPNext directly over REST; there is no backend of its own and no data is stored on any server belonging to this project. Connections are configured in the browser as profiles. Credentials are encrypted with Web Crypto, and a temporary local session survives page refreshes.
 
-Incluye:
+Features:
 
-- Productos `Item` con caché local, búsqueda explícita y edición en página separada.
-- DocTypes con catálogo cacheado y actualización manual.
-- Vista **Variantes** con jerarquía de plantillas y variantes usando `variant_of`; inicia colapsada para evitar una lista extensa.
-- Controles para expandir/colapsar cada rama o toda la jerarquía, con expansión automática de las ramas relevantes al buscar.
-- Creación y edición de productos/variantes desde la jerarquía.
-- Vista **Múltiples UOM** para detectar presentaciones como `Kg`, `Bulto` o `Caja`, mostrando sus factores de conversión.
+- `Item` products with a local cache, explicit search, and editing on dedicated pages.
+- DocTypes with a cached catalog and manual refresh.
+- **Variants** view showing the template/variant hierarchy through `variant_of`; it starts collapsed to avoid a long list.
+- Controls to expand or collapse each branch or the whole hierarchy, with relevant branches expanded automatically while searching.
+- Product and variant creation and editing from the hierarchy.
+- **Multiple UOM** view to spot presentations such as `Kg`, `Bulto`, or `Caja`, with their conversion factors.
+- Prices, suppliers, stock with reconciliation, POS shifts and sales, sales orders, and quotations.
+- Spanish and English interface.
 
-## Caché y ERPNext
+## Cache and ERPNext
 
-Los catálogos se guardan en IndexedDB por perfil de conexión y no se vuelven a descargar al navegar entre vistas. La jerarquía se renderiza desde esa caché; usa los botones de refresco cuando necesites sincronizar cambios externos.
+Catalogs are stored in IndexedDB per connection profile and are not downloaded again when navigating between views. The hierarchy renders from that cache; use the refresh buttons when you need to sync external changes.
 
-La lectura de UOM intenta consultar `UOM Conversion Detail` en una sola carga paginada. Si el usuario no tiene permiso sobre ese child DocType, la aplicación usa las filas `uoms` incluidas en cada documento `Item` como fallback. Esto evita exigir permisos adicionales solo para visualizar presentaciones.
+UOM data is read from `UOM Conversion Detail` in a single paginated load. If the user lacks permission on that child DocType, the app falls back to the `uoms` rows included in each `Item` document. This avoids requiring extra permissions just to view presentations.
 
-El editor por producto consulta el documento `Item` una sola vez para cargar sus UOM y conversiones. El catálogo de nombres del DocType `UOM` se guarda en IndexedDB separado por perfil, se reutiliza durante 24 horas y se sincroniza en páginas de 500 registros cuando caduca. Si la sincronización falla pero existe una copia local, se conserva esa copia para no bloquear el editor. Las claves de React Query también incluyen el perfil para evitar mezclar datos entre conexiones ERPNext.
+The per-product editor fetches the `Item` document once to load its UOMs and conversions. The name catalog of the `UOM` DocType is stored in a separate IndexedDB store per profile, reused for 24 hours, and synced in pages of 500 records when it expires. If the sync fails but a local copy exists, that copy is kept so the editor is not blocked. React Query keys also include the profile so data from different ERPNext connections never mixes.
 
-## Desarrollo
+Local caches are kept in IndexedDB per profile. Successful edits may update an entity locally, but they keep the local-changes marker until a full catalog refresh runs.
+
+The variant hierarchy virtualizes its roots when a search yields more than 200 nodes; small catalogs keep normal rendering for simple, accessible interaction.
+
+## Development
 
 ```bash
 npm install
@@ -35,18 +41,13 @@ npm run dev
 npm run lint
 ```
 
-La aplicación no tiene backend propio. Cada usuario configura la URL de su instancia,
-API Key y API Secret desde el navegador. Las credenciales se cifran con Web Crypto
-antes de guardarse localmente y nunca se incluyen en el bundle.
+The app has no backend. Each user configures their instance URL, API Key, and API Secret in the browser. Credentials are encrypted with Web Crypto before being stored locally and are never included in the bundle.
 
 ## Feature flags
 
-Los flags se leen actualmente desde variables `VITE_FF_*` al construir la SPA. La
-resolución está aislada en `src/lib/feature-flags.ts`, por lo que el proveedor puede
-cambiar después a Firebase Remote Config, LaunchDarkly u otro servicio sin acoplar
-los componentes a ese proveedor. Consulta `.env.example` para los nombres disponibles.
+Flags are currently read from `VITE_FF_*` variables at build time. Resolution is isolated in `src/lib/feature-flags.ts`, so the provider can later move to Firebase Remote Config, LaunchDarkly, or another service without coupling components to it. See `.env.example` for the available names.
 
-## Verificación
+## Verification
 
 ```bash
 npm run lint
@@ -57,65 +58,47 @@ npm test
 npm run test:e2e
 ```
 
-El workflow `.github/workflows/ci.yml` ejecuta estos mismos pasos, pero solo se lanza
-manualmente desde la pestaña Actions de GitHub; no corre en cada push ni pull request.
+The `.github/workflows/ci.yml` workflow runs these same steps, but only when triggered manually from the GitHub Actions tab; it does not run on every push or pull request.
 
-La suite `npm run test:e2e` usa datos mockeados y valida navegación responsive en móvil
-y escritorio. Para probar la integración real, `npm run test:e2e:erpnext` levanta un
-ERPNext local desechable en Docker, borra sus volúmenes, crea fixtures funcionales por
-REST y ejecuta la suite en móvil, tablet y escritorio. Requiere Docker, Node y un
-Chrome local compatible con Playwright.
+`npm run test:e2e` uses mocked data and checks responsive navigation on mobile, tablet, and desktop. To test the real integration, `npm run test:e2e:erpnext` starts a disposable local ERPNext in Docker, wipes its volumes, creates working fixtures over REST, and runs the suite on mobile, tablet, and desktop. It requires Docker, Node, and a local Chrome compatible with Playwright.
 
-## E2E real con ERPNext
+## Real ERPNext E2E
 
 ```bash
-cp .env.erpnext.example .env.erpnext.local # opcional: los defaults son locales
+cp .env.erpnext.example .env.erpnext.local # optional: defaults are local
 npm run erpnext:up
 npm run erpnext:health
 npm run test:e2e:erpnext
 ```
 
-`test:e2e:erpnext` hace reset automático del entorno local antes de sembrar los datos.
-Los accesos API se generan después del seed y se guardan únicamente en el archivo
-ignorado `.env.erpnext.local`. El stack usa la imagen oficial `frappe/erpnext` y queda
-disponible en `http://127.0.0.1:8080`. Para destruirlo manualmente:
+`test:e2e:erpnext` automatically resets the local environment before seeding data. API credentials are generated after seeding and stored only in the git-ignored `.env.erpnext.local` file. The stack uses the official `frappe/erpnext` image and is available at `http://127.0.0.1:8080`. To destroy it manually:
 
 ```bash
 npm run erpnext:reset
 ```
 
-El reset elimina solamente los volúmenes del proyecto Docker `mauricio-erpnext-e2e`.
-No uses estos scripts contra una instancia remota o de producción.
+The reset removes only the volumes of the `mauricio-erpnext-e2e` Docker project. Never run these scripts against a remote or production instance.
 
-La instancia ERPNext debe permitir CORS desde el dominio donde se despliega la SPA.
-En producción se aceptan URLs HTTPS; HTTP queda limitado a `localhost` para desarrollo.
+The ERPNext instance must allow CORS from the domain where the SPA is deployed. Production accepts HTTPS URLs; HTTP is limited to `localhost` for development.
 
-## Despliegue
+## Deployment
 
-`npm run build` genera archivos estáticos en `dist/`. Sirve esa carpeta desde cualquier
-hosting estático con HTTPS y configura un fallback de rutas a `index.html`, porque la
-SPA usa rutas del navegador (`/items`, `/pos`, etc.). Los feature flags `VITE_FF_*` se
-fijan en el build; no hay variables de entorno en tiempo de ejecución.
+`npm run build` produces static files in `dist/`. Serve that folder from any static host with HTTPS and configure a route fallback to `index.html`, because the SPA uses browser routes (`/items`, `/pos`, etc.). `VITE_FF_*` feature flags are fixed at build time; there are no runtime environment variables.
 
-## Rutas principales
+## Main routes
 
-- `/items`: catálogo local de productos.
-- `/variants`: jerarquía de plantillas, variantes y múltiples UOM.
-- `/prices`: precios de compra, venta y precios específicos por proveedor.
-- `/suppliers`: catálogo de proveedores y alta de nuevos registros.
-- `/doctypes`: explorador de DocTypes cacheado.
-- `/settings`: prueba y bloqueo de la conexión local.
+- `/`: operational home.
+- `/pos`, `/pos/ventas`, `/pos/turnos`, `/pos/cotizaciones`: POS, daily sales, shifts, and quotations.
+- `/items`: local product catalog.
+- `/variants`: template/variant hierarchy and multiple UOMs.
+- `/prices`: buying, selling, and supplier-specific prices.
+- `/suppliers`: supplier catalog and new supplier creation.
+- `/stock`, `/stock/reconciliation`: stock viewer and reconciliation.
+- `/doctypes`: cached DocType explorer.
+- `/settings`: preferences, caches, and the local connection.
 
-No incluyas API keys, API secrets, contraseñas locales ni respuestas reales de ERPNext en commits, capturas o issues.
+Never include API keys, API secrets, local passwords, or real ERPNext responses in commits, screenshots, or issues.
 
-Las cachés locales se mantienen en IndexedDB por perfil. Las ediciones exitosas pueden actualizar localmente una entidad, pero conservan la marca de cambios locales hasta que se ejecute un refresco completo del catálogo.
+## License
 
-La jerarquía de variantes virtualiza sus raíces cuando la búsqueda produce más de 200 nodos; con catálogos pequeños conserva el render normal para mantener una interacción sencilla y accesible.
-
-
-## Licencia
-
-Este proyecto se distribuye bajo [CC BY-NC-SA 4.0](./LICENSE). Puedes usarlo, estudiarlo
-y modificarlo sin fines comerciales, dando crédito al autor. Cualquier versión modificada
-que compartas debe publicarse bajo la misma licencia. El uso comercial requiere permiso
-explícito del autor.
+This project is licensed under [CC BY-NC-SA 4.0](./LICENSE). You may use, study, and modify it for non-commercial purposes with attribution to the author. Any modified version you share must be released under the same license. Commercial use requires explicit permission from the author.
