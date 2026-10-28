@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/mauricio-logo-cropped.png" alt="Mauricio ERPNext" width="160" />
+</p>
+
 # Mauricio_ERPNext
 
 Cliente local y agnóstico para administrar instancias ERPNext desde el navegador.
