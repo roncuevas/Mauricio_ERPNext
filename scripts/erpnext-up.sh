@@ -7,5 +7,4 @@ source .env.erpnext.local
 set +a
 compose=(docker compose --env-file .env.erpnext.local -f docker-compose.erpnext.yml)
 "${compose[@]}" up -d
-"${compose[@]}" wait create-site
 scripts/erpnext-seed.py

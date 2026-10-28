@@ -12,8 +12,9 @@ services:
       DB_PORT: "3306"
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-admin}
       MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-admin}
+    # Workers must load the site only after create-site writes its encryption_key.
     depends_on:
-      configurator:
+      create-site:
         condition: service_completed_successfully
 
   configurator:
@@ -69,6 +70,11 @@ services:
         if ! bench --site frontend list-apps | grep -q '^erpnext'; then
           bench --site frontend install-app erpnext
         fi
+        # Frappe creates encryption_key lazily per process; concurrent workers would race
+        # and leave API secrets encrypted with a key that is later overwritten.
+        if ! grep -q '"encryption_key"' sites/frontend/site_config.json; then
+          bench --site frontend set-config encryption_key "$$(env/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+        fi
         bench --site frontend set-config allow_cors '["http://127.0.0.1:5173", "http://localhost:5173"]'
     environment:
       DB_PASSWORD: ${DB_PASSWORD:-admin}
@@ -116,7 +122,9 @@ services:
       FRAPPE_REDIS_CACHE: redis://redis-cache:6379
       FRAPPE_REDIS_QUEUE: redis://redis-queue:6379
     volumes: [sites:/home/frappe/frappe-bench/sites, logs:/home/frappe/frappe-bench/logs]
-    depends_on: [configurator]
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
 
   queue-short:
     image: ${ERPNEXT_IMAGE:-frappe/erpnext:v16.52.1}
@@ -126,7 +134,9 @@ services:
       FRAPPE_REDIS_CACHE: redis://redis-cache:6379
       FRAPPE_REDIS_QUEUE: redis://redis-queue:6379
     volumes: [sites:/home/frappe/frappe-bench/sites, logs:/home/frappe/frappe-bench/logs]
-    depends_on: [configurator]
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
 
   redis-queue:
     image: redis:6.2-alpine
@@ -142,7 +152,9 @@ services:
     networks: [frappe_network]
     command: ["bench", "schedule"]
     volumes: [sites:/home/frappe/frappe-bench/sites, logs:/home/frappe/frappe-bench/logs]
-    depends_on: [configurator]
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
 
   websocket:
     image: ${ERPNEXT_IMAGE:-frappe/erpnext:v16.52.1}
@@ -152,7 +164,9 @@ services:
       FRAPPE_REDIS_CACHE: redis://redis-cache:6379
       FRAPPE_REDIS_QUEUE: redis://redis-queue:6379
     volumes: [sites:/home/frappe/frappe-bench/sites, logs:/home/frappe/frappe-bench/logs]
-    depends_on: [configurator]
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
 
 volumes:
   db-data:
