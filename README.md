@@ -57,8 +57,8 @@ npm test
 npm run test:e2e
 ```
 
-Estos mismos pasos corren en GitHub Actions (`.github/workflows/ci.yml`) en cada push a
-`main` y en cada pull request.
+El workflow `.github/workflows/ci.yml` ejecuta estos mismos pasos, pero solo se lanza
+manualmente desde la pestaña Actions de GitHub; no corre en cada push ni pull request.
 
 La suite `npm run test:e2e` usa datos mockeados y valida navegación responsive en móvil
 y escritorio. Para probar la integración real, `npm run test:e2e:erpnext` levanta un
