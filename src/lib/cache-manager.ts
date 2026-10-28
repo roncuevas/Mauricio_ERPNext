@@ -342,7 +342,7 @@ export async function refreshManagedCache(id: ManagedCacheId, context: ManagedRe
     case 'shifts': return refreshShifts(context.client, profileId, retryOnly)
     case 'quotations': {
       if (!activeProfile?.company) throw new Error('Selecciona o configura un POS Profile con compañía para refrescar cotizaciones.')
-      const quotations = (await context.client.listDocuments<QuotationSummary>('Quotation', { fields: ['name', 'docstatus', 'quotation_to', 'party_name', 'customer_name', 'company', 'transaction_date', 'delivery_date', 'valid_till', 'status', 'currency', 'grand_total', 'modified'], filters: [['company', '=', activeProfile.company], ['docstatus', 'in', [0, 1]],], pageLength: 500, orderBy: 'modified desc' })).data
+      const quotations = (await context.client.listDocuments<QuotationSummary>('Quotation', { fields: ['name', 'docstatus', 'quotation_to', 'party_name', 'customer_name', 'company', 'transaction_date', 'valid_till', 'status', 'currency', 'grand_total', 'modified'], filters: [['company', '=', activeProfile.company], ['docstatus', 'in', [0, 1]],], pageLength: 500, orderBy: 'modified desc' })).data
       return quotationStore.write({ profileId, updatedAt: now(), data: { company: activeProfile.company, quotations } })
     }
   }

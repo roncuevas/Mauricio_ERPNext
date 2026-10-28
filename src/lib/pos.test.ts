@@ -20,7 +20,7 @@ describe('POS rules', () => {
       { charge_type: 'On Net Total', description: 'IVA incluido', rate: 16, included_in_print_rate: 1 },
       { charge_type: 'On Previous Row Total', description: 'Recargo', rate: 10, reference_row: 1, included_in_print_rate: '0' },
     ]
-    expect(cartTotals([{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 100 }], taxes)).toMatchObject({ total: 110, totalTaxes: 23.79, taxes: [{ amount: 13.79 }, { amount: 10 }] })
+    expect(cartTotals([{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 100 }], taxes)).toMatchObject({ subtotalWithoutTaxes: 86.21, total: 110, totalTaxes: 23.79, taxes: [{ amount: 13.79 }, { amount: 10 }] })
   })
 
   it('validates mixed payments and calculates change', () => {

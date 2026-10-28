@@ -537,17 +537,17 @@ export default interface Resources {
         "noConfirmedSales": "Sin ventas confirmadas en este turno.",
         "noTaxes": "Sin impuestos configurados en el POS Profile",
         "payment": "Pago",
-        "provisionalTotal": "Total provisional",
         "quantityFor": "Cantidad de {{name}} en {{uom}}",
         "received": "Recibido",
         "remove": "Quitar {{name}}",
         "return": "Devolver",
         "shiftSales": "Ventas del turno",
-        "subtotal": "Subtotal",
+        "subtotalWithoutTaxes": "Subtotal sin impuestos",
         "tax": "Impuesto",
         "taxBreakdown": "Desglose de impuestos",
         "taxes": "Impuestos",
         "totalTaxes": "Total impuestos",
+        "totalWithTaxes": "Total con impuestos",
         "uomLabel": "UOM:"
       },
       "variant": {
@@ -670,7 +670,8 @@ export default interface Resources {
       "title": "Precios por producto",
       "uomLabel": "UOM:",
       "updatedAt": "Actualizado: {{date}}",
-      "updatedCount": "Precios actualizados: {{count}}"
+      "updatedCount": "Precios actualizados: {{count}}",
+      "variant": "Variante"
     },
     "productsPage": {
       "applyFilter": "Aplicar filtro",

@@ -75,12 +75,22 @@ function itemMatchesFilters(item: VariantItem, prices: ItemPrice[], filters: Pri
 
 type HierarchySearchResult = { visibleNames: Set<string>; directNames: Set<string>; contextNames: Set<string>; expandedNames: Set<string>; scores: Map<string, number> }
 
-function collectVisibleNames(items: VariantItem[], childrenByParent: Map<string, VariantItem[]>, pricesByItem: Map<string, ItemPrice[]>, search: string, filters: PriceFilters): HierarchySearchResult {
+// eslint-disable-next-line react-refresh/only-export-components
+export function collectVisibleNames(items: VariantItem[], childrenByParent: Map<string, VariantItem[]>, pricesByItem: Map<string, ItemPrice[]>, search: string, filters: PriceFilters): HierarchySearchResult {
   const visibleNames = new Set<string>()
   const directNames = new Set<string>()
   const contextNames = new Set<string>()
   const expandedNames = new Set<string>()
   const scores = new Map<string, number>()
+  function revealMatchingDescendants(item: VariantItem) {
+    const children = childrenByParent.get(item.name) ?? []
+    for (const child of children) {
+      if (!itemMatchesFilters(child, pricesByItem.get(child.name) ?? [], filters)) continue
+      visibleNames.add(child.name)
+      if ((childrenByParent.get(child.name) ?? []).length > 0) expandedNames.add(child.name)
+      revealMatchingDescendants(child)
+    }
+  }
   function visit(item: VariantItem): boolean {
     const children = childrenByParent.get(item.name) ?? []
     const descendantMatches = children.map(visit).some(Boolean)
@@ -88,6 +98,10 @@ function collectVisibleNames(items: VariantItem[], childrenByParent: Map<string,
     const searchMatches = !search || match !== null
     const matches = searchMatches && itemMatchesFilters(item, pricesByItem.get(item.name) ?? [], filters)
     if (matches) { directNames.add(item.name); scores.set(item.name, match?.score ?? 0) }
+    if (matches && children.length > 0) {
+      expandedNames.add(item.name)
+      revealMatchingDescendants(item)
+    }
     if (descendantMatches && !matches) contextNames.add(item.name)
     if (descendantMatches) expandedNames.add(item.name)
     if (matches || descendantMatches) visibleNames.add(item.name)
@@ -150,7 +164,7 @@ function PriceNode({ item, depth, childrenByParent, pricesByItem, visibleNames, 
         <div className="price-node-heading">
           <div className={`price-node-toggle${children.length ? '' : ' price-node-toggle-empty'}`}>{children.length > 0 && <button className="price-expand-button" aria-label={expandedNode ? t('pricesPage.hideItem', { name: item.name }) : t('pricesPage.showItem', { name: item.name })} aria-expanded={expandedNode} onClick={() => onToggle(item.name)}>{expandedNode ? '▾' : '▸'}</button>}</div>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2"><strong className="price-node-title">{item.item_name || item.name}</strong>{isTemplate ? <span className="price-template-badge">{t('pricesPage.template')}</span> : null}</div>
+            <div className="flex flex-wrap items-center gap-2"><strong className="price-node-title">{item.item_name || item.name}</strong>{isTemplate ? <span className="price-template-badge">{t('pricesPage.template')}</span> : item.variant_of ? <span className="price-variant-badge">{t('pricesPage.variant')}</span> : null}</div>
             <div className="price-node-meta"><span className="font-mono">{item.name}</span>{item.brand && <span>{t('common.brand')}: {item.brand}</span>}{item.stock_uom && <span className="variant-stock-badge">{item.stock_uom}</span>}{!isTemplate && <span>{t('pricesPage.priceCount', { count: prices.length })}</span>}</div>
           </div>
         </div>

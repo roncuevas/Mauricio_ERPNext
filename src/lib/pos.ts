@@ -9,6 +9,7 @@ export type PosClosingSummary = { rows: Array<{ modeOfPayment: string; opening: 
 
 export type PosTotals = {
   subtotal: number
+  subtotalWithoutTaxes: number
   discount: number
   taxes: PosTaxCalculation[]
   totalTaxes: number
@@ -60,7 +61,8 @@ export function cartTotals(lines: PosCartLine[], taxRows: PosTaxRow[] = []): Pos
   const taxes = calculateTaxes(lines, taxRows, total)
   const totalTaxes = roundMoney(taxes.reduce((sum, tax) => sum + tax.amount, 0))
   const payableTaxes = roundMoney(taxes.filter((tax) => !isChecked(tax.included_in_print_rate)).reduce((sum, tax) => sum + tax.amount, 0))
-  return { subtotal, discount: roundMoney(subtotal - total), taxes, totalTaxes, total: roundMoney(total + payableTaxes) }
+  const finalTotal = roundMoney(total + payableTaxes)
+  return { subtotal, subtotalWithoutTaxes: roundMoney(finalTotal - totalTaxes), discount: roundMoney(subtotal - total), taxes, totalTaxes, total: finalTotal }
 }
 
 export function validatePayments(payments: PosPaymentLine[], total: number) {
