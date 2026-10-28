@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import { featureFlags } from '../lib/feature-flags'
 
 type WorkspaceTab = { value: string; labelKey: string; to: string; matches: (pathname: string) => boolean }
 type Workspace = { id: string; labelKey: string; descriptionKey: string; tabs: WorkspaceTab[] }
@@ -13,7 +14,7 @@ const workspaces: Workspace[] = [
     tabs: [
       { value: 'pos', labelKey: 'navigation.pos', to: '/pos', matches: (pathname) => pathname === '/pos' },
       { value: 'sales', labelKey: 'navigation.dailySales', to: '/pos/ventas', matches: (pathname) => pathname.startsWith('/pos/ventas') },
-      { value: 'quotations', labelKey: 'navigation.quotations', to: '/pos/cotizaciones', matches: (pathname) => pathname.startsWith('/pos/cotizaciones') },
+      ...(featureFlags.quotationsView ? [{ value: 'quotations', labelKey: 'navigation.quotations', to: '/pos/cotizaciones', matches: (pathname: string) => pathname.startsWith('/pos/cotizaciones') }] : []),
       { value: 'shifts', labelKey: 'navigation.shifts', to: '/pos/turnos', matches: (pathname) => pathname.startsWith('/pos/turnos') },
     ],
   },
