@@ -36,11 +36,11 @@ async function createConnection(page: Page) {
   await fields.nth(3).fill('e2e-secret')
   await fields.nth(4).fill('e2e-passphrase')
   await page.getByRole('button', { name: 'Cifrar y conectar' }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole('heading', { name: 'Inicio' })).toBeVisible()
 }
 
 async function refreshCatalog(page: Page) {
-  await expect(page.getByRole('heading', { name: 'Productos' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Productos', exact: true })).toBeVisible()
   const actions = page.locator('details.mobile-actions')
   if (await actions.isVisible()) {
     await actions.locator('summary').click()
@@ -111,23 +111,24 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page).not.toHaveURL(/api_secret/)
     await page.getByRole('textbox').nth(4).fill('e2e-passphrase')
     await page.getByRole('button', { name: 'Cifrar y conectar' }).click()
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('heading', { name: 'Inicio' })).toBeVisible()
   })
 
   test('mobile routes remain usable screen by screen', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'Este caso corresponde al proyecto móvil')
     await createConnection(page)
+    await page.goto('/items')
     await refreshCatalog(page)
     await expect(page.getByText('Croquetas Adulto Premium', { exact: true }).first()).toBeVisible()
-    await page.getByRole('button', { name: 'Cards' }).click()
+    await page.getByRole('radio', { name: 'Cards' }).click()
     await expect(page.getByRole('alert')).toContainText('La vista Cards carga información enriquecida')
     await page.getByRole('button', { name: 'Cargar y guardar en caché' }).click()
     await expect(page.getByText('Precios, UOM y conversiones guardados en caché')).toBeVisible()
     await expect(page.locator('.product-card')).toHaveCount(1)
     await expect(page.getByText('Ganancia aprox.')).toBeVisible()
     await expect(page.getByText('$50.00', { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Tabla' }).click()
-    await page.getByRole('button', { name: 'Cards' }).click()
+    await page.getByRole('radio', { name: 'Tabla' }).click()
+    await page.getByRole('radio', { name: 'Cards' }).click()
     await expect(page.getByRole('alert')).toHaveCount(0)
     await page.goto('/prices')
     await expect(page.getByRole('heading', { name: 'Precios por producto' })).toBeVisible()
@@ -183,7 +184,7 @@ test.describe('responsive navigation and empty states', () => {
 
     for (const [path, heading] of routes) {
       await page.goto(path)
-      await expect(page.getByRole('heading', { name: heading })).toBeVisible()
+      await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible()
       await expect(page.locator('.page-header')).toBeVisible()
       await expect(page.locator('.page-header')).toHaveCSS('position', 'static')
       if (['/items', '/suppliers'].includes(path)) await expect(page.locator('.page-header-toolbar')).toBeVisible()
@@ -212,7 +213,7 @@ test.describe('responsive navigation and empty states', () => {
     test.skip(testInfo.project.name !== 'tablet', 'Este caso corresponde al proyecto tablet')
     await createConnection(page)
     await page.goto('/items')
-    await expect(page.getByRole('heading', { name: 'Productos' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Productos', exact: true })).toBeVisible()
     await expect(page.locator('.mobile-navigation')).toBeVisible()
     for (const path of ['/items', '/prices', '/variants', '/stock', '/stock/reconciliation', '/pos/ventas', '/pos/turnos']) {
       await page.goto(path)
@@ -245,7 +246,7 @@ test.describe('responsive navigation and empty states', () => {
     await page.getByRole('button', { name: 'Expandir Administración' }).click()
     await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Configuración' }).click()
     await expect(page.getByRole('heading', { name: 'Configuración' })).toBeVisible()
-    await page.getByRole('tab', { name: 'Cachés' }).click()
+    await page.getByRole('tab', { name: 'Datos' }).click()
     await expect(page.getByRole('heading', { name: 'Cachés y último fetch' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Productos' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Refrescar todo' })).toBeVisible()
@@ -271,7 +272,7 @@ test.describe('responsive navigation and empty states', () => {
       await expect(page.getByRole('tab', { name: /Carrito/ })).toHaveAttribute('aria-selected', 'false')
       await page.getByRole('tab', { name: /Carrito/ }).click()
       await expect(page.getByRole('tab', { name: /Carrito/ })).toHaveAttribute('aria-selected', 'true')
-      await page.getByRole('button', { name: 'Más acciones del POS' }).click()
+      await page.getByRole('button', { name: 'Más acciones' }).click()
       await expect(page.getByRole('menuitem', { name: 'Mostrar productos' })).toBeVisible()
       await page.getByRole('menuitem', { name: 'Mostrar contexto' }).click()
     }
@@ -290,7 +291,7 @@ test.describe('responsive navigation and empty states', () => {
     await page.goto('/pos')
     await page.getByRole('button', { name: 'Abrir turno' }).click()
     if (testInfo.project.name === 'mobile') {
-      await page.getByRole('button', { name: 'Más acciones del POS' }).click()
+      await page.getByRole('button', { name: 'Más acciones' }).click()
       await page.getByRole('menuitem', { name: 'Mostrar contexto' }).click()
     }
     await expect(page.getByText(/Turno abierto:/)).toBeVisible()
@@ -314,6 +315,6 @@ test.describe('responsive navigation and empty states', () => {
     await expect(page.getByRole('heading', { name: 'Abrir Caja Demo' })).toBeVisible()
     await page.getByLabel('Fondo inicial Efectivo').fill('500')
     await page.getByRole('button', { name: 'Confirmar apertura' }).click()
-    await expect(page.getByRole('status')).toContainText('Turno abierto: SUP-001')
+    await expect(page.getByRole('status').filter({ hasText: 'Turno abierto' })).toContainText('Turno abierto: SUP-001')
   })
 })

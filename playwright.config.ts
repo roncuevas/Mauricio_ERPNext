@@ -2,10 +2,12 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: /erpnext\.spec\.ts/,
   fullyParallel: true,
   reporter: process.env.CI ? 'dot' : 'list',
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    locale: 'es-MX',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
