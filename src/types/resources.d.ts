@@ -694,6 +694,8 @@ export default interface Resources {
       "updatedCount_one": "Precios actualizados: {{count}}",
       "updatedCount_other": "Precios actualizados: {{count}}",
       "useSuggestion": "Usar precio sugerido",
+      "validFrom": "Vigente desde {{date}}",
+      "validUntil": "Vigente hasta {{date}}",
       "variant": "Variante"
     },
     "productsPage": {

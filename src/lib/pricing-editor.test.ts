@@ -21,6 +21,13 @@ describe('price editor suggestions and duplicate detection', () => {
     expect(findDuplicateItemPrice([existing], candidate, undefined, 'Kg')).toEqual(existing)
   })
 
+  it('blocks an active dated price when a new price has no validity dates', () => {
+    const existing = { ...candidate, name: 'PRICE-1', valid_from: '2026-10-01', valid_upto: '2026-11-01' }
+    expect(findDuplicateItemPrice([existing], candidate, undefined, undefined, '2026-10-30')).toEqual(existing)
+    expect(findDuplicateItemPrice([existing], candidate, undefined, undefined, '2026-09-30')).toBeNull()
+    expect(findDuplicateItemPrice([{ ...existing, valid_upto: '2026-10-29' }], candidate, undefined, undefined, '2026-10-30')).toBeNull()
+  })
+
   it('averages active prices from other lists only when dimensions are comparable', () => {
     const prices = [
       { ...candidate, name: 'PRICE-1', price_list: 'Lista A', price_list_rate: 80 },

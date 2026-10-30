@@ -27,13 +27,19 @@ function sameOptionalValue(left?: string | null, right?: string | null) {
   return (left || '') === (right || '')
 }
 
-/** Mirrors Item Price's uniqueness dimensions used by ERPNext and ignores the row being edited. */
-export function findDuplicateItemPrice(prices: PriceCandidate[], candidate: PriceCandidate, excludeName?: string, stockUom?: string) {
+function localDateString(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/** Uses ERPNext's uniqueness dimensions and checks active dated prices when the editor leaves validity blank. */
+export function findDuplicateItemPrice(prices: PriceCandidate[], candidate: PriceCandidate, excludeName?: string, stockUom?: string, today = localDateString()) {
   return prices.find((price) => price.name !== excludeName
     && price.item_code === candidate.item_code
     && price.price_list === candidate.price_list
     && (price.uom || stockUom || '') === (candidate.uom || stockUom || '')
-    && sameOptionalValue(price.valid_from, candidate.valid_from)
+    && (candidate.valid_from
+      ? sameOptionalValue(price.valid_from, candidate.valid_from)
+      : (!price.valid_from || price.valid_from <= today) && (!price.valid_upto || price.valid_upto >= today))
     && sameOptionalValue(price.customer, candidate.customer)
     && sameOptionalValue(price.supplier, candidate.supplier)
     && sameOptionalValue(price.batch_no, candidate.batch_no)

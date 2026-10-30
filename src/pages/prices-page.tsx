@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -33,6 +33,13 @@ function money(price: ItemPrice, locale = 'es', fallback = 'Sin precio') {
 
 function priceUomLabel(price: Pick<ItemPrice, 'uom'>, defaultLabel: string) {
   return price.uom || defaultLabel
+}
+
+function PriceValidity({ price }: { price: ItemPrice }) {
+  const { t } = useTranslation()
+  if (!price.valid_from && !price.valid_upto) return null
+  const dates = [price.valid_from && t('pricesPage.validFrom', { date: price.valid_from }), price.valid_upto && t('pricesPage.validUntil', { date: price.valid_upto })].filter(Boolean)
+  return <span className="text-xs text-[var(--color-muted)]">{dates.join(' · ')}</span>
 }
 
 function sortPricesByPriceList(prices: ItemPrice[]) {
@@ -132,6 +139,7 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
   const [supplier, setSupplier] = useState(price?.supplier ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const saveInProgress = useRef(false)
   const availablePriceLists = priceLists.filter((candidate) => priceListSupports(candidate, kind))
   const selectedPriceListIsAvailable = availablePriceLists.some((candidate) => candidate.name === priceList)
   const candidate = { name: price?.name ?? '', item_code: item.name, price_list: priceList.trim(), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || undefined, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || undefined : undefined, supplier: kind === 'buying' ? supplier.trim() || undefined : undefined, batch_no: price?.batch_no, packing_unit: price?.packing_unit ?? 0, valid_from: price?.valid_from }
@@ -140,12 +148,16 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
   const duplicateMessage = (duplicatePrice: Pick<ItemPrice, 'price_list' | 'uom'>) => t('pricesPage.duplicatePrice', { list: duplicatePrice.price_list || t('pricesPage.noList'), uom: priceUomLabel(duplicatePrice, t('pricesPage.defaultStockUom', { uom: item.stock_uom || '—' })) })
 
   async function save(event: React.FormEvent) {
-    event.preventDefault(); setBusy(true); setError('')
-    if (!priceList.trim() || !rate || Number(rate) < 0) { setError(t('pricesPage.requiredPrice')); setBusy(false); return }
-    if (duplicate) { setError(t('pricesPage.duplicatePrice', { list: duplicate.price_list || t('pricesPage.noList'), uom: duplicate.uom || item.stock_uom || '—' })); setBusy(false); return }
+    event.preventDefault()
+    if (saveInProgress.current) return
+    saveInProgress.current = true
+    setBusy(true)
+    setError('')
+    if (!priceList.trim() || !rate || Number(rate) < 0) { setError(t('pricesPage.requiredPrice')); setBusy(false); saveInProgress.current = false; return }
+    if (duplicate) { setError(duplicateMessage(duplicate)); setBusy(false); saveInProgress.current = false; return }
     const data = { item_code: item.name, price_list: priceList.trim(), price_list_rate: Number(rate), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || null, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || null : null, supplier: kind === 'buying' ? supplier.trim() || null : null }
     try {
-      const currentPrices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto'], filters: [['item_code', '=', item.name], ['price_list', '=', priceList.trim()]], orderBy: 'name asc' })
+      const currentPrices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto'], filters: [['item_code', '=', item.name]], orderBy: 'name asc' })
       const currentDuplicate = findDuplicateItemPrice(currentPrices, candidate, price?.name, item.stock_uom)
       if (currentDuplicate) { setError(duplicateMessage(currentDuplicate)); return }
       const saved = price ? await client.updateDocument<Record<string, unknown>>('Item Price', price.name, data) : await client.createDocument<Record<string, unknown>>('Item Price', data)
@@ -153,7 +165,7 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : t('pricesPage.saveError')
       setError(/Item Price appears multiple times|ItemPriceDuplicateItem/i.test(message) ? duplicateMessage({ price_list: priceList, uom }) : message)
-    } finally { setBusy(false) }
+    } finally { setBusy(false); saveInProgress.current = false }
   }
 
   return <div id="price-editor" className="card mb-5 border-blue-200 p-5">
@@ -192,6 +204,7 @@ function PriceNode({ item, depth, childrenByParent, pricesByItem, visibleNames, 
         {prices.length > 0 && <div className="price-entry-list">{prices.map((price) => <div className="price-entry" key={price.name}>
           <div className="price-entry-top"><span className={`price-kind ${price.buying ? 'price-kind-buying' : 'price-kind-selling'}`}>{price.buying ? t('pricesPage.buying') : t('pricesPage.selling')}</span><span className="price-amount">{money(price, i18n.language)}</span></div>
           <div className="price-entry-meta"><span>{price.price_list || t('pricesPage.noList')}</span><Badge tone={price.buying ? 'warning' : 'success'}>{t('pricesPage.uomLabel')} {priceUomLabel(price, t('pricesPage.defaultStockUom', { uom: item.stock_uom || '—' }))}</Badge>{price.buying ? <span>{t('common.supplier')}: {price.supplier || t('pricesPage.general')}</span> : price.customer ? <span>{t('common.customer')}: {price.customer}</span> : null}</div>
+          <PriceValidity price={price} />
           {price.selling ? <div className="price-entry-margin"><MarginSummary selling={price} purchases={findComparablePurchases(price, prices)} /></div> : null}
           <Button className="price-edit-button" type="button" variant="secondary" onClick={() => onEdit(item, price)}>{t('common.edit')}</Button>
         </div>)}</div>}
@@ -313,5 +326,5 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
 
   if (pricesQuery.isPending || variantsQuery.isPending) return <section><Spinner /></section>
   if (!item) return <section><Notice>{t('pricesPage.productNotFound')}</Notice><Button className="mt-3" type="button" variant="secondary" onClick={() => navigate(returnToPrices)}>{t('pricesPage.backToPrices')}</Button></section>
-  return <section className="price-management-workspace"><PageHeader title={editingPrice ? t('pricesPage.editPrice') : t('pricesPage.addPrice')} description={t('pricesPage.managementDescription', { item: item.item_name || item.name })} action={<Button type="button" variant="secondary" onClick={() => navigate(returnToPrices)}>{t('pricesPage.backToPrices')}</Button>} /><div className="price-management-summary"><div><span className="price-management-label">{t('common.product')}</span><strong>{item.item_name || item.name}</strong><code>{item.name}</code></div><div><span className="price-management-label">{t('pricesPage.existingPrices')}</span><strong>{existingPrices.length}</strong></div><Button type="button" variant="secondary" onClick={() => setEditingPriceName('')}>{t('pricesPage.addAnother')}</Button></div><div className="price-management-existing"><div className="price-management-section-heading"><h2>{t('pricesPage.currentPrices')}</h2><span>{existingPrices.length}</span></div>{existingPrices.length ? existingPrices.map((price) => <div className={`price-management-entry${price.name === editingPriceName ? ' price-management-entry-active' : ''}`} key={price.name}><div><span className={`price-kind ${price.buying ? 'price-kind-buying' : 'price-kind-selling'}`}>{price.buying ? t('pricesPage.buying') : t('pricesPage.selling')}</span><strong>{money(price, i18n.language)}</strong></div><div><span>{price.price_list || t('pricesPage.noList')}</span><span>{t('pricesPage.uomLabel')} {priceUomLabel(price, t('pricesPage.defaultStockUom', { uom: item.stock_uom || '—' }))}</span>{price.buying ? <span>{t('common.supplier')}: {price.supplier || t('pricesPage.general')}</span> : price.customer ? <span>{t('common.customer')}: {price.customer}</span> : null}</div><Button type="button" variant="secondary" onClick={() => setEditingPriceName(price.name)}>{t('common.edit')}</Button></div>) : <p className="muted">{t('pricesPage.noSavedPrices')}</p>}</div>{message && <Notice tone="info">{message}</Notice>}{priceListsQuery.isError && <Notice tone="warning">{t('pricesPage.priceListsError')}</Notice>}<PriceEditor key={`${item.name}-${editingPrice?.name ?? 'new'}`} client={client} item={item} price={editingPrice} prices={existingPrices} priceLists={priceListsQuery.data ?? []} defaultPriceList={searchParams.get('priceList') ?? undefined} defaultUom={searchParams.get('uom') ?? undefined} returnTo={`${location.pathname}${location.search}`} onSaved={savePrice} onClose={() => navigate(returnToPrices)} /></section>
+  return <section className="price-management-workspace"><PageHeader title={editingPrice ? t('pricesPage.editPrice') : t('pricesPage.addPrice')} description={t('pricesPage.managementDescription', { item: item.item_name || item.name })} action={<Button type="button" variant="secondary" onClick={() => navigate(returnToPrices)}>{t('pricesPage.backToPrices')}</Button>} /><div className="price-management-summary"><div><span className="price-management-label">{t('common.product')}</span><strong>{item.item_name || item.name}</strong><code>{item.name}</code></div><div><span className="price-management-label">{t('pricesPage.existingPrices')}</span><strong>{existingPrices.length}</strong></div><Button type="button" variant="secondary" onClick={() => setEditingPriceName('')}>{t('pricesPage.addAnother')}</Button></div><div className="price-management-existing"><div className="price-management-section-heading"><h2>{t('pricesPage.currentPrices')}</h2><span>{existingPrices.length}</span></div>{existingPrices.length ? existingPrices.map((price) => <div className={`price-management-entry${price.name === editingPriceName ? ' price-management-entry-active' : ''}`} key={price.name}><div><span className={`price-kind ${price.buying ? 'price-kind-buying' : 'price-kind-selling'}`}>{price.buying ? t('pricesPage.buying') : t('pricesPage.selling')}</span><strong>{money(price, i18n.language)}</strong></div><div><span>{price.price_list || t('pricesPage.noList')}</span><span>{t('pricesPage.uomLabel')} {priceUomLabel(price, t('pricesPage.defaultStockUom', { uom: item.stock_uom || '—' }))}</span><PriceValidity price={price} />{price.buying ? <span>{t('common.supplier')}: {price.supplier || t('pricesPage.general')}</span> : price.customer ? <span>{t('common.customer')}: {price.customer}</span> : null}</div><Button type="button" variant="secondary" onClick={() => setEditingPriceName(price.name)}>{t('common.edit')}</Button></div>) : <p className="muted">{t('pricesPage.noSavedPrices')}</p>}</div>{message && <Notice tone="info">{message}</Notice>}{priceListsQuery.isError && <Notice tone="warning">{t('pricesPage.priceListsError')}</Notice>}<PriceEditor key={`${item.name}-${editingPrice?.name ?? 'new'}`} client={client} item={item} price={editingPrice} prices={existingPrices} priceLists={priceListsQuery.data ?? []} defaultPriceList={searchParams.get('priceList') ?? undefined} defaultUom={searchParams.get('uom') ?? undefined} returnTo={`${location.pathname}${location.search}`} onSaved={savePrice} onClose={() => navigate(returnToPrices)} /></section>
 }
