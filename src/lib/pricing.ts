@@ -21,7 +21,7 @@ export function findComparablePurchases(selling: ItemPrice, prices: ItemPrice[])
   return Array.from(bySupplier.values()).sort((left, right) => Number(left.price_list_rate ?? 0) - Number(right.price_list_rate ?? 0))
 }
 
-type PriceCandidate = Omit<Pick<ItemPrice, 'item_code' | 'price_list' | 'price_list_rate' | 'buying' | 'selling' | 'uom' | 'currency' | 'customer' | 'supplier' | 'valid_from' | 'valid_upto' | 'name'>, 'name'> & { name?: string }
+type PriceCandidate = Omit<Pick<ItemPrice, 'item_code' | 'price_list' | 'price_list_rate' | 'buying' | 'selling' | 'uom' | 'currency' | 'customer' | 'supplier' | 'batch_no' | 'packing_unit' | 'valid_from' | 'valid_upto' | 'name'>, 'name'> & { name?: string }
 
 function sameOptionalValue(left?: string | null, right?: string | null) {
   return (left || '') === (right || '')
@@ -35,7 +35,9 @@ export function findDuplicateItemPrice(prices: PriceCandidate[], candidate: Pric
     && sameOptionalValue(price.uom, candidate.uom)
     && sameOptionalValue(price.valid_from, candidate.valid_from)
     && sameOptionalValue(price.customer, candidate.customer)
-    && sameOptionalValue(price.supplier, candidate.supplier)) ?? null
+    && sameOptionalValue(price.supplier, candidate.supplier)
+    && sameOptionalValue(price.batch_no, candidate.batch_no)
+    && Number(price.packing_unit ?? 0) === Number(candidate.packing_unit ?? 0)) ?? null
 }
 
 /** Suggests an average from active prices in other lists with the same type, UOM, currency and party context. */

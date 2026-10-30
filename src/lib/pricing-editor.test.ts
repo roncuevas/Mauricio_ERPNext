@@ -10,6 +10,12 @@ describe('price editor suggestions and duplicate detection', () => {
     expect(findDuplicateItemPrice([existing], candidate, 'PRICE-1')).toBeNull()
   })
 
+  it('keeps ERPNext batch and packing-unit variants separate', () => {
+    const existing = { ...candidate, name: 'PRICE-1', batch_no: 'BATCH-1', packing_unit: 6 }
+    expect(findDuplicateItemPrice([existing], candidate)).toBeNull()
+    expect(findDuplicateItemPrice([{ ...existing, batch_no: undefined, packing_unit: 0 }], candidate)?.name).toBe('PRICE-1')
+  })
+
   it('averages active prices from other lists only when dimensions are comparable', () => {
     const prices = [
       { ...candidate, name: 'PRICE-1', price_list: 'Lista A', price_list_rate: 80 },

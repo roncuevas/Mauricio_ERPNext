@@ -264,7 +264,7 @@ async function refreshProducts(client: ErpNextClient, profileId: string, onProgr
 
 async function refreshPrices(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void) {
   const cached = await readItemPriceCatalog(profileId)
-  const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto', 'modified'], ...(cached ? { filters: [['modified', '>', cached.updatedAt] as [string, string, unknown]] } : {}), orderBy: 'item_code asc, price_list asc' }, (count) => onProgress?.(`${cached ? 'Sincronizando' : 'Descargando'} precios: ${count}`))
+  const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto', 'modified'], ...(cached ? { filters: [['modified', '>', cached.updatedAt] as [string, string, unknown]] } : {}), orderBy: 'item_code asc, price_list asc' }, (count) => onProgress?.(`${cached ? 'Sincronizando' : 'Descargando'} precios: ${count}`))
   const byName = new Map((cached?.prices ?? []).map((price) => [price.name, price]))
   prices.forEach((price) => byName.set(price.name, { ...byName.get(price.name), ...price }))
   const next: ItemPriceCatalogCache = { profileId, updatedAt: now(), prices: Array.from(byName.values()) }

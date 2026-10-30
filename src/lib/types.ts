@@ -92,6 +92,8 @@ export type ItemPrice = {
   currency?: string
   customer?: string
   supplier?: string
+  batch_no?: string
+  packing_unit?: number
   valid_from?: string
   valid_upto?: string
   modified?: string

@@ -11,7 +11,7 @@ export async function syncProductCardDetails(client: ErpNextClient, profileId: s
   const prices = priceCache?.prices ?? await (async () => {
     setMessage('Descargando precios para la vista Cards...')
     const nextPrices = await listAllDocuments<ItemPrice>(client, 'Item Price', {
-      fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'supplier', 'valid_from', 'valid_upto'],
+      fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto'],
       orderBy: 'item_code asc, price_list asc',
     }, (count) => setMessage(`Descargando precios para la vista Cards: ${count}`))
     await writeItemPriceCatalog({ profileId, updatedAt: new Date().toISOString(), prices: nextPrices })

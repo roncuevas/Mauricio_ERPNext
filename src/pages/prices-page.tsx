@@ -129,9 +129,10 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
   const [error, setError] = useState('')
   const availablePriceLists = priceLists.filter((candidate) => priceListSupports(candidate, kind))
   const selectedPriceListIsAvailable = availablePriceLists.some((candidate) => candidate.name === priceList)
-  const candidate = { name: price?.name ?? '', item_code: item.name, price_list: priceList.trim(), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || undefined, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || undefined : undefined, supplier: kind === 'buying' ? supplier.trim() || undefined : undefined, valid_from: price?.valid_from }
+  const candidate = { name: price?.name ?? '', item_code: item.name, price_list: priceList.trim(), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || undefined, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || undefined : undefined, supplier: kind === 'buying' ? supplier.trim() || undefined : undefined, batch_no: price?.batch_no, packing_unit: price?.packing_unit ?? 0, valid_from: price?.valid_from }
   const duplicate = findDuplicateItemPrice(prices, candidate, price?.name)
   const suggestion = !price ? suggestComparableItemPrice(prices, candidate, item.stock_uom) : null
+  const duplicateMessage = (duplicatePrice: Pick<ItemPrice, 'price_list' | 'uom'>) => t('pricesPage.duplicatePrice', { list: duplicatePrice.price_list || t('pricesPage.noList'), uom: duplicatePrice.uom || item.stock_uom || '—' })
 
   async function save(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('')
@@ -139,9 +140,15 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
     if (duplicate) { setError(t('pricesPage.duplicatePrice', { list: duplicate.price_list || t('pricesPage.noList'), uom: duplicate.uom || item.stock_uom || '—' })); setBusy(false); return }
     const data = { item_code: item.name, price_list: priceList.trim(), price_list_rate: Number(rate), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || null, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || null : null, supplier: kind === 'buying' ? supplier.trim() || null : null }
     try {
+      const currentPrices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto'], filters: [['item_code', '=', item.name], ['price_list', '=', priceList.trim()]], orderBy: 'name asc' })
+      const currentDuplicate = findDuplicateItemPrice(currentPrices, candidate, price?.name)
+      if (currentDuplicate) { setError(duplicateMessage(currentDuplicate)); return }
       const saved = price ? await client.updateDocument<Record<string, unknown>>('Item Price', price.name, data) : await client.createDocument<Record<string, unknown>>('Item Price', data)
       await onSaved({ ...data, ...saved, name: String(saved.name ?? price?.name ?? '') } as ItemPrice)
-    } catch (reason) { setError(reason instanceof Error ? reason.message : t('pricesPage.saveError')) } finally { setBusy(false) }
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : t('pricesPage.saveError')
+      setError(/Item Price appears multiple times|ItemPriceDuplicateItem/i.test(message) ? duplicateMessage({ price_list: priceList, uom }) : message)
+    } finally { setBusy(false) }
   }
 
   return <div id="price-editor" className="card mb-5 border-blue-200 p-5">
@@ -151,7 +158,7 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
       <Field label={t('common.type')}><Select value={kind} onValueChange={(value) => setKind(value as 'buying' | 'selling')}><SelectTrigger aria-label={t('common.type')}><SelectValue /></SelectTrigger><SelectContent align="start"><SelectItem value="buying">{t('pricesPage.buying')}</SelectItem><SelectItem value="selling">{t('pricesPage.selling')}</SelectItem></SelectContent></Select></Field>
       <Field label={t('pricesPage.priceListRequired')}><Select value={priceList || undefined} onValueChange={setPriceList} required><SelectTrigger aria-label={t('common.priceList')}><SelectValue placeholder={t('pricesPage.selectPriceList')} /></SelectTrigger><SelectContent align="start">{!selectedPriceListIsAvailable && priceList && <SelectItem value={priceList}>{priceList} ({t('pricesPage.current')})</SelectItem>}{availablePriceLists.map((candidate) => <SelectItem key={candidate.name} value={candidate.name}>{candidate.name}</SelectItem>)}</SelectContent></Select></Field>
       <Field label={t('pricesPage.priceRequired')}><Input type="number" min="0" step="any" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="0.00" required /></Field>
-      {duplicate && <div className="sm:col-span-2"><Notice>{t('pricesPage.duplicatePrice', { list: duplicate.price_list || t('pricesPage.noList'), uom: duplicate.uom || item.stock_uom || '—' })}</Notice></div>}
+      {duplicate && <div className="sm:col-span-2"><Notice>{duplicateMessage(duplicate)}</Notice></div>}
       {suggestion && <Card className="sm:col-span-2 border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-heading)] shadow-none"><CardContent className="grid gap-3 p-3"><p className="text-sm leading-relaxed text-[var(--color-heading)]">{t('pricesPage.priceSuggestion', { amount: money({ ...candidate, price_list_rate: suggestion.average }, 'es'), count: suggestion.count })}</p><Button className="w-fit" type="button" variant="secondary" onClick={() => setRate(String(Number(suggestion.average.toFixed(6))))}>{t('pricesPage.useSuggestion')}</Button></CardContent></Card>}
       <Field label={t('pricesPage.currency')}><Input value={currency} onChange={(event) => setCurrency(event.target.value)} placeholder="MXN" /></Field>
       <div className="space-y-1.5"><div className="flex items-center justify-between gap-2"><Label htmlFor={uomInputId}>{t('common.uom')}</Label><div className="flex items-center gap-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><button type="button" className="rounded-full px-1 text-sm font-semibold text-slate-500 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]" aria-label={t('pricesPage.uomHelp')} title={t('pricesPage.uomHelp')}>ⓘ</button></TooltipTrigger><TooltipContent>{t('pricesPage.uomHelp')}</TooltipContent></Tooltip></TooltipProvider><ButtonLink variant="secondary" size="compact" to={`/items/${encodeURIComponent(item.name)}/uoms?returnTo=${encodeURIComponent(returnTo)}`}>{t('pricesPage.configureUom')}</ButtonLink></div></div><Select value={uom || undefined} onValueChange={setUom}><SelectTrigger id={uomInputId} aria-label={t('common.uom')}><SelectValue placeholder={item.stock_uom || t('pricesPage.stockUom')} /></SelectTrigger><SelectContent align="start">{availableUoms.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select></div>
@@ -237,7 +244,7 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
       uoms: Array.from(new Set(prices.map((price) => price.uom || '—'))).sort(),
     }
   }, [priceListsQuery.data, pricesQuery.data?.prices, variantsQuery.data?.items])
-  const refresh = useMutation({ mutationFn: async () => { const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => setSyncMessage(t('pricesPage.downloading', { count }))); const next: ItemPriceCatalogCache = { profileId, updatedAt: new Date().toISOString(), prices }; return writeItemPriceCatalog(next) }, onSuccess: (next) => { queryClient.setQueryData(queryKeys.catalog.price(profileId), next); setSyncMessage(t('pricesPage.updatedCount', { count: next.prices.length })) }, onError: (error) => setSyncMessage(error.message) })
+  const refresh = useMutation({ mutationFn: async () => { const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => setSyncMessage(t('pricesPage.downloading', { count }))); const next: ItemPriceCatalogCache = { profileId, updatedAt: new Date().toISOString(), prices }; return writeItemPriceCatalog(next) }, onSuccess: (next) => { queryClient.setQueryData(queryKeys.catalog.price(profileId), next); setSyncMessage(t('pricesPage.updatedCount', { count: next.prices.length })) }, onError: (error) => setSyncMessage(error.message) })
   const searchResult = useMemo(() => collectVisibleNames(tree.roots, tree.children, pricesByItem, search, filters), [tree.children, tree.roots, pricesByItem, search, filters])
   const visibleNames = searchResult.visibleNames
   const effectiveExpanded = useMemo(() => {
