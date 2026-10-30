@@ -649,6 +649,7 @@ export default interface Resources {
       "downloadHint": "Pulsa “Refrescar precios” para cargar Item Price.",
       "downloading_one": "Descargando precios: {{count}}",
       "downloading_other": "Descargando precios: {{count}}",
+      "duplicatePrice": "Ya existe un precio para esta combinación de lista ({{list}}), UOM ({{uom}}), vigencia y cliente/proveedor. Edítalo en lugar de duplicarlo.",
       "editPrice": "Editar precio",
       "existingPrices": "Precios existentes",
       "gain": "Ganancia",
@@ -669,6 +670,7 @@ export default interface Resources {
       "priceListRequired": "Lista de precios *",
       "priceListsError": "No se pudieron cargar las listas de precios; solo se conservará la lista actual del registro.",
       "priceRequired": "Precio *",
+      "priceSuggestion": "Promedio de {{count}} precio(s) activos en otras listas con la misma UOM, moneda y contexto: {{amount}}.",
       "productNotFound": "No se encontró el producto en la caché de Variantes.",
       "refresh": "Refrescar precios",
       "refreshVariantsHint": "Primero refresca el catálogo en Variantes para cargar la jerarquía plantilla → variante.",
@@ -690,6 +692,7 @@ export default interface Resources {
       "updatedAt": "Actualizado: {{date}}",
       "updatedCount_one": "Precios actualizados: {{count}}",
       "updatedCount_other": "Precios actualizados: {{count}}",
+      "useSuggestion": "Usar precio sugerido",
       "variant": "Variante"
     },
     "productsPage": {
