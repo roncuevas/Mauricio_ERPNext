@@ -16,6 +16,11 @@ describe('price editor suggestions and duplicate detection', () => {
     expect(findDuplicateItemPrice([{ ...existing, batch_no: undefined, packing_unit: 0 }], candidate)?.name).toBe('PRICE-1')
   })
 
+  it('treats an unspecified UOM as the stock UOM when checking visible duplicates', () => {
+    const existing = { ...candidate, name: 'PRICE-1', uom: undefined }
+    expect(findDuplicateItemPrice([existing], candidate, undefined, 'Kg')).toEqual(existing)
+  })
+
   it('averages active prices from other lists only when dimensions are comparable', () => {
     const prices = [
       { ...candidate, name: 'PRICE-1', price_list: 'Lista A', price_list_rate: 80 },

@@ -645,6 +645,7 @@ export default interface Resources {
       "current": "actual",
       "currentPrices": "Precios y clientes/proveedores actuales",
       "customerPlaceholder": "Opcional: precio específico para un cliente",
+      "defaultStockUom": "Stock (UOM sin especificar: {{uom}})",
       "description": "Jerarquía de plantillas, variantes y precios por UOM o proveedor.",
       "downloadHint": "Pulsa “Refrescar precios” para cargar Item Price.",
       "downloading_one": "Descargando precios: {{count}}",

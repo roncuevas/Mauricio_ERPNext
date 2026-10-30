@@ -28,11 +28,11 @@ function sameOptionalValue(left?: string | null, right?: string | null) {
 }
 
 /** Mirrors Item Price's uniqueness dimensions used by ERPNext and ignores the row being edited. */
-export function findDuplicateItemPrice(prices: PriceCandidate[], candidate: PriceCandidate, excludeName?: string) {
+export function findDuplicateItemPrice(prices: PriceCandidate[], candidate: PriceCandidate, excludeName?: string, stockUom?: string) {
   return prices.find((price) => price.name !== excludeName
     && price.item_code === candidate.item_code
     && price.price_list === candidate.price_list
-    && sameOptionalValue(price.uom, candidate.uom)
+    && (price.uom || stockUom || '') === (candidate.uom || stockUom || '')
     && sameOptionalValue(price.valid_from, candidate.valid_from)
     && sameOptionalValue(price.customer, candidate.customer)
     && sameOptionalValue(price.supplier, candidate.supplier)
