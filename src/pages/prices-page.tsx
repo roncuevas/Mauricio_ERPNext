@@ -115,10 +115,11 @@ type PriceEditorProps = { client: Client; item: VariantItem; price?: ItemPrice; 
 
 function PriceEditor({ client, item, price, priceLists, defaultPriceList, defaultUom, onSaved, onClose }: PriceEditorProps) {
   const { t } = useTranslation()
+  const availableUoms = Array.from(new Set([item.stock_uom, ...(item.uoms ?? []).map((option) => option.uom), price?.uom].filter((option): option is string => Boolean(option))))
   const [kind, setKind] = useState<'buying' | 'selling'>(price?.buying ? 'buying' : 'selling')
   const [priceList, setPriceList] = useState(price?.price_list ?? defaultPriceList ?? (price?.buying ? 'Standard Buying' : 'Standard Selling'))
   const [rate, setRate] = useState(String(price?.price_list_rate ?? ''))
-  const [uom, setUom] = useState(price?.uom ?? defaultUom ?? item.stock_uom ?? '')
+  const [uom, setUom] = useState(price?.uom ?? (availableUoms.includes(defaultUom ?? '') ? defaultUom : undefined) ?? item.stock_uom ?? '')
   const [currency, setCurrency] = useState(price?.currency ?? 'MXN')
   const [customer, setCustomer] = useState(price?.customer ?? '')
   const [supplier, setSupplier] = useState(price?.supplier ?? '')
@@ -145,7 +146,7 @@ function PriceEditor({ client, item, price, priceLists, defaultPriceList, defaul
       <Field label={t('pricesPage.priceListRequired')}><Select value={priceList || undefined} onValueChange={setPriceList} required><SelectTrigger aria-label={t('common.priceList')}><SelectValue placeholder={t('pricesPage.selectPriceList')} /></SelectTrigger><SelectContent align="start">{!selectedPriceListIsAvailable && priceList && <SelectItem value={priceList}>{priceList} ({t('pricesPage.current')})</SelectItem>}{availablePriceLists.map((candidate) => <SelectItem key={candidate.name} value={candidate.name}>{candidate.name}</SelectItem>)}</SelectContent></Select></Field>
       <Field label={t('pricesPage.priceRequired')}><Input type="number" min="0" step="any" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="0.00" required /></Field>
       <Field label={t('pricesPage.currency')}><Input value={currency} onChange={(event) => setCurrency(event.target.value)} placeholder="MXN" /></Field>
-      <Field label={t('common.uom')}><Input value={uom} onChange={(event) => setUom(event.target.value)} placeholder={item.stock_uom || t('pricesPage.stockUom')} /></Field>
+      <Field label={t('common.uom')}><Select value={uom || undefined} onValueChange={setUom}><SelectTrigger aria-label={t('common.uom')}><SelectValue placeholder={item.stock_uom || t('pricesPage.stockUom')} /></SelectTrigger><SelectContent align="start">{availableUoms.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select></Field>
       {kind === 'selling' ? <Field label={t('common.customer')}><Input value={customer} onChange={(event) => setCustomer(event.target.value)} placeholder={t('pricesPage.customerPlaceholder')} /></Field> : <Field label={t('common.supplier')}><Input value={supplier} onChange={(event) => setSupplier(event.target.value)} placeholder={t('pricesPage.supplierPlaceholder')} /></Field>}
       <div className="flex flex-wrap justify-end gap-2 sm:col-span-2"><Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button><Button type="submit" disabled={busy}>{busy ? <><Spinner /> <span className="ml-2">{t('common.save')}</span></> : t('pricesPage.savePrice')}</Button></div>
     </form>
