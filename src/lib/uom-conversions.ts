@@ -16,3 +16,25 @@ export function rebaseUomConversions(currentStockUom: string, nextStockUom: stri
   return Array.from(unique, ([uom, factor]) => ({ uom, conversion_factor: factor / nextBaseFactor }))
     .filter((row) => row.uom !== nextStockUom)
 }
+
+export function buildItemUomRows(stockUom: string, conversions: ItemUom[]) {
+  return [{ uom: stockUom, conversion_factor: 1 }, ...conversions]
+}
+
+export function itemUomRowsMatch(document: Record<string, unknown>, expected: ItemUom[]) {
+  if (!Array.isArray(document.uoms)) return false
+  const actual = new Map<string, number>()
+  for (const row of document.uoms) {
+    if (!row || typeof row !== 'object') return false
+    const entry = row as Record<string, unknown>
+    const uom = String(entry.uom ?? '')
+    const factor = Number(entry.conversion_factor)
+    if (!uom || !Number.isFinite(factor) || factor <= 0 || actual.has(uom)) return false
+    actual.set(uom, factor)
+  }
+
+  return actual.size === expected.length && expected.every((row) => {
+    const factor = actual.get(row.uom)
+    return factor !== undefined && Math.abs(factor - row.conversion_factor) <= Math.max(1, Math.abs(row.conversion_factor)) * 1e-9
+  })
+}

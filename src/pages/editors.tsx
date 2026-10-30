@@ -10,6 +10,7 @@ import { patchItemCatalog } from '../lib/item-cache'
 import { patchVariantCatalog, readVariantCatalog } from '../lib/variant-cache'
 import { readUomCatalog, writeUomCatalog } from '../lib/uom-cache'
 import { syncUomCatalog, UOM_CACHE_TTL_MS } from '../lib/catalog-sync'
+import { buildItemUomRows, itemUomRowsMatch } from '../lib/uom-conversions'
 import type { CachedItem, VariantItem } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
 
@@ -76,71 +77,175 @@ export function UomEditorPage({ client, profileId }: { client: Client; profileId
   const uoms = useQuery({ queryKey: queryKeys.uom.options(profileId), queryFn: async () => { const cached = await readUomCatalog(profileId); const next = await syncUomCatalog(client, profileId, cached); if (next !== cached) await writeUomCatalog(next); return next.uoms }, staleTime: UOM_CACHE_TTL_MS, gcTime: UOM_CACHE_TTL_MS * 2 })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [recoveryError, setRecoveryError] = useState('')
+  const [pendingConversions, setPendingConversions] = useState<UomEditorValues | null>(null)
   const values = useMemo(() => item.data ? readUomValues(item.data) : null, [item.data])
+
+  async function updateLocalCaches(document: Record<string, unknown>) {
+    const savedName = String(document.name ?? name)
+    const savedItem = { ...document, name: savedName }
+    const itemCache = await patchItemCatalog(profileId, savedItem as CachedItem)
+    const variantCache = await patchVariantCatalog(profileId, savedItem as VariantItem)
+    if (itemCache) queryClient.setQueryData(queryKeys.catalog.item(profileId), itemCache)
+    if (variantCache) queryClient.setQueryData(queryKeys.catalog.variant(profileId), variantCache)
+    queryClient.setQueryData(queryKeys.item.detail(profileId, savedName), savedItem)
+    await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.item(profileId) })
+    await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) })
+    return savedItem
+  }
+
+  async function readAndCacheItem() {
+    if (!name) throw new Error(t('editorsPage.uomMissingProduct'))
+    const persisted = await client.getDocument<Record<string, unknown>>('Item', name)
+    await updateLocalCaches(persisted)
+    return persisted
+  }
+
+  function finishSave() {
+    setPendingConversions(null)
+    setRecoveryError('')
+    navigate(returnTo)
+  }
+
+  async function retryConversions() {
+    if (!name || !pendingConversions) return
+    setBusy(true)
+    setRecoveryError('')
+    setError('')
+    const expectedRows = buildItemUomRows(pendingConversions.stockUom, pendingConversions.conversions)
+    try {
+      let persisted = await readAndCacheItem()
+      if (String(persisted.stock_uom ?? '') !== pendingConversions.stockUom) {
+        setPendingConversions(null)
+        setError(t('editorsPage.uomRecoveryConflict'))
+        return
+      }
+      if (itemUomRowsMatch(persisted, expectedRows)) {
+        finishSave()
+        return
+      }
+      const resetRows = buildItemUomRows(pendingConversions.stockUom, [])
+      if (!itemUomRowsMatch(persisted, resetRows)) {
+        setPendingConversions(null)
+        setError(t('editorsPage.uomRecoveryConflict'))
+        return
+      }
+
+      await client.updateDocument<Record<string, unknown>>('Item', name, { uoms: expectedRows })
+      persisted = await readAndCacheItem()
+      if (String(persisted.stock_uom ?? '') !== pendingConversions.stockUom || !itemUomRowsMatch(persisted, expectedRows)) {
+        throw new Error(t('editorsPage.uomConversionsVerificationFailed'))
+      }
+      finishSave()
+    } catch (reason) {
+      const details = reason instanceof Error ? reason.message : t('editorsPage.saveUomError')
+      try {
+        const persisted = await readAndCacheItem()
+        if (String(persisted.stock_uom ?? '') !== pendingConversions.stockUom) {
+          setPendingConversions(null)
+          setError(t('editorsPage.uomRecoveryConflict'))
+          return
+        }
+        if (itemUomRowsMatch(persisted, expectedRows)) {
+          finishSave()
+          return
+        }
+        if (!itemUomRowsMatch(persisted, buildItemUomRows(pendingConversions.stockUom, []))) {
+          setPendingConversions(null)
+          setError(t('editorsPage.uomRecoveryConflict'))
+          return
+        }
+      } catch { /* Keep recovery available when ERPNext cannot be read back. */ }
+      setRecoveryError(t('editorsPage.uomConversionsRetryFailed', { error: details }))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function save(next: UomEditorValues) {
     if (!name) return
-    setBusy(true); setError('')
+    setBusy(true)
+    setError('')
+    setRecoveryError('')
     const stockUomChanged = next.stockUom !== values?.stockUom
-
-    async function updateLocalCaches(document: Record<string, unknown>) {
-      const savedName = String(document.name ?? name)
-      const savedItem = { ...document, name: savedName }
-      const itemCache = await patchItemCatalog(profileId, savedItem as CachedItem)
-      const variantCache = await patchVariantCatalog(profileId, savedItem as VariantItem)
-      if (itemCache) queryClient.setQueryData(queryKeys.catalog.item(profileId), itemCache)
-      if (variantCache) queryClient.setQueryData(queryKeys.catalog.variant(profileId), variantCache)
-      queryClient.setQueryData(queryKeys.item.detail(profileId, savedName), savedItem)
-      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.item(profileId) })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) })
-      return savedItem
-    }
+    const defaults = { sales_uom: next.salesUom || null, purchase_uom: next.purchaseUom || null }
 
     try {
-      const defaults = { sales_uom: next.salesUom || null, purchase_uom: next.purchaseUom || null }
       if (stockUomChanged) {
-        await client.updateDocument<Record<string, unknown>>('Item', name, { stock_uom: next.stockUom, ...defaults })
-        let conversionsSaved: Record<string, unknown>
-        try {
-          conversionsSaved = await client.updateDocument<Record<string, unknown>>('Item', name, {
-            uoms: [{ uom: next.stockUom, conversion_factor: 1 }, ...next.conversions],
-          })
-        } catch (reason) {
-          try {
-            const persisted = await client.getDocument<Record<string, unknown>>('Item', name)
-            await updateLocalCaches(persisted)
-          } catch { /* Keep the form available if ERPNext or IndexedDB cannot be read back. */ }
-          const details = reason instanceof Error ? reason.message : t('editorsPage.saveUomError')
-          setError(t('editorsPage.uomConversionsSavePartial', { error: details }))
+        const current = await client.getDocument<Record<string, unknown>>('Item', name)
+        if (String(current.stock_uom ?? '') !== values?.stockUom) {
+          await updateLocalCaches(current)
+          setError(t('editorsPage.uomStockChangedRemotely'))
           return
         }
+
+        const expectedRows = buildItemUomRows(next.stockUom, next.conversions)
+        setPendingConversions(next)
+        try {
+          await client.updateDocument<Record<string, unknown>>('Item', name, { stock_uom: next.stockUom, ...defaults })
+        } catch (reason) {
+          try {
+            const persisted = await readAndCacheItem()
+            if (String(persisted.stock_uom ?? '') === next.stockUom) {
+              setRecoveryError(t('editorsPage.uomConversionsSavePartial', { error: reason instanceof Error ? reason.message : t('editorsPage.saveUomError') }))
+              return
+            }
+          } catch { /* The update may have reached ERPNext; retry will first verify the persisted base UOM. */ }
+          setPendingConversions(null)
+          throw reason
+        }
+
         let persisted: Record<string, unknown>
         try {
-          persisted = await client.getDocument<Record<string, unknown>>('Item', name)
-        } catch {
-          persisted = { ...conversionsSaved, name, stock_uom: next.stockUom, ...defaults }
+          persisted = await readAndCacheItem()
+        } catch (reason) {
+          setRecoveryError(t('editorsPage.uomConversionsSavePartial', { error: reason instanceof Error ? reason.message : t('editorsPage.saveUomError') }))
+          return
         }
-        await updateLocalCaches(persisted)
-      } else {
-        await client.updateDocument<Record<string, unknown>>('Item', name, {
-          stock_uom: next.stockUom,
-          ...defaults,
-          uoms: next.conversions,
-        })
-        let persisted: Record<string, unknown>
+        if (String(persisted.stock_uom ?? '') !== next.stockUom) {
+          setPendingConversions(null)
+          setError(t('editorsPage.uomRecoveryConflict'))
+          return
+        }
+
         try {
-          persisted = await client.getDocument<Record<string, unknown>>('Item', name)
-        } catch {
-          persisted = { name, stock_uom: next.stockUom, ...defaults, uoms: next.conversions }
+          await client.updateDocument<Record<string, unknown>>('Item', name, { uoms: expectedRows })
+          persisted = await readAndCacheItem()
+        } catch (reason) {
+          const details = reason instanceof Error ? reason.message : t('editorsPage.saveUomError')
+          try {
+            persisted = await readAndCacheItem()
+            if (String(persisted.stock_uom ?? '') === next.stockUom && itemUomRowsMatch(persisted, expectedRows)) {
+              finishSave()
+              return
+            }
+          } catch { /* Leave the retry action available when the persisted state is unknown. */ }
+          setRecoveryError(t('editorsPage.uomConversionsSavePartial', { error: details }))
+          return
         }
-        await updateLocalCaches(persisted)
+
+        if (String(persisted.stock_uom ?? '') !== next.stockUom || !itemUomRowsMatch(persisted, expectedRows)) {
+          setRecoveryError(t('editorsPage.uomConversionsVerificationFailed'))
+          return
+        }
+        finishSave()
+        return
       }
+
+      const saved = await client.updateDocument<Record<string, unknown>>('Item', name, { stock_uom: next.stockUom, ...defaults, uoms: next.conversions })
+      let persisted: Record<string, unknown> = { ...saved, name }
+      try { persisted = await client.getDocument<Record<string, unknown>>('Item', name) } catch { /* Use ERPNext's successful update response to refresh local caches. */ }
+      await updateLocalCaches(persisted)
       navigate(returnTo)
-    } catch (reason) { setError(reason instanceof Error ? reason.message : t("editorsPage.saveUomError")) } finally { setBusy(false) }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t('editorsPage.saveUomError'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (!name) return <Notice>{t("editorsPage.uomMissingProduct")}</Notice>
   if (item.isError) return <Notice>{item.error.message}</Notice>
   if (item.isPending || !values) return <Spinner />
-  return <section><PageHeader title={t("editorsPage.uomTitle")} description={t("editorsPage.uomDescription")} action={<Button variant="secondary" onClick={() => navigate(returnTo)}>{t("editorsPage.backToProduct")}</Button>} /><UomEditor itemName={name} itemLabel={String(item.data.item_name ?? '')} values={values} uomOptions={uoms.data ?? []} busy={busy} error={error || (uoms.isError ? t("editorsPage.uomSuggestionsError", { error: uoms.error.message }) : '')} onSave={save} onCancel={() => navigate(returnTo)} /></section>
+  return <section><PageHeader title={t("editorsPage.uomTitle")} description={t("editorsPage.uomDescription")} action={<Button variant="secondary" onClick={() => navigate(returnTo)}>{t("editorsPage.backToProduct")}</Button>} /><UomEditor itemName={name} itemLabel={String(item.data.item_name ?? '')} values={values} uomOptions={uoms.data ?? []} busy={busy} error={recoveryError || error || (uoms.isError ? t("editorsPage.uomSuggestionsError", { error: uoms.error.message }) : '')} onRetryConversions={pendingConversions ? retryConversions : undefined} onSave={save} onCancel={() => navigate(returnTo)} /></section>
 }
