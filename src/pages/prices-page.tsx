@@ -4,12 +4,13 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, ButtonLink, Card, CardContent, Field, Input, Label, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog'
 import { createErpNextClient } from '../lib/erpnext'
 import { listAllDocuments } from '../lib/pagination'
 import { patchItemPriceCatalog, writeItemPriceCatalog } from '../lib/price-cache'
 import { buildVariantTree } from '../lib/variant-cache'
 import { variantSearchScore } from '../components/variant-tree'
-import { calculateGrossMargin, findComparablePurchases, findDuplicateItemPrice, suggestComparableItemPrice } from '../lib/pricing'
+import { averageComparableOppositeTypePrice, calculateGrossMargin, findComparablePurchases, findDuplicateItemPrice, suggestComparableItemPrice } from '../lib/pricing'
 import { PriceFilterSheet } from '../components/price-filter-sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import type { ItemPrice, ItemPriceCatalogCache, PriceList, VariantItem } from '../lib/types'
@@ -127,7 +128,7 @@ export function collectVisibleNames(items: VariantItem[], childrenByParent: Map<
 type PriceEditorProps = { client: Client; item: VariantItem; price?: ItemPrice; prices: ItemPrice[]; priceLists: PriceList[]; defaultPriceList?: string; defaultUom?: string; returnTo: string; onSaved: (price: ItemPrice) => Promise<void>; onClose: () => void }
 
 function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList, defaultUom, returnTo, onSaved, onClose }: PriceEditorProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const uomInputId = useId()
   const availableUoms = Array.from(new Set([item.stock_uom, ...(item.uoms ?? []).map((option) => option.uom), price?.uom].filter((option): option is string => Boolean(option))))
   const [kind, setKind] = useState<'buying' | 'selling'>(price?.buying ? 'buying' : 'selling')
@@ -139,16 +140,23 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
   const [supplier, setSupplier] = useState(price?.supplier ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
   const saveInProgress = useRef(false)
   const availablePriceLists = priceLists.filter((candidate) => priceListSupports(candidate, kind))
   const selectedPriceListIsAvailable = availablePriceLists.some((candidate) => candidate.name === priceList)
   const candidate = { name: price?.name ?? '', item_code: item.name, price_list: priceList.trim(), buying: kind === 'buying' ? 1 : 0, selling: kind === 'selling' ? 1 : 0, uom: uom.trim() || undefined, currency: currency.trim() || 'MXN', customer: kind === 'selling' ? customer.trim() || undefined : undefined, supplier: kind === 'buying' ? supplier.trim() || undefined : undefined, batch_no: price?.batch_no, packing_unit: price?.packing_unit ?? 0, valid_from: price?.valid_from }
   const duplicate = findDuplicateItemPrice(prices, candidate, price?.name, item.stock_uom)
   const suggestion = !price ? suggestComparableItemPrice(prices, candidate, item.stock_uom) : null
+  const oppositeAverage = averageComparableOppositeTypePrice(prices, candidate, item.stock_uom)
+  const rateValue = Number(rate)
+  const priceDeviation = rate && oppositeAverage && (kind === 'selling' ? rateValue < oppositeAverage.average : rateValue > oppositeAverage.average)
+    ? kind === 'selling'
+      ? t('pricesPage.saleBelowPurchaseAverage', { price: money({ ...candidate, price_list_rate: rateValue }, i18n.language), average: money({ ...candidate, price_list_rate: oppositeAverage.average }, i18n.language), count: oppositeAverage.count })
+      : t('pricesPage.purchaseAboveSalesAverage', { price: money({ ...candidate, price_list_rate: rateValue }, i18n.language), average: money({ ...candidate, price_list_rate: oppositeAverage.average }, i18n.language), count: oppositeAverage.count })
+    : ''
   const duplicateMessage = (duplicatePrice: Pick<ItemPrice, 'price_list' | 'uom'>) => t('pricesPage.duplicatePrice', { list: duplicatePrice.price_list || t('pricesPage.noList'), uom: priceUomLabel(duplicatePrice, t('pricesPage.defaultStockUom', { uom: item.stock_uom || '—' })) })
 
-  async function save(event: React.FormEvent) {
-    event.preventDefault()
+  async function savePrice() {
     if (saveInProgress.current) return
     saveInProgress.current = true
     setBusy(true)
@@ -168,20 +176,28 @@ function PriceEditor({ client, item, price, prices, priceLists, defaultPriceList
     } finally { setBusy(false); saveInProgress.current = false }
   }
 
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (priceDeviation) { setConfirmationOpen(true); return }
+    void savePrice()
+  }
+
   return <div id="price-editor" className="card mb-5 border-blue-200 p-5">
     <div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold">{price ? t('pricesPage.editPrice') : t('pricesPage.addPrice')}</h2><p className="muted">{item.item_name || item.name} · {item.name}</p></div><Button type="button" variant="secondary" onClick={onClose}>{t('common.close')}</Button></div>
     {error && <div className="mb-4"><Notice>{error}</Notice></div>}
-    <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>
+    <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
       <Field label={t('common.type')}><Select value={kind} onValueChange={(value) => setKind(value as 'buying' | 'selling')}><SelectTrigger aria-label={t('common.type')}><SelectValue /></SelectTrigger><SelectContent align="start"><SelectItem value="buying">{t('pricesPage.buying')}</SelectItem><SelectItem value="selling">{t('pricesPage.selling')}</SelectItem></SelectContent></Select></Field>
       <Field label={t('pricesPage.priceListRequired')}><Select value={priceList || undefined} onValueChange={setPriceList} required><SelectTrigger aria-label={t('common.priceList')}><SelectValue placeholder={t('pricesPage.selectPriceList')} /></SelectTrigger><SelectContent align="start">{!selectedPriceListIsAvailable && priceList && <SelectItem value={priceList}>{priceList} ({t('pricesPage.current')})</SelectItem>}{availablePriceLists.map((candidate) => <SelectItem key={candidate.name} value={candidate.name}>{candidate.name}</SelectItem>)}</SelectContent></Select></Field>
       <Field label={t('pricesPage.priceRequired')}><Input type="number" min="0" step="any" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="0.00" required /></Field>
       {duplicate && <div className="sm:col-span-2"><Notice>{duplicateMessage(duplicate)}</Notice></div>}
+      {priceDeviation && <div className="sm:col-span-2"><Notice tone="warning">{priceDeviation}</Notice></div>}
       {suggestion && <Card className="sm:col-span-2 border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-heading)] shadow-none"><CardContent className="grid gap-3 p-3"><p className="text-sm leading-relaxed text-[var(--color-heading)]">{t('pricesPage.priceSuggestion', { amount: money({ ...candidate, price_list_rate: suggestion.average }, 'es'), count: suggestion.count })}</p><Button className="w-fit" type="button" variant="secondary" onClick={() => setRate(String(Number(suggestion.average.toFixed(6))))}>{t('pricesPage.useSuggestion')}</Button></CardContent></Card>}
       <Field label={t('pricesPage.currency')}><Input value={currency} onChange={(event) => setCurrency(event.target.value)} placeholder="MXN" /></Field>
       <div className="space-y-1.5"><div className="flex items-center justify-between gap-2"><Label htmlFor={uomInputId}>{t('common.uom')}</Label><div className="flex items-center gap-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><button type="button" className="rounded-full px-1 text-sm font-semibold text-slate-500 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]" aria-label={t('pricesPage.uomHelp')} title={t('pricesPage.uomHelp')}>ⓘ</button></TooltipTrigger><TooltipContent>{t('pricesPage.uomHelp')}</TooltipContent></Tooltip></TooltipProvider><ButtonLink variant="secondary" size="compact" to={`/items/${encodeURIComponent(item.name)}/uoms?returnTo=${encodeURIComponent(returnTo)}`}>{t('pricesPage.configureUom')}</ButtonLink></div></div><Select value={price && !price.uom ? defaultStockUomOption : uom || undefined} onValueChange={(value) => setUom(value === defaultStockUomOption ? '' : value)}><SelectTrigger id={uomInputId} aria-label={t('common.uom')}><SelectValue placeholder={item.stock_uom || t('pricesPage.stockUom')} /></SelectTrigger><SelectContent align="start">{price && !price.uom && <SelectItem value={defaultStockUomOption}>{priceUomLabel(price, t('pricesPage.defaultStockUom', { uom: item.stock_uom || '—' }))}</SelectItem>}{availableUoms.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select></div>
       {kind === 'selling' ? <Field label={t('common.customer')}><Input value={customer} onChange={(event) => setCustomer(event.target.value)} placeholder={t('pricesPage.customerPlaceholder')} /></Field> : <Field label={t('common.supplier')}><Input value={supplier} onChange={(event) => setSupplier(event.target.value)} placeholder={t('pricesPage.supplierPlaceholder')} /></Field>}
       <div className="flex flex-wrap justify-end gap-2 sm:col-span-2"><Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button><Button type="submit" disabled={busy || Boolean(duplicate)}>{busy ? <><Spinner /> <span className="ml-2">{t('common.save')}</span></> : t('pricesPage.savePrice')}</Button></div>
     </form>
+    <AlertDialog open={confirmationOpen} onOpenChange={setConfirmationOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('pricesPage.priceDeviationTitle')}</AlertDialogTitle><AlertDialogDescription>{t('pricesPage.priceDeviationDescription', { warning: priceDeviation })}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel asChild><Button type="button" variant="secondary">{t('common.cancel')}</Button></AlertDialogCancel><AlertDialogAction asChild><Button type="button" onClick={() => void savePrice()}>{t('pricesPage.confirmPriceAnyway')}</Button></AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>
 }
 

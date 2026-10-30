@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { findDuplicateItemPrice, suggestComparableItemPrice } from './pricing'
+import { averageComparableOppositeTypePrice, findDuplicateItemPrice, suggestComparableItemPrice } from './pricing'
 
 describe('price editor suggestions and duplicate detection', () => {
-  const candidate = { item_code: 'ITEM-1', price_list: 'Nueva Venta', price_list_rate: 0, selling: 1, buying: 0, uom: 'Kg', currency: 'MXN' }
+  const candidate = { name: 'CANDIDATE', item_code: 'ITEM-1', price_list: 'Nueva Venta', price_list_rate: 0, selling: 1, buying: 0, uom: 'Kg', currency: 'MXN' }
 
   it('finds the same item, list, UOM, validity and party regardless of entered rate', () => {
     const existing = { ...candidate, name: 'PRICE-1', price_list_rate: 42 }
@@ -26,6 +26,19 @@ describe('price editor suggestions and duplicate detection', () => {
     expect(findDuplicateItemPrice([existing], candidate, undefined, undefined, '2026-10-30')).toEqual(existing)
     expect(findDuplicateItemPrice([existing], candidate, undefined, undefined, '2026-09-30')).toBeNull()
     expect(findDuplicateItemPrice([{ ...existing, valid_upto: '2026-10-29' }], candidate, undefined, undefined, '2026-10-30')).toBeNull()
+  })
+
+  it('averages active purchase prices for sales and active sale prices for purchases', () => {
+    const prices = [
+      { ...candidate, name: 'BUY-1', buying: 1, selling: 0, price_list: 'Compra A', price_list_rate: 100 },
+      { ...candidate, name: 'BUY-2', buying: 1, selling: 0, price_list: 'Compra B', price_list_rate: 120, supplier: 'Proveedor A' },
+      { ...candidate, name: 'SALE-1', buying: 0, selling: 1, price_list: 'Venta A', price_list_rate: 200 },
+      { ...candidate, name: 'OTHER-UOM', buying: 1, selling: 0, uom: 'Caja', price_list_rate: 999 },
+      { ...candidate, name: 'OTHER-CURRENCY', buying: 1, selling: 0, currency: 'USD', price_list_rate: 999 },
+      { ...candidate, name: 'EXPIRED', buying: 1, selling: 0, valid_upto: '2026-10-29', price_list_rate: 999 },
+    ]
+    expect(averageComparableOppositeTypePrice(prices, { ...candidate, buying: 0, selling: 1 }, 'Kg', '2026-10-30')).toMatchObject({ average: 110, count: 2 })
+    expect(averageComparableOppositeTypePrice(prices, { ...candidate, buying: 1, selling: 0 }, 'Kg', '2026-10-30')).toMatchObject({ average: 200, count: 1 })
   })
 
   it('averages active prices from other lists only when dimensions are comparable', () => {

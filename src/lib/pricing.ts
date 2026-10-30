@@ -65,6 +65,23 @@ export function suggestComparableItemPrice(prices: PriceCandidate[], candidate: 
   return { average, count: matches.length, prices: matches }
 }
 
+/** Calculates the active average from the opposite transaction type for a comparable item UOM and currency. */
+export function averageComparableOppositeTypePrice(prices: ItemPrice[], candidate: ItemPrice, stockUom?: string, today = localDateString()) {
+  const comparisonIsBuying = !candidate.buying
+  const matches = prices.filter((price) => price.item_code === candidate.item_code
+    && Boolean(price.buying) === comparisonIsBuying
+    && (comparisonIsBuying ? Boolean(price.buying) : Boolean(price.selling))
+    && (price.uom || stockUom || '') === (candidate.uom || stockUom || '')
+    && (price.currency || 'MXN') === (candidate.currency || 'MXN')
+    && (!price.valid_from || price.valid_from <= today)
+    && (!price.valid_upto || price.valid_upto >= today))
+    .filter((price) => Number.isFinite(Number(price.price_list_rate)))
+
+  if (!matches.length) return null
+  const average = matches.reduce((sum, price) => sum + Number(price.price_list_rate), 0) / matches.length
+  return { average, count: matches.length, prices: matches }
+}
+
 export function calculateGrossMargin(selling: ItemPrice, purchase: ItemPrice) {
   const sale = Number(selling.price_list_rate ?? 0)
   const cost = Number(purchase.price_list_rate ?? 0)
