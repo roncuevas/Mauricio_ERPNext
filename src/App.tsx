@@ -3,10 +3,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './components/ui/alert-dialog'
 import { Button, IconButton, Spinner } from './components/ui'
-import { DesktopNavigation, MobileNavigation, NavLink, PageLayout, SidebarIcon, ThemeModeToggle } from './components/layout'
+import { DesktopNavigation, MobileNavigation, NavLink, SidebarIcon, ThemeModeToggle } from './components/layout'
 import { ConnectionScreen } from './components/connection-screen'
 import { ConnectionStatus } from './components/connection-status'
 import { GlobalSearch } from './components/global-search'
+import { WorkspaceNavigation } from './components/workspace-navigation'
 import { LanguageSelector } from './components/language-selector'
 import { RouteErrorBoundary } from './components/route-error-boundary'
 import { createErpNextClient } from './lib/erpnext'
@@ -97,7 +98,7 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
   useEffect(() => { markPerformance('app-shell-ready') }, [])
   const requestLock = () => setConfirmLock(true)
   const lockSession = () => { setConfirmLock(false); onLock() }
-  return <div className={`min-h-screen lg:flex${sidebarCollapsed ? ' app-shell-sidebar-collapsed' : ''}`}>
+  return <GlobalSearch profileId={connection.id}><div className={`min-h-screen lg:flex${sidebarCollapsed ? ' app-shell-sidebar-collapsed' : ''}`}>
     <LocalCachePrefetch profileId={connection.id} />
     <MobileNavigation onLock={requestLock} client={client} />
     <aside className="app-sidebar border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
@@ -106,7 +107,7 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
       <nav className="app-sidebar-nav" aria-label={t('navigation.main')}><DesktopNavigation collapsed={sidebarCollapsed} /></nav>
       <div className="app-sidebar-footer"><div className="app-sidebar-footer-actions"><NavLink to="/settings" className="app-sidebar-settings-link" ariaLabel={t('navigation.settings')}><span className="app-sidebar-settings-icon"><SidebarIcon name="settings" /></span><span className="app-sidebar-settings-label">{t('navigation.settings')}</span></NavLink><ThemeModeToggle /><LanguageSelector compact={sidebarCollapsed} className="app-sidebar-language-selector" /><button className="app-sidebar-lock" type="button" aria-label={t('navigation.lock')} onClick={requestLock}><span>{t('navigation.lock')}</span><SidebarIcon name="logout" /></button></div></div>
     </aside>
-    <main className="min-w-0 flex-1"><GlobalSearch profileId={connection.id} /><RouteErrorBoundary onLock={requestLock}><Suspense fallback={<main className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></main>}><Routes><Route element={<PageLayout client={client} />}>
+    <main className="min-w-0 flex-1"><div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><WorkspaceNavigation /><RouteErrorBoundary onLock={requestLock}><Suspense fallback={<div className="flex min-h-[16rem] items-center justify-center p-6"><div className="flex items-center gap-2 muted"><Spinner /> {t('common.loading')}</div></div>}><Routes>
         <Route path="/" element={<DefaultLandingPage client={client} profileId={connection.id} route={appPreferences.landingRoute} />} />
         <Route path="/pos" element={<PosPage client={client} profileId={connection.id} />} />
         <Route path="/pos/ventas" element={<SalesOrdersPage client={client} profileId={connection.id} />} />
@@ -130,9 +131,9 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
         <Route path="/suppliers" element={<SuppliersPage client={client} profileId={connection.id} />} />
         <Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} />
         <Route path="/settings" element={<SettingsPage connection={connection} onLock={requestLock} />} />
-      </Route></Routes></Suspense></RouteErrorBoundary></main>
+      </Routes></Suspense></RouteErrorBoundary></div></main>
     <AlertDialog open={confirmLock} onOpenChange={setConfirmLock}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('navigation.lockConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('navigation.lockConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel asChild><Button variant="secondary">{t('common.cancel')}</Button></AlertDialogCancel><AlertDialogAction asChild><Button variant="danger" onClick={lockSession}>{t('navigation.lockConfirmAction')}</Button></AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-  </div>
+  </div></GlobalSearch>
 }
 
 function DefaultLandingPage({ client, profileId, route }: { client: ReturnType<typeof createErpNextClient>; profileId: string; route: AppPreferences['landingRoute'] }) {

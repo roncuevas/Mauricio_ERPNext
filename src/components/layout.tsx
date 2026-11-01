@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { IconButton } from './ui'
 import { useTheme } from './theme-provider'
 import { featureFlags } from '../lib/feature-flags'
-import { WorkspaceNavigation } from './workspace-navigation'
 import { LanguageSelector } from './language-selector'
 import { ConnectionStatus } from './connection-status'
+import { GlobalSearchNavigationAction } from './global-search-trigger'
 import type { createErpNextClient } from '../lib/erpnext'
 import { useTranslation } from 'react-i18next'
 import { Boxes, ChevronDown, ChevronLeft, ChevronRight, House, LayoutDashboard, LockKeyhole, LogOut, Menu, Moon, Settings, Sun, Warehouse, X, type LucideIcon } from 'lucide-react'
@@ -99,7 +99,7 @@ function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: bool
 
 export function DesktopNavigation({ collapsed = false }: { collapsed?: boolean }) {
   const { t } = useTranslation()
-  return <div className="desktop-navigation-stack"><NavLink to="/" className="navigation-home-link"><SidebarIcon name="home" /><span className="navigation-home-label">{t('navigation.home')}</span></NavLink><NavigationGroups collapsed={collapsed} /></div>
+  return <div className="desktop-navigation-stack"><NavLink to="/" className="navigation-home-link"><SidebarIcon name="home" /><span className="navigation-home-label">{t('navigation.home')}</span></NavLink><GlobalSearchNavigationAction className="navigation-home-link global-search-navigation-action" collapsed={collapsed} /><NavigationGroups collapsed={collapsed} /></div>
 }
 
 export function MobileNavigation({ onLock, client }: { onLock: () => void; client: ReturnType<typeof createErpNextClient> }) {
@@ -137,7 +137,7 @@ export function MobileNavigation({ onLock, client }: { onLock: () => void; clien
     </div>
     {open && <nav id="mobile-navigation-menu" className="mobile-navigation-menu" aria-label={t('navigation.main')}>
       <div className="mobile-navigation-menu-heading"><span>{t('navigation.goTo')}</span><small>{t('navigation.currentSection', { section: currentPage })}</small></div>
-      <NavLink to="/" className="navigation-home-link"><SidebarIcon name="home" /><span>{t('navigation.home')}</span></NavLink><NavigationGroups mobile />
+      <NavLink to="/" className="navigation-home-link"><SidebarIcon name="home" /><span>{t('navigation.home')}</span></NavLink><GlobalSearchNavigationAction className="navigation-home-link global-search-navigation-action" /><NavigationGroups mobile />
       <div className="mobile-navigation-menu-footer"><LanguageSelector compact className="mobile-language-selector" /></div>
     </nav>}
   </div>
@@ -148,8 +148,4 @@ export function ThemeModeToggle({ className = 'app-sidebar-theme-toggle' }: { cl
   const { colorMode, toggleColorMode } = useTheme()
   const label = colorMode === 'dark' ? t('navigation.lightMode') : t('navigation.darkMode')
   return <IconButton className={className} type="button" label={label} title={label} onClick={toggleColorMode} icon={<SidebarIcon name={colorMode === 'dark' ? 'sun' : 'moon'} />} />
-}
-
-export function PageLayout({ children }: { client?: unknown; children?: ReactNode }) {
-  return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8"><WorkspaceNavigation />{children ?? <Outlet />}</div>
 }

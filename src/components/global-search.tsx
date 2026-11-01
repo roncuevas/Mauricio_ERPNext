@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
-import { Button } from './ui'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
+import { GlobalSearchContext } from './global-search-context'
 import { readItemCatalog } from '../lib/item-cache'
 import { readItemPriceCatalog } from '../lib/price-cache'
 import { readCustomerCatalog, readSalesOrderCatalog } from '../lib/sales-order-cache'
@@ -13,12 +12,16 @@ import { searchScore } from '../lib/search'
 
 type SearchResult = { id: string; title: string; detail: string; kind: string; href: string }
 
-export function GlobalSearch({ profileId }: { profileId: string }) {
+export function GlobalSearch({ profileId, children }: { profileId: string; children: ReactNode }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
+
+  function openSearch() {
+    setOpen(true)
+  }
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -56,8 +59,8 @@ export function GlobalSearch({ profileId }: { profileId: string }) {
     navigate(result.href)
   }
 
-  return <>
-    <Button type="button" variant="secondary" className="global-search-trigger" onClick={() => setOpen(true)}><Search className="h-4 w-4" aria-hidden="true" />{t('globalSearch.open')}<kbd>{t('globalSearch.shortcut')}</kbd></Button>
+  return <GlobalSearchContext.Provider value={openSearch}>
+    {children}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent className="global-search-dialog"><DialogHeader><DialogTitle>{t('globalSearch.title')}</DialogTitle><DialogDescription>{t('globalSearch.description')}</DialogDescription></DialogHeader><Command shouldFilter={false}><CommandInput value={search} onValueChange={setSearch} placeholder={t('globalSearch.placeholder')} autoFocus /><CommandList><CommandEmpty>{results.length ? t('globalSearch.noResults') : t('globalSearch.noCache')}</CommandEmpty><CommandGroup>{filtered.map((result) => <CommandItem key={result.id} value={result.id} onSelect={() => select(result)}><span className="min-w-0"><strong className="block truncate">{result.title}</strong><small className="muted block truncate">{result.detail}</small></span></CommandItem>)}</CommandGroup></CommandList></Command></DialogContent></Dialog>
-  </>
+  </GlobalSearchContext.Provider>
 }
