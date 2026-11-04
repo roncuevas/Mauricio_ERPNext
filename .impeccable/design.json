@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T15:18:17Z",
+  "title": "Design System: Mauricio ERPNext",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "ERP Blue", "canonical": "#2563eb", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
+      "primary-hover": { "role": "primary", "displayName": "Deep ERP Blue", "canonical": "#1d4ed8", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
+      "primary-soft": { "role": "primary", "displayName": "Pale Blue", "canonical": "#eff6ff", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#eff6ff"] },
+      "secondary": { "role": "secondary", "displayName": "Sky Blue", "canonical": "#0ea5e9", "tonalRamp": ["#082f49", "#0c4a6e", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#e0f2fe"] },
+      "accent": { "role": "primary", "displayName": "Pale Accent Blue", "canonical": "#dbeafe", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
+      "page": { "role": "neutral", "displayName": "Cool Page Gray", "canonical": "#f5f7fb", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f5f7fb"] },
+      "surface": { "role": "neutral", "displayName": "White Surface", "canonical": "#ffffff", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#ffffff"] },
+      "surface-muted": { "role": "neutral", "displayName": "Cloud Gray", "canonical": "#f8fafc", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#172033", "tonalRamp": ["#0b1120", "#172033", "#263247", "#334155", "#475569", "#64748b", "#94a3b8", "#e5e7eb"] },
+      "heading": { "role": "neutral", "displayName": "Heading Ink", "canonical": "#0f172a", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"] },
+      "muted": { "role": "neutral", "displayName": "Slate Muted", "canonical": "#64748b", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"] },
+      "border": { "role": "neutral", "displayName": "Slate Border", "canonical": "#cbd5e1", "tonalRamp": ["#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] },
+      "border-subtle": { "role": "neutral", "displayName": "Soft Divider", "canonical": "#e2e8f0", "tonalRamp": ["#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] },
+      "danger": { "role": "tertiary", "displayName": "Danger Red", "canonical": "#dc2626", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fecaca"] },
+      "warning": { "role": "tertiary", "displayName": "Warning Amber", "canonical": "#b45309", "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fde68a"] },
+      "success": { "role": "tertiary", "displayName": "Success Green", "canonical": "#047857", "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#34d399", "#a7f3d0"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Page titles and primary orientation." },
+      "title": { "displayName": "Title", "purpose": "Section and card headings." },
+      "body": { "displayName": "Body", "purpose": "Operational copy and controls." },
+      "label": { "displayName": "Label", "purpose": "Field labels and compact navigation metadata." }
+    },
+    "shadows": [
+      { "name": "control-lift", "value": "0 1px 3px rgba(15, 23, 42, .1)", "purpose": "Subtle separation for compact actionable elements." },
+      { "name": "card", "value": "0 4px 14px rgba(15, 23, 42, .06)", "purpose": "Low emphasis depth on grouped content." },
+      { "name": "focus-ring", "value": "0 0 0 3px rgba(37, 99, 235, .18)", "purpose": "Visible focus treatment for keyboard use." }
+    ],
+    "motion": [
+      { "name": "state-transition", "value": ".15s ease", "purpose": "Short color, border, and shadow state changes." },
+      { "name": "button-press", "value": "translateY(-1px) on hover; translateY(0) on active", "purpose": "Subtle tactile feedback on actionable controls." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-navigation", "value": "1023px", "purpose": "Switches the desktop rail for mobile navigation." },
+      { "name": "table-cards", "value": "700px", "purpose": "Switches dense product tables to mobile cards." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action with compact, consistent control height.",
+      "html": "<button class=\"ds-button-primary\">Guardar cambios</button>",
+      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 2.5rem; padding: .5rem 1rem; border: 1px solid transparent; border-radius: .5rem; background: var(--color-primary); color: #fff; font: 600 .875rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; transition: background-color .15s ease, transform .15s ease; } .ds-button-primary:hover { background: var(--color-primary-hover); transform: translateY(-1px); } .ds-button-primary:active { transform: translateY(0); } .ds-button-primary:focus-visible { outline: 0; box-shadow: var(--focus-ring); } .ds-button-primary:disabled { opacity: .5; pointer-events: none; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Supporting action on a neutral surface.",
+      "html": "<button class=\"ds-button-secondary\">Cancelar</button>",
+      "css": ".ds-button-secondary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 2.5rem; padding: .5rem 1rem; border: 1px solid var(--color-border); border-radius: .5rem; background: var(--color-surface); color: var(--color-heading); font: 600 .875rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; transition: background-color .15s ease, transform .15s ease; } .ds-button-secondary:hover { background: var(--color-surface-muted); transform: translateY(-1px); } .ds-button-secondary:active { transform: translateY(0); } .ds-button-secondary:focus-visible { outline: 0; box-shadow: var(--focus-ring); }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Semantic destructive action; use only when an operation is destructive.",
+      "html": "<button class=\"ds-button-danger\">Eliminar</button>",
+      "css": ".ds-button-danger { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; padding: .5rem 1rem; border: 1px solid transparent; border-radius: .5rem; background: var(--color-danger); color: #fff; font: 600 .875rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; transition: background-color .15s ease; } .ds-button-danger:hover { background: var(--color-danger-hover); } .ds-button-danger:focus-visible { outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 22%, transparent); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Standard operational text entry with visible focus.",
+      "html": "<input class=\"ds-field\" type=\"text\" aria-label=\"Buscar productos\" placeholder=\"Buscar productos\">",
+      "css": ".ds-field { width: 100%; height: 2.5rem; padding: 0 .75rem; border: 1px solid var(--color-border); border-radius: .5rem; background: var(--color-surface); color: var(--color-heading); font: 400 .875rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; transition: border-color .15s ease, box-shadow .15s ease; } .ds-field::placeholder { color: var(--color-muted); } .ds-field:focus-visible { border-color: var(--color-primary); outline: 0; box-shadow: var(--focus-ring); } .ds-field:disabled { background: var(--color-surface-muted); opacity: .65; }"
+    },
+    {
+      "name": "Information Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Compact contextual status or category label.",
+      "html": "<span class=\"ds-badge-info\">Activo</span>",
+      "css": ".ds-badge-info { display: inline-flex; align-items: center; border-radius: 999px; padding: .2rem .5rem; background: var(--color-primary-soft); color: var(--color-primary-hover); font: 800 .68rem/1.2 Inter, ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Grouped operational information on a quiet surface.",
+      "html": "<section class=\"ds-card\"><strong>Inventario</strong><p>Almacén principal</p></section>",
+      "css": ".ds-card { padding: 1rem; border: 1px solid var(--color-border-subtle); border-radius: .75rem; background: var(--color-surface); color: var(--color-ink); box-shadow: var(--shadow-card); } .ds-card strong { color: var(--color-heading); font: 600 1rem/1.4 Inter, ui-sans-serif, system-ui, sans-serif; } .ds-card p { margin: .5rem 0 0; color: var(--color-muted); font: 400 .875rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Grouped navigation item with a clear selected state.",
+      "html": "<a class=\"ds-nav-link ds-nav-link-active\" href=\"#catalogo\" aria-current=\"page\">Catálogo</a>",
+      "css": ".ds-nav-link { display: flex; align-items: center; min-height: 2.5rem; padding: .5rem .75rem; border-radius: .5rem; color: var(--color-muted); font: 600 .875rem/1.4 Inter, ui-sans-serif, system-ui, sans-serif; text-decoration: none; transition: background-color .15s ease, color .15s ease; } .ds-nav-link:hover { background: var(--color-surface-muted); color: var(--color-heading); } .ds-nav-link-active { background: var(--color-primary-soft); color: var(--color-primary-hover); } .ds-nav-link:focus-visible { outline: 0; box-shadow: var(--focus-ring); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Escritorio ERP ordenado",
+    "overview": "Mauricio is a clear, professional, familiar workspace for people completing many ERP tasks. Its structure stays compact and predictable so product, price, inventory, and sales information remain easy to scan. The interface serves daily operations; it should not take on the voice or composition of a marketing page.\n\nThe default Azul ERP theme pairs a practical blue action color with cool, light neutrals. Users can select among ten color themes and switch between light and dark modes. Controls use visible state changes, concise labels, and a consistent hierarchy. Surfaces rely on thin borders with restrained shadows to distinguish working areas.",
+    "keyCharacteristics": ["Compact, familiar operational structure.", "Clear, professional language and hierarchy.", "Practical controls with visible states.", "Themeable color accents over stable neutral surfaces."],
+    "rules": [
+      { "name": "The Theme Role Rule", "body": "Preserve semantic color roles when the user selects another theme; do not hard-code the default blue into new themed components.", "section": "colors" }
+    ],
+    "dos": ["Do keep operational information compact, scannable, and grouped by task.", "Do retain the familiar neutral surfaces and express theme choice through semantic color roles.", "Do make active, hover, focus, error, disabled, and loading states visibly distinct.", "Do adapt dense tables and navigation for touch-width screens.", "Do preserve visible keyboard focus and accessible labels on icon-only controls."],
+    "donts": ["Don't turn operational screens into marketing pages or decorative dashboards.", "Don't use color alone to explain status or selection.", "Don't replace the compact operational hierarchy with oversized display typography or oversized empty space.", "Don't use shadows as the only boundary between related surfaces."]
+  }
+}
