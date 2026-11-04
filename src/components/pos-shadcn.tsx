@@ -6,7 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverAnchor, PopoverContent } from './ui/popover'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from './ui/sheet'
 import type { PosClosingSummary } from '../lib/pos'
 import type { PosPaymentLine, PosPaymentMethod } from '../lib/types'
@@ -17,10 +17,44 @@ export function PosCustomerPicker({ enabled, value, search, customers, onSearch,
   return <Popover open={Boolean(enabled && search)}><Field label={t('pos.customer.label')}><PopoverAnchor asChild><Input value={search || value} onChange={(event) => onSearch(event.target.value)} placeholder={t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></PopoverAnchor></Field><PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start"><Command><CommandInput placeholder={t('pos.customer.search')} value={search} onValueChange={onSearch} aria-label={t('pos.customer.filter')} /><CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={`${item.name} ${item.customer_name ?? ''}`} onSelect={() => onSelect(item.name)}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent></Popover>
 }
 
-export function PosMobileTabs({ value, count, fixed, onChange, onOpenDrafts, onOpenQuotations, onOpenLocalCarts }: { value: 'products' | 'cart'; count: number; fixed: boolean; onChange: (value: 'products' | 'cart') => void; onOpenDrafts: () => void; onOpenQuotations?: () => void; onOpenLocalCarts: () => void }) {
+type PosAuxiliaryActionsProps = {
+  showHistory: boolean
+  onToggleHistory: () => void
+  onOpenDrafts: () => void
+  onOpenLocalCarts: () => void
+  onOpenQuotations?: () => void
+  historyDisabled?: boolean
+  draftsDisabled?: boolean
+  localCartsDisabled?: boolean
+  onShowProducts?: () => void
+  onShowCart?: () => void
+  onToggleContext?: () => void
+  contextOpen?: boolean
+}
+
+export function PosAuxiliaryActions({ showHistory, onToggleHistory, onOpenDrafts, onOpenLocalCarts, onOpenQuotations, historyDisabled, draftsDisabled, localCartsDisabled, onShowProducts, onShowCart, onToggleContext, contextOpen }: PosAuxiliaryActionsProps) {
+  const { t } = useTranslation()
+  return <>
+    {onShowProducts && onShowCart && <>
+      <DropdownMenuItem onSelect={onShowProducts}>{t('pos.mobile.showProducts')}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={onShowCart}>{t('pos.mobile.showCart')}</DropdownMenuItem>
+      <DropdownMenuSeparator />
+    </>}
+    <DropdownMenuItem disabled={historyDisabled} onSelect={onToggleHistory}>{showHistory ? t('posPage.hideHistory') : t('posPage.history')}</DropdownMenuItem>
+    <DropdownMenuItem className="pos-more-action" disabled={draftsDisabled} onSelect={onOpenDrafts}><span>{t('pos.drafts.title')}</span><small>{t('pos.drafts.scope')}</small></DropdownMenuItem>
+    <DropdownMenuItem className="pos-more-action" disabled={localCartsDisabled} onSelect={onOpenLocalCarts}><span>{t('pos.localCarts.title')}</span><small>{t('pos.localCarts.scope')}</small></DropdownMenuItem>
+    {onOpenQuotations && <DropdownMenuItem onSelect={onOpenQuotations}>{t('posPage.quotes')}</DropdownMenuItem>}
+    {onToggleContext && <>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onToggleContext}>{contextOpen ? t('pos.mobile.hideContext') : t('pos.mobile.showContext')}</DropdownMenuItem>
+    </>}
+  </>
+}
+
+export function PosMobileTabs({ value, count, fixed, showHistory, onChange, onToggleHistory, onOpenDrafts, onOpenQuotations, onOpenLocalCarts, draftsDisabled, localCartsDisabled }: { value: 'products' | 'cart'; count: number; fixed: boolean; showHistory: boolean; onChange: (value: 'products' | 'cart') => void; onToggleHistory: () => void; onOpenDrafts: () => void; onOpenQuotations?: () => void; onOpenLocalCarts: () => void; draftsDisabled: boolean; localCartsDisabled: boolean }) {
   const { t } = useTranslation()
   const [contextOpen, setContextOpen] = useState(false)
-  return <div className={`pos-mobile-tabs${fixed ? ' is-fixed' : ''}`} data-context-open={contextOpen || undefined}><Tabs value={value} onValueChange={(next) => onChange(next as 'products' | 'cart')}><TabsList aria-label={t('pos.mobile.view')}><TabsTrigger value="products">{t('common.products')}</TabsTrigger><TabsTrigger value="cart">{t('pos.mobile.cart')}{count > 0 && <span>{count}</span>}</TabsTrigger></TabsList></Tabs><DropdownMenu><DropdownMenuTrigger asChild><Button variant="secondary" size="compact" aria-label={t('pos.mobile.moreActions')}>{t('pos.mobile.moreActions')}</Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => onChange('products')}>{t('pos.mobile.showProducts')}</DropdownMenuItem><DropdownMenuItem onSelect={() => onChange('cart')}>{t('pos.mobile.showCart')}</DropdownMenuItem><DropdownMenuItem onSelect={onOpenLocalCarts}>{t('pos.localCarts.title')}</DropdownMenuItem><DropdownMenuItem onSelect={onOpenDrafts}>{t('pos.mobile.heldSales')}</DropdownMenuItem>{onOpenQuotations && <DropdownMenuItem onSelect={onOpenQuotations}>{t('navigation.quotations')}</DropdownMenuItem>}<DropdownMenuItem onSelect={() => setContextOpen((current) => !current)}>{contextOpen ? t('pos.mobile.hideContext') : t('pos.mobile.showContext')}</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>
+  return <div className={`pos-mobile-tabs${fixed ? ' is-fixed' : ''}`} data-context-open={contextOpen || undefined}><Tabs value={value} onValueChange={(next) => onChange(next as 'products' | 'cart')}><TabsList aria-label={t('pos.mobile.view')}><TabsTrigger value="products">{t('common.products')}</TabsTrigger><TabsTrigger value="cart">{t('pos.mobile.cart')}{count > 0 && <span>{count}</span>}</TabsTrigger></TabsList></Tabs><DropdownMenu><DropdownMenuTrigger asChild><Button variant="secondary" size="compact" aria-label={t('pos.mobile.moreActions')}>{t('pos.mobile.moreActions')}</Button></DropdownMenuTrigger><DropdownMenuContent align="end"><PosAuxiliaryActions showHistory={showHistory} onToggleHistory={onToggleHistory} onOpenDrafts={onOpenDrafts} onOpenLocalCarts={onOpenLocalCarts} onOpenQuotations={onOpenQuotations} draftsDisabled={draftsDisabled} localCartsDisabled={localCartsDisabled} onShowProducts={() => onChange('products')} onShowCart={() => onChange('cart')} onToggleContext={() => setContextOpen((current) => !current)} contextOpen={contextOpen} /></DropdownMenuContent></DropdownMenu></div>
 }
 
 export function PosClosingPanel({ open, paymentMethods, balances, summary, recovery: _recovery, busy, error, onChange, onSubmit, onClose, onOpenChange }: { open?: boolean; paymentMethods: PosPaymentMethod[]; balances: PosPaymentLine[]; summary?: PosClosingSummary; recovery?: { name: string; status?: string } | null; busy: boolean; error?: string; onChange: (next: PosPaymentLine[]) => void; onSubmit?: () => void; onClose?: () => void; onOpenChange?: (open: boolean) => void }) {

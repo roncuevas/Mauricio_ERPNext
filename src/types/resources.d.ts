@@ -428,6 +428,7 @@ export default interface Resources {
         "modified": "Modificado {{date}}",
         "noCustomer": "Sin cliente",
         "resume": "Continuar",
+        "scope": "Borradores guardados en ERPNext",
         "title": "Ventas retenidas"
       },
       "localCarts": {
@@ -447,6 +448,7 @@ export default interface Resources {
         "resume": "Recuperar",
         "save": "Guardar carrito",
         "saved": "Carrito guardado: {{name}}.",
+        "scope": "Guardados en este dispositivo",
         "storageError": "No se pudo guardar el carrito local en este dispositivo.",
         "title": "Carritos locales",
         "updated": "Actualizado {{date}}"
@@ -471,12 +473,17 @@ export default interface Resources {
         "openShiftToCharge": "Abre un turno antes de cobrar.",
         "openShiftToSave": "Abre un turno antes de guardar.",
         "pendingCartClose": "No puedes cerrar el turno con una venta pendiente en el carrito.",
+        "pendingSaleDraft": "La venta {{name}} sigue como borrador. Vuelve a verificarla; se usará esta misma factura.",
+        "pendingSaleSubmitted": "La venta {{name}} ya está confirmada. Se está sincronizando el carrito guardado; verifica de nuevo antes de iniciar otra venta.",
+        "pendingSaleUnknown": "No se pudo confirmar el estado de la venta {{name}}. No intentes cobrar de nuevo; verifica el estado primero.",
         "prepareCloseError": "No se pudo preparar el cierre.",
         "returnConfirm": "¿Crear devolución para {{name}}?",
         "returnConfirmed": "Devolución confirmada: {{name}}.",
         "returnError": "No se pudo crear la devolución.",
         "saleConfirmed": "Venta confirmada: {{name}}.",
         "saleNotSubmitted": "La venta {{name}} no quedó enviada.",
+        "cancelSaleConfirm": "¿Vaciar la venta actual? Se quitarán sus productos y pagos. El carrito local guardado y cualquier venta retenida en ERPNext se conservarán.",
+        "verifyPendingSale": "Verificar y continuar",
         "saveCartError": "No se pudo guardar el carrito.",
         "savedPriceMismatch": "El precio guardado no coincide con el producto actual.",
         "selectCustomerToCharge": "Selecciona un cliente antes de cobrar.",

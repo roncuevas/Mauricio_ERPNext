@@ -174,6 +174,7 @@ Controls and cards use softly rounded corners: fields and standard buttons are 8
 - **Danger:** Semantic red for destructive or lock-related actions.
 - **Hover / Focus:** Subtle color shift and 1px lift on hover; return to rest on press. Keep a visible 2px keyboard ring.
 - **Disabled:** Reduce opacity and disable pointer interaction.
+- **Icon actions:** `IconButton`, `RefreshButton`, `SearchButton`, and `FilterButton` live with `Button` in `src/components/ui/button.tsx`; use Lucide icons and require accessible labels. Import through `src/components/ui.tsx` in screens.
 
 ### Chips
 - **Style:** Compact pill with a semantic or neutral tint and high-weight text.

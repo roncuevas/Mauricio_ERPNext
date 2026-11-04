@@ -2,7 +2,7 @@ import { cloneElement, isValidElement, useId, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 export { Button, buttonVariants, type ButtonProps } from './ui/button'
-export { ButtonLink } from './ui/button'
+export { ButtonLink, IconButton, RefreshButton, SearchButton, FilterButton } from './ui/button'
 export { Input } from './ui/input'
 export { Textarea } from './ui/textarea'
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card'
@@ -18,30 +18,9 @@ export { Checkbox } from './ui/checkbox'
 export { RadioGroup, RadioGroupItem } from './ui/radio-group'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 export { EntityCombobox } from './entity-combobox'
-import { Button, type ButtonProps } from './ui/button'
 import { Alert } from './ui/alert'
 import { Label } from './ui/label'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
-
-export function IconButton({ label, icon, loading = false, variant = 'secondary', ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; icon: ReactNode; loading?: boolean; variant?: NonNullable<ButtonProps['variant']> }) {
-  return <Button {...props} variant={variant} size="icon" loading={loading} aria-label={label} title={props.title ?? label}>{icon}</Button>
-}
-
-export function RefreshButton({ label, loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; loading?: boolean }) {
-  return <IconButton {...props} type="button" label={label} loading={loading} icon="↻" />
-}
-
-export function SearchButton({ label, loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label?: string; loading?: boolean }) {
-  const { t } = useTranslation()
-  label ??= t('common.search')
-  return <IconButton {...props} className={cn('toolbar-search-button', props.className)} type="submit" label={label} loading={loading} title={`${label} (Enter)`} icon={<svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 16 5 5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg>} />
-}
-
-export function FilterButton({ label, activeCount = 0, expanded = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant'> & { label?: string; activeCount?: number; expanded?: boolean }) {
-  const { t } = useTranslation()
-  label ??= t('common.filters')
-  return <IconButton {...props} className={cn('toolbar-filter-button', props.className)} type="button" label={label} aria-expanded={expanded} icon={<><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" /></svg>{activeCount > 0 && <span className="filter-button-count">{activeCount}</span>}</>} />
-}
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   const generatedId = useId()
