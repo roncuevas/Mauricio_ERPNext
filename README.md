@@ -16,7 +16,7 @@ The home screen uses an isolated demo profile and empty sample data; the screens
 
 ## Scope
 
-The SPA talks to ERPNext directly over REST; there is no backend of its own and no data is stored on any server belonging to this project. Connections are configured in the browser as profiles. Credentials are encrypted with Web Crypto, and a temporary local session survives page refreshes.
+The SPA talks to ERPNext directly over REST; there is no backend of its own and no data is stored on any server belonging to this project. Connections are configured in the browser as profiles. Credentials are encrypted with Web Crypto, and the temporary local session can be restored across tabs and page refreshes for up to eight hours after unlocking. Locking the session in one tab locks it in the others.
 
 Features include:
 

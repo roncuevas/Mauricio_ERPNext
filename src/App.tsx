@@ -11,7 +11,7 @@ import { WorkspaceNavigation } from './components/workspace-navigation'
 import { LanguageSelector } from './components/language-selector'
 import { RouteErrorBoundary } from './components/route-error-boundary'
 import { createErpNextClient } from './lib/erpnext'
-import { clearLocalSession, restoreLocalSession, startLocalSession } from './lib/session'
+import { clearLocalSession, localSessionStorageKey, restoreLocalSession, startLocalSession } from './lib/session'
 import { readProfiles } from './lib/storage'
 import { readSharedConnection } from './lib/share-link'
 import { readItemCatalog } from './lib/item-cache'
@@ -53,6 +53,16 @@ function App() {
     if (sharedConnection) { setRestoring(false); return }
     restoreLocalSession().then(setConnection).finally(() => setRestoring(false))
   }, [sharedConnection])
+
+  useEffect(() => {
+    function syncSession(event: StorageEvent) {
+      if (event.key !== localSessionStorageKey) return
+      if (event.newValue === null) setConnection(null)
+      else void restoreLocalSession().then(setConnection)
+    }
+    window.addEventListener('storage', syncSession)
+    return () => window.removeEventListener('storage', syncSession)
+  }, [])
 
   async function unlock(profile: ConnectionProfile) {
     await startLocalSession(profile)

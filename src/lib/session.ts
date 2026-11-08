@@ -3,7 +3,7 @@ import type { ConnectionProfile } from './types'
 const databaseName = 'mauricio-erpnext-session'
 const storeName = 'session-keys'
 const databaseVersion = 1
-const sessionStorageKey = 'mauricio-erpnext:active-session'
+export const localSessionStorageKey = 'mauricio-erpnext:active-session'
 const sessionDuration = 8 * 60 * 60 * 1000
 
 type SessionEnvelope = { profileId: string; expiresAt: number; iv: string; ciphertext: string }
@@ -44,13 +44,18 @@ export async function startLocalSession(profile: ConnectionProfile) {
     request.onerror = () => reject(request.error ?? new Error('No se pudo guardar la sesión local.'))
   })
   const envelope: SessionEnvelope = { profileId: profile.id, expiresAt: Date.now() + sessionDuration, iv: encode(iv), ciphertext: encode(ciphertext) }
-  sessionStorage.setItem(sessionStorageKey, JSON.stringify(envelope))
+  localStorage.setItem(localSessionStorageKey, JSON.stringify(envelope))
+  sessionStorage.removeItem(localSessionStorageKey)
 }
 
 export async function restoreLocalSession(): Promise<ConnectionProfile | null> {
-  const raw = sessionStorage.getItem(sessionStorageKey)
+  const raw = localStorage.getItem(localSessionStorageKey) ?? sessionStorage.getItem(localSessionStorageKey)
   if (!raw) return null
   try {
+    if (!localStorage.getItem(localSessionStorageKey)) {
+      localStorage.setItem(localSessionStorageKey, raw)
+      sessionStorage.removeItem(localSessionStorageKey)
+    }
     const envelope = JSON.parse(raw) as SessionEnvelope
     if (envelope.expiresAt <= Date.now()) { await clearLocalSession(); return null }
     const key = await getKey(envelope.profileId)
@@ -64,8 +69,9 @@ export async function restoreLocalSession(): Promise<ConnectionProfile | null> {
 }
 
 export async function clearLocalSession() {
-  const raw = sessionStorage.getItem(sessionStorageKey)
-  sessionStorage.removeItem(sessionStorageKey)
+  const raw = localStorage.getItem(localSessionStorageKey) ?? sessionStorage.getItem(localSessionStorageKey)
+  localStorage.removeItem(localSessionStorageKey)
+  sessionStorage.removeItem(localSessionStorageKey)
   if (!raw) return
   try {
     const profileId = (JSON.parse(raw) as SessionEnvelope).profileId

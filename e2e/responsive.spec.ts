@@ -54,6 +54,21 @@ test.describe('responsive navigation and empty states', () => {
     await mockErpNext(page)
   })
 
+  test('shares the active eight-hour session with a new tab', async ({ page, context }) => {
+    await createConnection(page)
+    const newTab = await context.newPage()
+    await mockErpNext(newTab)
+    await newTab.goto('/')
+    await expect(newTab.getByRole('heading', { name: 'Inicio' })).toBeVisible()
+    await expect(newTab.getByRole('button', { name: 'Cifrar y conectar' })).toHaveCount(0)
+
+    const mobileMenu = page.getByRole('button', { name: 'Menú' })
+    if (await mobileMenu.isVisible()) await mobileMenu.click()
+    await page.getByRole('button', { name: 'Bloquear sesión' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Sí, bloquear' }).click()
+    await expect(newTab.getByRole('button', { name: 'Cifrar y conectar' })).toBeVisible()
+  })
+
   test('mobile uses compact navigation and keeps pages inside the viewport', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'Este caso corresponde al proyecto móvil')
     await createConnection(page)
