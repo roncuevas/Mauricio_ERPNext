@@ -4,22 +4,27 @@
 
 # Mauricio_ERPNext
 
-A local-first, instance-agnostic browser client for managing ERPNext.
+A local-first, instance-agnostic browser client for store operations in ERPNext. The React/Vite SPA connects directly to each user's ERPNext site through its REST API; this project has no application backend.
+
+## Screenshots
+
+The home screen uses an isolated demo profile and empty sample data; the screenshots contain no real ERPNext records or credentials.
+
+| Secure connection setup | Operational home |
+| --- | --- |
+| ![Secure connection form](./docs/screenshots/conexion.png) | ![Mauricio operational home](./docs/screenshots/inicio.png) |
 
 ## Scope
 
 The SPA talks to ERPNext directly over REST; there is no backend of its own and no data is stored on any server belonging to this project. Connections are configured in the browser as profiles. Credentials are encrypted with Web Crypto, and a temporary local session survives page refreshes.
 
-Features:
+Features include:
 
-- `Item` products with a local cache, explicit search, and editing on dedicated pages.
-- DocTypes with a cached catalog and manual refresh.
-- **Variants** view showing the template/variant hierarchy through `variant_of`; it starts collapsed to avoid a long list.
-- Controls to expand or collapse each branch or the whole hierarchy, with relevant branches expanded automatically while searching.
-- Product and variant creation and editing from the hierarchy.
-- **Multiple UOM** view to spot presentations such as `Kg`, `Bulto`, or `Caja`, with their conversion factors.
-- Prices, suppliers, stock with reconciliation, POS shifts and sales, sales orders, and quotations.
-- Spanish and English interface.
+- Product catalog with explicit search, product editing, and local caching.
+- Variant hierarchy based on `variant_of`, plus UOM conversions and product creation/editing.
+- Buying, selling, and supplier prices; supplier directory; stock lookup and reconciliation.
+- Point of sale, opening and closing shifts, daily sales, sales orders, and quotations.
+- Cached DocType explorer, configurable home page, local cache tools, and Spanish/English interface.
 
 ## Cache and ERPNext
 
@@ -33,13 +38,16 @@ Local caches are kept in IndexedDB per profile. Successful edits may update an e
 
 The variant hierarchy virtualizes its roots when a search yields more than 200 nodes; small catalogs keep normal rendering for simple, accessible interaction.
 
-## Development
+## Requirements and development
+
+Use Node.js compatible with the project's Vite toolchain and npm.
 
 ```bash
 npm install
 npm run dev
-npm run lint
 ```
+
+`npm run dev` starts Vite locally. `npm run build` performs the TypeScript check and creates the production bundle. `npm run lint` runs ESLint.
 
 The app has no backend. Each user configures their instance URL, API Key, and API Secret in the browser. Credentials are encrypted with Web Crypto before being stored locally and are never included in the bundle.
 
@@ -88,14 +96,11 @@ The ERPNext instance must allow CORS from the domain where the SPA is deployed. 
 ## Main routes
 
 - `/`: operational home.
-- `/pos`, `/pos/ventas`, `/pos/turnos`, `/pos/cotizaciones`: POS, daily sales, shifts, and quotations.
-- `/items`: local product catalog.
-- `/variants`: template/variant hierarchy and multiple UOMs.
-- `/prices`: buying, selling, and supplier-specific prices.
-- `/suppliers`: supplier catalog and new supplier creation.
-- `/stock`, `/stock/reconciliation`: stock viewer and reconciliation.
-- `/doctypes`: cached DocType explorer.
-- `/settings`: preferences, caches, and the local connection.
+- `/pos`, `/pos/turnos`, `/pos/ventas`, `/pos/cotizaciones`: point of sale, shifts, sales, and quotations.
+- `/items`, `/variants`: product catalog, variant hierarchy, and UOM management.
+- `/prices`, `/suppliers`: product prices and supplier catalog.
+- `/stock`, `/stock/reconciliation`: stock lookup and reconciliation.
+- `/doctypes`, `/settings`: DocType explorer, preferences, local caches, and connection settings.
 
 Never include API keys, API secrets, local passwords, or real ERPNext responses in commits, screenshots, or issues.
 
