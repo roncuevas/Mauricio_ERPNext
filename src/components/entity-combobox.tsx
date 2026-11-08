@@ -27,9 +27,10 @@ type EntityComboboxProps = {
   className?: string
   allowClear?: boolean
   clearLabel?: string
+  required?: boolean
 }
 
-export function EntityCombobox({ value = '', onValueChange, options, placeholder = 'Selecciona una opción', searchPlaceholder = 'Buscar…', emptyMessage = 'No hay coincidencias.', ariaLabel, disabled = false, loading = false, className, allowClear = false, clearLabel = 'Sin selección' }: EntityComboboxProps) {
+export function EntityCombobox({ value = '', onValueChange, options, placeholder = 'Selecciona una opción', searchPlaceholder = 'Buscar…', emptyMessage = 'No hay coincidencias.', ariaLabel, disabled = false, loading = false, className, allowClear = false, clearLabel = 'Sin selección', required = false }: EntityComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const selected = options.find((option) => option.value === value)
@@ -42,7 +43,7 @@ export function EntityCombobox({ value = '', onValueChange, options, placeholder
 
   return <Popover open={open} onOpenChange={setOpen}>
     <PopoverTrigger asChild>
-      <Button type="button" variant="secondary" className={cn('entity-combobox-trigger control flex w-full items-center justify-between gap-2 text-left font-normal', !selected && 'text-[var(--color-muted)]', className)} disabled={disabled || loading} aria-label={ariaLabel} aria-expanded={open} role="combobox">
+      <Button type="button" variant="secondary" className={cn('entity-combobox-trigger control flex w-full items-center justify-between gap-2 text-left font-normal', !selected && 'text-[var(--color-muted)]', className)} disabled={disabled || loading} aria-label={ariaLabel} aria-expanded={open} aria-required={required || undefined} role="combobox">
         <span className="min-w-0 truncate">{loading ? 'Cargando…' : selected?.label || placeholder}</span>
         <span aria-hidden="true" className="shrink-0 text-xs">⌄</span>
       </Button>

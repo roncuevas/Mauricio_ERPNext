@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -6,7 +6,7 @@ import { MetadataDocEditor } from '../components/metadata-editor'
 import { Button, ButtonLink, Notice, PageHeader, Spinner } from '../components/ui'
 import { UomEditor, type UomEditorValues } from '../components/uom-editor'
 import { createErpNextClient } from '../lib/erpnext'
-import { patchItemCatalog } from '../lib/item-cache'
+import { patchItemCatalog, readItemCatalog, writeItemCatalog } from '../lib/item-cache'
 import { patchVariantCatalog, readVariantCatalog } from '../lib/variant-cache'
 import { readUomCatalog, writeUomCatalog } from '../lib/uom-cache'
 import { syncUomCatalog, UOM_CACHE_TTL_MS } from '../lib/catalog-sync'
@@ -47,8 +47,34 @@ export function ItemEditorPage({ client, profileId }: { client: Client; profileI
   const navigate = useNavigate()
   const isNew = !name || name === 'new'
   const queryClient = useQueryClient()
+  const createdItemRef = useRef<CachedItem | null>(null)
+  const [createdItem, setCreatedItem] = useState<CachedItem | null>(null)
   const meta = useQuery({ queryKey: queryKeys.metadata.doctype(profileId, 'Item'), queryFn: () => client.getDocTypeMeta('Item') })
-  return <section><PageHeader title={isNew ? t("editorsPage.newProduct") : t("editorsPage.editProduct")} description={isNew ? t("editorsPage.productDescriptionNew") : t("editorsPage.productDescriptionEdit", { name })} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>{t("editorsPage.configureUom")}</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} profileId={profileId} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} onClose={() => navigate('/items')} onSaved={async (saved) => { const savedName = String(saved.name ?? name ?? ''); if (savedName) { const next = await patchItemCatalog(profileId, { ...saved, name: savedName } as CachedItem); if (next) queryClient.setQueryData(queryKeys.catalog.item(profileId), next) } await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) }) }} />}</section>
+  const basicFieldNames = ['item_code', 'item_name', 'item_group', 'stock_uom']
+
+  if (createdItem) return <section><PageHeader title={t('editorsPage.createdTitle')} description={t('editorsPage.createdDescription', { name: createdItem.item_name || createdItem.name })} /><div className="card flex flex-wrap items-center justify-between gap-4 p-5"><div><strong>{createdItem.item_name || createdItem.name}</strong><p className="muted">{createdItem.name}</p></div><div className="flex flex-wrap gap-2"><ButtonLink to={`/prices/manage/${encodeURIComponent(createdItem.name)}?returnTo=%2Fitems`}>{t('editorsPage.addPrice')}</ButtonLink><ButtonLink variant="secondary" to="/items">{t('editorsPage.backToProducts')}</ButtonLink></div></div></section>
+
+  return <section><PageHeader title={isNew ? t("editorsPage.newProduct") : t("editorsPage.editProduct")} description={isNew ? t("editorsPage.productDescriptionNew") : t("editorsPage.productDescriptionEdit", { name })} action={!isNew && name ? <ButtonLink variant="secondary" to={`/items/${encodeURIComponent(name)}/uoms`}>{t("editorsPage.configureUom")}</ButtonLink> : undefined} />{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} profileId={profileId} doctype="Item" name={isNew ? null : name} fields={meta.data?.fields ?? []} basicFieldNames={isNew ? basicFieldNames : undefined} onClose={() => { if (isNew && createdItemRef.current) { setCreatedItem(createdItemRef.current); return } navigate('/items') }} onSaved={async (saved) => {
+    const savedName = String(saved.name ?? name ?? '')
+    if (!savedName) return
+    const savedItem = { ...saved, name: savedName } as CachedItem
+    if (isNew) createdItemRef.current = savedItem
+    const currentItems = await readItemCatalog(profileId)
+    const nextItems = currentItems
+      ? { ...currentItems, updatedAt: new Date().toISOString(), locallyModified: true, items: [...currentItems.items.filter((item) => item.name !== savedName), savedItem] }
+      : null
+    if (nextItems) {
+      await writeItemCatalog(nextItems)
+      queryClient.setQueryData(queryKeys.catalog.item(profileId), nextItems)
+    }
+    queryClient.setQueryData(queryKeys.item.detail(profileId, savedName), savedItem)
+    const currentVariants = await readVariantCatalog(profileId)
+    if (currentVariants) {
+      const previous = currentVariants.items.find((item) => item.name === savedName)
+      const nextVariants = await patchVariantCatalog(profileId, { ...previous, ...savedItem, name: savedName } as VariantItem)
+      if (nextVariants) queryClient.setQueryData(queryKeys.catalog.variant(profileId), nextVariants)
+    } else await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) })
+  }} />}</section>
 }
 
 function readUomValues(document: Record<string, unknown>): UomEditorValues {

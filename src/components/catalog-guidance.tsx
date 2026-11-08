@@ -25,5 +25,5 @@ export function CatalogReadinessNotice({ title, description, action, to, onActio
 
 export function CatalogSearchShortcutHint() {
   const { t } = useTranslation()
-  return <p className="catalog-search-hint"><kbd>Ctrl/Cmd K</kbd><span className="sr-only sm:not-sr-only">{t('catalogGuidance.globalSearch')}</span></p>
+  return <p className="catalog-search-hint"><kbd>Ctrl/Cmd K</kbd><span className="sr-only">{t('catalogGuidance.globalSearch')}</span></p>
 }
