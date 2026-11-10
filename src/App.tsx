@@ -41,6 +41,7 @@ const VariantsPage = lazy(() => import('./pages/catalog-pages').then(({ Variants
 const DocTypesPage = lazy(() => import('./pages/catalog-pages').then(({ DocTypesPage }) => ({ default: DocTypesPage })))
 const SettingsPage = lazy(() => import('./pages/settings-page').then(({ SettingsPage }) => ({ default: SettingsPage })))
 const HomePage = lazy(() => import('./pages/home-page').then(({ HomePage }) => ({ default: HomePage })))
+const PendingPage = lazy(() => import('./pages/pending-page').then(({ PendingPage }) => ({ default: PendingPage })))
 
 function App() {
   const { t } = useTranslation()
@@ -135,6 +136,7 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
         <Route path="/variants/new" element={<VariantEditorPage client={client} profileId={connection.id} />} />
         <Route path="/variants/:name" element={<VariantEditorPage client={client} profileId={connection.id} />} />
         <Route path="/prices" element={<PricesPage client={client} profileId={connection.id} />} />
+        <Route path="/pendientes" element={<PendingPage client={client} profileId={connection.id} />} />
         <Route path="/prices/manage/:itemName" element={<PriceManagementPage client={client} profileId={connection.id} />} />
         <Route path="/stock" element={<StockPage client={client} profileId={connection.id} />} />
         <Route path="/stock/reconciliation" element={<StockReconciliationPage client={client} profileId={connection.id} />} />

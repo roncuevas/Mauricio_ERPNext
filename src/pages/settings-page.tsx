@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { Button, Field, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
+import { Button, Field, Input, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
 import { Checkbox } from '../components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
@@ -12,11 +12,12 @@ import { LanguageSelector } from '../components/language-selector'
 import { useTheme } from '../components/theme-provider'
 import { ErpNextError, createErpNextClient } from '../lib/erpnext'
 import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profile'
-import type { ConnectionProfile, PosProfile } from '../lib/types'
+import type { ConnectionProfile, PosProfile, PriceList } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
 import { clearPosPreferences, DEFAULT_POS_PREFERENCES, readPosPreferences, writePosPreferences, type PosPreferences } from '../lib/pos-preferences'
 import { DEFAULT_APP_PREFERENCES, readAppPreferences, writeAppPreferences, type AppPreferences, type Density, type LandingRoute } from '../lib/app-preferences'
 import { useTranslation } from 'react-i18next'
+import { readPendingPreferences, writePendingPreferences, type PendingPreferences } from '../lib/pending-preferences'
 
 const TAB_VALUES = ['general', 'pos', 'appearance', 'language', 'data', 'navigation'] as const
 type SettingsTab = typeof TAB_VALUES[number]
@@ -63,11 +64,13 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   const activeTab: SettingsTab = TAB_VALUES.includes(rawTab as SettingsTab) ? rawTab as SettingsTab : 'general'
   const userQuery = useQuery({ queryKey: queryKeys.settings.userProfile(connection.id), queryFn: () => loadUserProfile(client) })
   const posProfilesQuery = useQuery({ queryKey: queryKeys.pos.profiles(connection.id), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'disabled'], pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
+  const pendingPriceListsQuery = useQuery({ queryKey: queryKeys.prices.lists(connection.id), queryFn: async () => (await client.listDocuments<PriceList>('Price List', { fields: ['name', 'selling', 'buying', 'enabled'], filters: [['enabled', '=', 1]], pageLength: 500, orderBy: 'name asc' })).data })
   const customersQuery = useQuery({ queryKey: queryKeys.pos.customers(connection.id), queryFn: async () => (await client.listDocuments<{ name: string; customer_name?: string }>('Customer', { fields: ['name', 'customer_name'], filters: [['disabled', '=', 0]], pageLength: 500, orderBy: 'customer_name asc' })).data })
   const [posDraft, setPosDraft] = useState<PosPreferences>(() => readPosPreferences(connection.id))
   const [posMessage, setPosMessage] = useState('')
   const [posError, setPosError] = useState('')
   const [appPreferences, setAppPreferences] = useState<AppPreferences>(() => readAppPreferences())
+  const [pendingPreferences, setPendingPreferences] = useState<PendingPreferences>(() => readPendingPreferences(connection.id))
   const [productView, setProductView] = useState<ProductView>(() => readProductView(connection.id))
   const { theme, setTheme, themes, colorMode, toggleColorMode } = useTheme()
   const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
@@ -77,6 +80,7 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   useEffect(() => {
     setProductView(readProductView(connection.id))
     setPosDraft(readPosPreferences(connection.id))
+    setPendingPreferences(readPendingPreferences(connection.id))
   }, [connection.id])
 
   function selectTab(value: string) {
@@ -105,6 +109,16 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
     setAppPreferences(writeAppPreferences(next))
   }
 
+  function changePendingPriceList(kind: 'buyingPriceList' | 'sellingPriceList', value: string) {
+    const next = writePendingPreferences(connection.id, { ...pendingPreferences, [kind]: value })
+    setPendingPreferences(next)
+  }
+
+  function changeLowMarginThreshold(value: number) {
+    const next = writePendingPreferences(connection.id, { ...pendingPreferences, lowMarginThreshold: value })
+    setPendingPreferences(next)
+  }
+
   function changeProductView(next: ProductView) {
     setProductView(next)
     localStorage.setItem(PRODUCT_VIEW_KEY(connection.id), next)
@@ -123,6 +137,15 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
       </TabsList>
 
       <TabsContent value="general"><div className="settings-grid">
+        <SettingSection eyebrow={t('settings.pending.eyebrow')} title={t('settings.pending.title')} description={t('settings.pending.description')}>
+          {pendingPriceListsQuery.isError && <Notice tone="error">{pendingPriceListsQuery.error instanceof Error ? pendingPriceListsQuery.error.message : t('settings.pending.loadError')}</Notice>}
+          <div className="settings-pos-form">
+            <Field label={t('settings.pending.buying')}><Select value={pendingPreferences.buyingPriceList} onValueChange={(value) => changePendingPriceList('buyingPriceList', value)}><SelectTrigger aria-label={t('settings.pending.buying')}><SelectValue /></SelectTrigger><SelectContent>{!(pendingPriceListsQuery.data ?? []).some((list) => list.name === pendingPreferences.buyingPriceList) && <SelectItem value={pendingPreferences.buyingPriceList}>{pendingPreferences.buyingPriceList}</SelectItem>}{(pendingPriceListsQuery.data ?? []).filter((list) => Boolean(list.buying)).map((list) => <SelectItem key={list.name} value={list.name}>{list.name}</SelectItem>)}</SelectContent></Select></Field>
+            <Field label={t('settings.pending.selling')}><Select value={pendingPreferences.sellingPriceList} onValueChange={(value) => changePendingPriceList('sellingPriceList', value)}><SelectTrigger aria-label={t('settings.pending.selling')}><SelectValue /></SelectTrigger><SelectContent>{!(pendingPriceListsQuery.data ?? []).some((list) => list.name === pendingPreferences.sellingPriceList) && <SelectItem value={pendingPreferences.sellingPriceList}>{pendingPreferences.sellingPriceList}</SelectItem>}{(pendingPriceListsQuery.data ?? []).filter((list) => Boolean(list.selling)).map((list) => <SelectItem key={list.name} value={list.name}>{list.name}</SelectItem>)}</SelectContent></Select></Field>
+            <Field label={t('settings.pending.lowMarginThreshold')}><Input type="number" min="0" max="100" step="1" value={pendingPreferences.lowMarginThreshold} onChange={(event) => changeLowMarginThreshold(Number(event.target.value))} aria-label={t('settings.pending.lowMarginThreshold')} /></Field>
+          </div>
+          <p className="muted">{t('settings.pending.savedLocally')}</p>
+        </SettingSection>
         <SettingSection eyebrow={t('settings.connection.eyebrow')} title={t('settings.connection.title')} description={t('settings.connection.description')}>
           <dl className="settings-connection-details"><div><dt className="field-label">{t('settings.connection.profile')}</dt><dd>{connection.label}</dd></div><div><dt className="field-label">{t('settings.connection.instance')}</dt><dd className="break-all">{connection.baseUrl}</dd></div></dl>
           <div className="settings-actions"><Button onClick={() => { void userQuery.refetch() }} disabled={userQuery.isFetching}>{userQuery.isFetching ? <><Spinner /> {t('settings.connection.testing')}</> : t('settings.connection.test')}</Button><Button variant="secondary" onClick={onLock}>{t('navigation.lock')}</Button></div>

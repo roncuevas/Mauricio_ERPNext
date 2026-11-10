@@ -23,7 +23,7 @@ export function SidebarIcon({ name, className = '' }: { name: SidebarIconName; c
 
 const navigationGroups: NavigationGroup[] = [
   { id: 'operation', label: 'Operación', icon: 'operation', landing: '/pos', items: [{ to: '/pos', label: 'POS' }, { to: '/pos/ventas', label: 'Ventas del día' }, { to: '/pos/turnos', label: 'Turnos' }, { to: '/pos/cotizaciones', label: 'Cotizaciones' }] },
-  { id: 'catalog', label: 'Catálogo', icon: 'catalog', landing: '/items', items: [{ to: '/items', label: 'Productos' }, { to: '/variants', label: 'Variantes' }, { to: '/prices', label: 'Precios' }] },
+  { id: 'catalog', label: 'Catálogo', icon: 'catalog', landing: '/items', items: [{ to: '/items', label: 'Productos' }, { to: '/variants', label: 'Variantes' }, { to: '/prices', label: 'Precios' }, { to: '/pendientes', label: 'Pendientes' }] },
   { id: 'inventory', label: 'Inventario', icon: 'inventory', landing: '/stock', items: [{ to: '/stock', label: 'Inventario' }, { to: '/suppliers', label: 'Proveedores' }] },
   { id: 'administration', label: 'Administración', icon: 'settings', landing: '/settings', items: [{ to: '/settings', label: 'Configuración' }, { to: '/doctypes', label: 'DocTypes' }] },
 ]
@@ -39,7 +39,7 @@ function visibleGroups() {
 }
 
 function navigationItemKey(label: string) {
-  const keys: Record<string, string> = { POS: 'pos', 'Ventas del día': 'dailySales', Turnos: 'shifts', Cotizaciones: 'quotations', Productos: 'products', Variantes: 'variants', Precios: 'prices', Inventario: 'stock', Proveedores: 'suppliers', Configuración: 'settings', DocTypes: 'doctypes' }
+  const keys: Record<string, string> = { POS: 'pos', 'Ventas del día': 'dailySales', Turnos: 'shifts', Cotizaciones: 'quotations', Productos: 'products', Variantes: 'variants', Precios: 'prices', Pendientes: 'pending', Inventario: 'stock', Proveedores: 'suppliers', Configuración: 'settings', DocTypes: 'doctypes' }
   return keys[label] ?? label
 }
 

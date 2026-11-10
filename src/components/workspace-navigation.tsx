@@ -26,6 +26,7 @@ const workspaces: Workspace[] = [
       { value: 'items', labelKey: 'navigation.products', to: '/items', matches: (pathname) => pathname.startsWith('/items') },
       { value: 'variants', labelKey: 'navigation.variants', to: '/variants', matches: (pathname) => pathname.startsWith('/variants') },
       { value: 'prices', labelKey: 'navigation.prices', to: '/prices', matches: (pathname) => pathname.startsWith('/prices') },
+      { value: 'pending', labelKey: 'navigation.pending', to: '/pendientes', matches: (pathname) => pathname.startsWith('/pendientes') },
     ],
   },
   {

@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+.pending-status-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; margin-bottom: 1rem; padding: .875rem 1rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-muted); font-size: .875rem; }
+.pending-status-bar > div { display: grid; gap: .2rem; }
+.pending-status-bar strong { color: var(--color-heading); }
+.pending-refresh-message { margin: -.35rem 0 .9rem; color: var(--color-primary); font-size: .875rem; }
+.pending-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin: 1.25rem 0 .75rem; }
+.pending-toolbar > div { display: grid; gap: .15rem; }
+.pending-toolbar > div strong { color: var(--color-heading); }
+.pending-toolbar > div span { color: var(--color-muted); font-size: .875rem; }
+.pending-toolbar input { width: min(100%, 22rem); }
+.pending-tabs { max-width: 100%; overflow-x: auto; }
+.pending-tabs button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .4rem; white-space: nowrap; }
+.pending-tabs button span { border-radius: 999px; background: var(--color-surface-muted); color: var(--color-muted); padding: .1rem .35rem; font-size: .7rem; }
+.pending-list { overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-card); }
+.pending-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; }
+.pending-row + .pending-row { border-top: 1px solid var(--color-border-subtle); }
+.pending-item-main { display: flex; min-width: 0; flex: 1 1 24rem; align-items: flex-start; gap: .8rem; }
+.pending-item-icon { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: var(--radius-sm); background: var(--color-warning-soft); color: var(--color-warning); }
+.pending-item-icon svg { width: 1.1rem; height: 1.1rem; }
+.pending-item-icon-variant { background: var(--color-primary-soft); color: var(--color-primary); }
+.pending-item-heading { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: .45rem .65rem; }
+.pending-item-heading h2 { overflow: hidden; color: var(--color-heading); font-size: 1rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.pending-item-main p { overflow-wrap: anywhere; margin-top: .15rem; color: var(--color-muted); font-size: .75rem; }
+.pending-missing-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.pending-empty-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface); }
+.pending-empty-state > svg { width: 1.35rem; height: 1.35rem; flex: 0 0 auto; color: var(--color-warning); }
+.pending-empty-state > div { flex: 1 1 20rem; }
+.pending-empty-state h2 { color: var(--color-heading); font-weight: 650; }
+.pending-empty-state p { margin-top: .2rem; color: var(--color-muted); font-size: .875rem; }
+@media (max-width: 640px) { .pending-row > a { width: 100%; } }
+
 :root {
   --color-ink: #172033;
   --color-heading: #0f172a;
