@@ -12,7 +12,7 @@ test.describe('ERPNext real local integration', () => {
     await expect(page.getByRole('heading', { name: 'Precios por producto' })).toBeVisible()
     const actions = page.locator('details.mobile-actions')
     if (await actions.isVisible()) await actions.locator('summary').click()
-    await page.getByRole('button', { name: 'Refrescar precios' }).click()
+    await page.locator('.page-header').getByRole('button', { name: 'Refrescar precios' }).click()
     const priceSearch = page.getByRole('textbox', { name: 'Buscar precios por producto' })
     await priceSearch.fill('E2E Product')
     await page.getByRole('button', { name: 'Buscar precios por producto' }).click()
@@ -42,7 +42,7 @@ test.describe('ERPNext real local integration', () => {
     await expect(shiftAction).toBeVisible({ timeout: 30_000 })
     if (await shiftAction.textContent() === 'Abrir turno') await shiftAction.click()
     if (testInfo.project.name === 'mobile') {
-      await page.getByRole('button', { name: 'Más acciones' }).click()
+      await page.locator('.pos-mobile-tabs').getByRole('button', { name: 'Más acciones' }).click()
       await page.getByRole('menuitem', { name: 'Mostrar contexto' }).click()
     }
     await expect(page.getByRole('button', { name: 'Preparar cierre' })).toBeVisible({ timeout: 30_000 })

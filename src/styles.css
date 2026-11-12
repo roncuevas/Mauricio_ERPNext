@@ -1196,6 +1196,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-search { display: flex; gap: .5rem; margin-bottom: .85rem; }
 .pos-search .control { min-width: 0; flex: 1; }
 .pos-product-grid { display: grid; max-height: 62vh; overflow-y: auto; gap: .55rem; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); padding: .15rem; }
+.pos-catalog-controls { display: flex; align-items: end; justify-content: space-between; gap: .75rem; margin: 0 0 .75rem; }
+.pos-catalog-filter { display: flex; min-width: 11rem; align-items: center; gap: .5rem; }
+.pos-catalog-filter > span { color: var(--color-muted); font-size: .75rem; font-weight: 650; }
+.pos-view-toggle { display: flex; gap: .35rem; }
+.pos-product-grid.is-list { grid-template-columns: 1fr; }
+.pos-product-grid.is-list .pos-product-card { min-height: 0; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: auto auto; align-items: center; }
+.pos-product-grid.is-list .pos-product-card-main { grid-column: 1; grid-row: 1 / span 2; }
+.pos-product-grid.is-list .pos-product-stepper, .pos-product-grid.is-list .pos-product-choose { grid-column: 2; grid-row: 1 / span 2; width: 8rem; }
+.pos-product-grid.is-list .pos-product-price-link { grid-column: 3; grid-row: 1 / span 2; }
+.pos-return-sheet { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: .75rem; }
+.pos-return-lines { display: grid; align-content: start; gap: .65rem; overflow-y: auto; }
+.pos-return-line { display: grid; grid-template-columns: minmax(0, 1fr) 8rem; align-items: center; gap: .75rem; border-bottom: 1px solid var(--color-border-subtle); padding: .65rem 0; }
+.pos-return-line > div:first-child { display: grid; gap: .2rem; min-width: 0; }
+.pos-return-line small { color: var(--color-muted); font-size: .72rem; }
+.pos-line-discount { display: inline-flex; align-items: center; gap: .35rem; margin-top: .25rem; color: var(--color-muted); font-size: .72rem; }
+.pos-line-discount .control { width: 5rem; min-height: 2rem; height: 2rem; }
+@media (max-width: 640px) {
+  .pos-catalog-controls { align-items: stretch; flex-direction: column; }
+  .pos-catalog-filter { width: 100%; }
+  .pos-catalog-filter > :last-child { flex: 1; }
+  .pos-product-grid.is-list .pos-product-card { grid-template-columns: minmax(0, 1fr) auto; }
+  .pos-product-grid.is-list .pos-product-price-link { grid-column: 1; grid-row: 3; }
+  .pos-product-grid.is-list .pos-product-stepper, .pos-product-grid.is-list .pos-product-choose { grid-column: 2; grid-row: 1 / span 2; width: 6.5rem; }
+  .pos-return-line { grid-template-columns: minmax(0, 1fr) 6.5rem; }
+}
 .pos-product { display: grid; min-width: 0; gap: .25rem; border: 1px solid var(--color-border-subtle); border-radius: .65rem; background: var(--color-surface); padding: .7rem; color: var(--color-heading); text-align: left; transition: border-color .15s ease, background .15s ease; }
 .pos-product:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
 .pos-product strong { overflow: hidden; font-size: .78rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
@@ -1207,6 +1232,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-product-card-main { display: grid; min-width: 0; min-height: 0; align-content: start; gap: .25rem; overflow: visible; border: 0; background: transparent; padding: 0; color: inherit; text-align: left; }
 .pos-product-title { display: block; overflow: visible; color: var(--color-heading); font-size: .82rem; line-height: 1.25; overflow-wrap: anywhere; white-space: normal; }
 .pos-product-meta { display: -webkit-box; overflow: hidden; color: var(--color-muted); font-size: .68rem; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.pos-product-stock { color: var(--color-muted); font-size: .7rem; font-variant-numeric: tabular-nums; }
 .pos-product-price { display: flex; min-height: 1.25rem; align-items: center; color: var(--color-primary-hover); font-size: .9rem; }
 .pos-product-price-missing, .pos-product-card .pos-product-template-label { color: var(--color-danger); }
 .pos-product-template-label { min-height: 1rem; font-size: .72rem; font-weight: 700; }

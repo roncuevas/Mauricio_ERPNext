@@ -235,6 +235,7 @@ export type PosProfile = {
   taxes_and_charges?: string
   tax_category?: string
   allow_rate_change?: number | boolean
+  allow_discount_change?: number | boolean
   allow_user_to_edit_rate?: number | boolean
   disabled?: number | boolean
   applicable_for_users?: Array<{ user?: string }>
@@ -354,6 +355,7 @@ export type PosTaxTemplate = {
 
 export type PosPaymentMethod = {
   mode_of_payment: string
+  type?: string
   default?: number | boolean
   opening_amount?: number
   account?: string
@@ -373,6 +375,8 @@ export type PosCartLine = {
   weightUom?: string
   warehouse?: string
   discountPercentage?: number
+  batchNo?: string
+  serialNos?: string[]
   priceListRate?: number
   rateOverride?: boolean
 }
@@ -407,6 +411,28 @@ export type PosSaleSummary = {
   grandTotal?: number
   grand_total?: number
   status?: string
+}
+
+export type PosReturnLine = {
+  name: string
+  item_code: string
+  item_name?: string
+  qty: number
+  rate: number
+  uom?: string
+  warehouse?: string
+  batch_no?: string
+  serial_no?: string
+  sales_invoice_item?: string
+}
+
+export type PosReturnDocument = {
+  name: string
+  customer: string
+  company: string
+  pos_profile?: string
+  doctype?: 'Sales Invoice' | 'POS Invoice'
+  items: PosReturnLine[]
 }
 
 export type PosDraftSummary = {

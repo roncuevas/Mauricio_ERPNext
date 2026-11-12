@@ -3,6 +3,15 @@ import type { CachedItem, ItemPrice, ItemUom } from './types'
 
 export type PriceIndex = Map<string, ItemPrice[]>
 
+export function findItemsByBarcode(items: CachedItem[], barcode: string) {
+  const value = barcode.trim().toLocaleLowerCase()
+  if (!value) return []
+  return items.filter((item) => {
+    const codes = [item.barcode, ...(Array.isArray(item.barcodes) ? item.barcodes.map((entry) => typeof entry === 'object' && entry ? (entry as { barcode?: unknown }).barcode : entry) : [])]
+    return codes.some((code) => String(code ?? '').trim().toLocaleLowerCase() === value)
+  })
+}
+
 export function buildPriceIndex(prices: ItemPrice[], priceList?: string): PriceIndex {
   const index: PriceIndex = new Map()
   prices.filter((price) => price.selling && (!priceList || price.price_list === priceList)).forEach((price) => {

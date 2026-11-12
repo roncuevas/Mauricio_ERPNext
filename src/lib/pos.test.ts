@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftToCartLines, normalizeClosingResponse, openingAvailability, openingPayload, returnInvoicePayload, salesInvoicePayload, validateClosingInput, validateOpeningRequest, validatePayments } from './pos'
+import { cartTotals, closingPayload, closingSummary, draftInvoicePayload, draftToCartLines, invoicePayments, normalizeClosingResponse, openingAvailability, openingPayload, returnInvoicePayload, salesInvoicePayload, validateClosingInput, validateOpeningRequest, validatePayments, validateReturnQuantities } from './pos'
 import type { PosTaxRow } from './types'
 import type { PosProfile } from './types'
 
@@ -23,19 +23,26 @@ describe('POS rules', () => {
     expect(cartTotals([{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 100 }], taxes)).toMatchObject({ subtotalWithoutTaxes: 86.21, total: 110, totalTaxes: 23.79, taxes: [{ amount: 13.79 }, { amount: 10 }] })
   })
 
-  it('validates mixed payments and calculates change', () => {
-    expect(validatePayments([{ modeOfPayment: 'Efectivo', amount: 100 }, { modeOfPayment: 'Tarjeta', amount: 100 }], 180)).toEqual({ paid: 200, change: 20 })
+  it('requires mixed payments to equal the invoice total exactly', () => {
+    expect(validatePayments([{ modeOfPayment: 'Efectivo', amount: 100 }, { modeOfPayment: 'Tarjeta', amount: 80 }], 180)).toEqual({ paid: 180, change: 0 })
+    expect(() => validatePayments([{ modeOfPayment: 'Efectivo', amount: 100 }, { modeOfPayment: 'Tarjeta', amount: 100 }], 180, ['Efectivo'])).toThrow('exclusivo en efectivo')
   })
 
   it('rejects payment below total', () => {
     expect(() => validatePayments([{ modeOfPayment: 'Efectivo', amount: 10 }], 20)).toThrow('Faltan')
   })
 
+  it('allows change only for a single cash tender and records only the invoice total', () => {
+    expect(validatePayments([{ modeOfPayment: 'Cash', amount: 200 }], 180, ['Cash'])).toEqual({ paid: 200, change: 20 })
+    expect(invoicePayments([{ modeOfPayment: 'Cash', amount: 200 }], 180, ['Cash'])).toEqual([{ modeOfPayment: 'Cash', amount: 180 }])
+    expect(() => validatePayments([{ modeOfPayment: 'Cash', amount: 100 }, { modeOfPayment: 'Card', amount: 100 }], 180, ['Cash'])).toThrow('exclusivo en efectivo')
+  })
+
   it('builds standard ERPNext opening and sales payloads', () => {
     const opening = openingPayload({ profile, user: 'cashier@example.com', openingAt: '2026-10-14T09:00:00.000Z', balances: [{ modeOfPayment: 'Efectivo', amount: 500 }] })
     expect(opening).toMatchObject({ doctype: 'POS Opening Entry', company: 'Empresa Demo', pos_profile: 'Caja Principal', balance_details: [{ opening_amount: 500 }] })
     expect(opening.period_start_date).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
-    expect(salesInvoicePayload({ profile, customer: 'Cliente Mostrador', postingDate: '2026-10-14', postingTime: '09:00:00', lines: [{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 120 }], payments: [{ modeOfPayment: 'Efectivo', amount: 120 }], posOpeningEntry: 'POS-O-0001' })).toMatchObject({ doctype: 'Sales Invoice', is_pos: 1, is_created_using_pos: 1, update_stock: 1, payments: [{ mode_of_payment: 'Efectivo', amount: 120 }] })
+    expect(salesInvoicePayload({ profile, customer: 'Cliente Mostrador', postingDate: '2026-10-14', postingTime: '09:00:00', lines: [{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 120 }], payments: [{ modeOfPayment: 'Efectivo', amount: 120 }], posOpeningEntry: 'POS-O-0001' })).toMatchObject({ doctype: 'Sales Invoice', is_pos: 1, is_created_using_pos: 1, update_stock: 1, payments: [] })
   })
 
   it('enforces ERPNext opening ownership and profile assignment rules', () => {
@@ -53,10 +60,12 @@ describe('POS rules', () => {
     expect(() => openingPayload({ profile, user: 'cashier@example.com', openingAt: 'invalid', balances: [{ modeOfPayment: 'Efectivo', amount: 0 }] })).toThrow('fecha')
   })
 
-  it('sends tax template metadata and calculated amounts to ERPNext', () => {
+  it('leaves tax calculation to the ERPNext invoice workflow', () => {
     const tax: PosTaxRow = { charge_type: 'On Net Total', account_head: 'IVA - ED', description: 'IVA', rate: 16, add_deduct_tax: 'Add' }
     const payload = salesInvoicePayload({ profile: { ...profile, taxes_and_charges: 'IVA 16%', tax_category: 'General' }, customer: 'Cliente Mostrador', postingDate: '2026-10-14', postingTime: '09:00:00', lines: [{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 100 }], payments: [{ modeOfPayment: 'Efectivo', amount: 116 }], taxes: [tax] })
-    expect(payload).toMatchObject({ taxes_and_charges: 'IVA 16%', tax_category: 'General', taxes: [{ idx: 1, tax_amount: 16 }] })
+    expect(payload).toMatchObject({ taxes_and_charges: 'IVA 16%', tax_category: 'General' })
+    expect(payload).not.toHaveProperty('taxes')
+    expect(payload).not.toHaveProperty('payments', expect.arrayContaining([expect.objectContaining({ amount: 116 })]))
   })
 
   it('preserves a custom rate and its price-list reference', () => {
@@ -64,6 +73,13 @@ describe('POS rules', () => {
     const payload = salesInvoicePayload({ profile, customer: 'Cliente Mostrador', postingDate: '2026-10-14', postingTime: '09:00:00', lines, payments: [{ modeOfPayment: 'Efectivo', amount: 80 }] })
     expect(payload.items).toMatchObject([{ rate: 80, price_list_rate: 100 }])
     expect(draftToCartLines([{ item_code: 'A', item_name: 'Producto A', qty: 1, rate: 120, price_list_rate: 100 }])).toMatchObject([{ rate: 120, priceListRate: 100, rateOverride: true }])
+  })
+
+  it('gates line discounts by the POS Profile discount permission and validates range', () => {
+    const lines = [{ itemCode: 'A', itemName: 'Producto A', qty: 1, rate: 100, discountPercentage: 10 }]
+    expect(salesInvoicePayload({ profile: { ...profile, allow_discount_change: 1 }, customer: 'Cliente', postingDate: '2026-10-14', postingTime: '09:00:00', lines, payments: [{ modeOfPayment: 'Efectivo', amount: 90 }] }).items).toMatchObject([{ discount_percentage: 10 }])
+    expect(() => salesInvoicePayload({ profile: { ...profile, allow_rate_change: 1 }, customer: 'Cliente', postingDate: '2026-10-14', postingTime: '09:00:00', lines, payments: [{ modeOfPayment: 'Efectivo', amount: 90 }] })).toThrow('no permite')
+    expect(() => salesInvoicePayload({ profile: { ...profile, allow_discount_change: 1 }, customer: 'Cliente', postingDate: '2026-10-14', postingTime: '09:00:00', lines: [{ ...lines[0], discountPercentage: 101 }], payments: [{ modeOfPayment: 'Efectivo', amount: 1 }] })).toThrow('entre 0 y 100')
   })
 
   it('preserves alternate UOM conversion in the sales invoice', () => {
@@ -114,6 +130,13 @@ describe('POS rules', () => {
   })
 
   it('builds a stock-return invoice without changing the original', () => {
-    expect(returnInvoicePayload({ name: 'SINV-0001', customer: 'Cliente', company: 'Empresa Demo', items: [{ item_code: 'A', qty: 2, rate: 100, warehouse: 'Almacén - ED' }] })).toMatchObject({ is_return: 1, return_against: 'SINV-0001', items: [{ item_code: 'A', qty: -2 }] })
+    expect(returnInvoicePayload({ name: 'SINV-0001', customer: 'Cliente', company: 'Empresa Demo', items: [{ name: 'ROW-1', item_code: 'A', qty: 2, rate: 100, warehouse: 'Almacén - ED' }] })).toMatchObject({ is_return: 1, return_against: 'SINV-0001', items: [{ qty: -2, sales_invoice_item: 'ROW-1' }] })
+  })
+
+  it('builds partial returns and rejects quantities beyond the remaining sold quantity', () => {
+    const items = [{ name: 'ROW-1', item_code: 'A', qty: 3, rate: 100 }, { name: 'ROW-2', item_code: 'B', qty: 1, rate: 20 }]
+    expect(validateReturnQuantities(items, [1, 0], [1, 0])).toEqual([1, 0])
+    expect(returnInvoicePayload({ name: 'SINV-0001', customer: 'Cliente', company: 'Empresa Demo', items }, [2, 0]).items).toMatchObject([{ item_code: 'A', qty: -2, sales_invoice_item: 'ROW-1' }])
+    expect(() => validateReturnQuantities(items, [3, 0], [1, 0])).toThrow('supera lo disponible')
   })
 })

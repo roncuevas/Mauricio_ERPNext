@@ -30,6 +30,15 @@ function isChecked(value: unknown) {
   return value === true || value === 1 || value === '1'
 }
 
+function validateSaleLines(lines: PosCartLine[], profile: PosProfile) {
+  for (const [index, line] of lines.entries()) {
+    if (!line.itemCode.trim() || !Number.isFinite(line.qty) || line.qty <= 0 || !Number.isFinite(line.rate) || line.rate < 0) throw new Error(`La partida ${index + 1} requiere artículo, cantidad y tarifa válidos.`)
+    const discount = Number(line.discountPercentage ?? 0)
+    if (!Number.isFinite(discount) || discount < 0 || discount > 100) throw new Error(`El descuento de la partida ${index + 1} debe estar entre 0 y 100%.`)
+    if (discount > 0 && !isChecked(profile.allow_discount_change)) throw new Error('El POS Profile no permite aplicar descuentos.')
+  }
+}
+
 export function lineTotal(line: PosCartLine) {
   const gross = line.qty * line.rate
   return roundMoney(gross * (1 - Math.max(0, Math.min(100, line.discountPercentage ?? 0)) / 100))
@@ -65,12 +74,22 @@ export function cartTotals(lines: PosCartLine[], taxRows: PosTaxRow[] = []): Pos
   return { subtotal, subtotalWithoutTaxes: roundMoney(finalTotal - totalTaxes), discount: roundMoney(subtotal - total), taxes, totalTaxes, total: finalTotal }
 }
 
-export function validatePayments(payments: PosPaymentLine[], total: number) {
+export function validatePayments(payments: PosPaymentLine[], total: number, cashMethods: string[] = []) {
   if (!payments.length) throw new Error('Agrega al menos una forma de pago.')
   if (payments.some((payment) => !payment.modeOfPayment || !Number.isFinite(payment.amount) || payment.amount < 0)) throw new Error('Cada pago debe tener forma y cantidad válida.')
   const paid = roundMoney(payments.reduce((sum, payment) => sum + payment.amount, 0))
   if (paid < roundMoney(total)) throw new Error(`Faltan ${formatMoney(roundMoney(total - paid))} por cobrar.`)
-  return { paid, change: roundMoney(Math.max(0, paid - total)) }
+  const change = roundMoney(Math.max(0, paid - total))
+  const activeMethods = payments.filter((payment) => payment.amount > 0)
+  if (change && (activeMethods.length !== 1 || !cashMethods.includes(activeMethods[0].modeOfPayment))) throw new Error('El cambio solo se permite con un pago exclusivo en efectivo.')
+  return { paid, change }
+}
+
+export function invoicePayments(payments: PosPaymentLine[], total: number, cashMethods: string[] = []) {
+  const { change } = validatePayments(payments, total, cashMethods)
+  if (!change) return payments
+  const cashMethod = payments.find((payment) => payment.amount > 0)?.modeOfPayment
+  return payments.map((payment) => payment.modeOfPayment === cashMethod ? { ...payment, amount: roundMoney(total) } : payment)
 }
 
 export function formatMoney(value: number, currency = 'MXN') {
@@ -102,10 +121,8 @@ function formatErpNextDateTime(value: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
-export function salesInvoicePayload(input: { profile: PosProfile; customer: string; postingDate: string; postingTime: string; lines: PosCartLine[]; payments: PosPaymentLine[]; taxes?: PosTaxRow[]; posOpeningEntry?: string; invoiceMode?: PosInvoiceMode }) {
-  const taxes = input.taxes ?? []
-  const totals = cartTotals(input.lines, taxes)
-  validatePayments(input.payments, totals.total)
+export function salesInvoicePayload(input: { profile: PosProfile; customer: string; postingDate: string; postingTime: string; lines: PosCartLine[]; payments?: PosPaymentLine[]; taxes?: PosTaxRow[]; posOpeningEntry?: string; invoiceMode?: PosInvoiceMode }) {
+  validateSaleLines(input.lines, input.profile)
   if (!input.customer.trim()) throw new Error('Selecciona un cliente.')
   if (!input.lines.length) throw new Error('Agrega al menos un producto.')
   if (!input.profile.company || !input.profile.warehouse) throw new Error('El POS Profile no tiene empresa y almacén completos.')
@@ -138,13 +155,15 @@ export function salesInvoicePayload(input: { profile: PosProfile; customer: stri
       weight_uom: line.weightUom,
       warehouse: line.warehouse || input.profile.warehouse,
       discount_percentage: line.discountPercentage || undefined,
+      batch_no: line.batchNo || undefined,
+      serial_no: line.serialNos?.length ? line.serialNos.join('\n') : undefined,
     })),
-    taxes: taxes.map((row, index) => ({ ...row, idx: index + 1, tax_amount: totals.taxes[index]?.amount ?? row.tax_amount ?? 0 })),
-    payments: input.payments.map((payment) => ({ mode_of_payment: payment.modeOfPayment, amount: payment.amount })),
+    payments: [],
   }
 }
 
 export function draftInvoicePayload(input: { profile: PosProfile; customer: string; postingDate: string; postingTime: string; lines: PosCartLine[]; taxes?: PosTaxRow[]; posOpeningEntry?: string; invoiceMode?: PosInvoiceMode }) {
+  validateSaleLines(input.lines, input.profile)
   if (!input.customer.trim()) throw new Error('Selecciona un cliente antes de guardar el carrito.')
   if (!input.lines.length) throw new Error('Agrega al menos un producto antes de guardar el carrito.')
   if (!input.profile.company || !input.profile.warehouse) throw new Error('El POS Profile no tiene empresa y almacén completos.')
@@ -177,8 +196,10 @@ export function draftInvoicePayload(input: { profile: PosProfile; customer: stri
       weight_uom: line.weightUom,
       warehouse: line.warehouse || input.profile.warehouse,
       discount_percentage: line.discountPercentage || undefined,
+      batch_no: line.batchNo || undefined,
+      serial_no: line.serialNos?.length ? line.serialNos.join('\n') : undefined,
     })),
-    taxes: (input.taxes ?? []).map((row, index) => ({ ...row, idx: index + 1, tax_amount: cartTotals(input.lines, input.taxes ?? []).taxes[index]?.amount ?? row.tax_amount ?? 0 })),
+    // ERPNext loads and calculates its configured tax template during document validation.
     payments: [],
   }
 }
@@ -217,8 +238,20 @@ export function closingPayload(input: { profile: PosProfile; user: string; openi
   }
 }
 
-export function returnInvoicePayload(invoice: { name: string; customer: string; company: string; doctype?: PosInvoiceMode; pos_profile?: string; items: Array<{ item_code: string; item_name?: string; qty: number; rate: number; uom?: string; warehouse?: string }> }) {
+export function validateReturnQuantities(items: Array<{ item_code: string; qty: number }>, quantities: number[], alreadyReturned: number[] = []) {
+  const selected = items.map((item, index) => {
+    const quantity = Number(quantities[index] ?? 0)
+    const remaining = Math.max(0, Math.abs(item.qty) - Number(alreadyReturned[index] ?? 0))
+    if (!Number.isFinite(quantity) || quantity < 0 || quantity > remaining) throw new Error(`La cantidad a devolver para ${item.item_code} supera lo disponible (${remaining}).`)
+    return quantity
+  })
+  if (!selected.some((quantity) => quantity > 0)) throw new Error('Selecciona al menos una cantidad para devolver.')
+  return selected
+}
+
+export function returnInvoicePayload(invoice: { name: string; customer: string; company: string; doctype?: PosInvoiceMode; pos_profile?: string; items: Array<{ name?: string; item_code: string; item_name?: string; qty: number; rate: number; uom?: string; warehouse?: string; batch_no?: string; serial_no?: string }> }, quantities?: number[]) {
   if (!invoice.name || !invoice.customer || !invoice.company || !invoice.items.length) throw new Error('La factura no tiene datos suficientes para devolverla.')
+  const selected = quantities ? validateReturnQuantities(invoice.items, quantities) : invoice.items.map((item) => Math.abs(item.qty))
   return {
     doctype: invoice.doctype ?? 'Sales Invoice',
     is_return: 1,
@@ -230,7 +263,12 @@ export function returnInvoicePayload(invoice: { name: string; customer: string; 
     customer: invoice.customer,
     posting_date: new Date().toISOString().slice(0, 10),
     update_stock: 1,
-    items: invoice.items.map((line) => ({ item_code: line.item_code, item_name: line.item_name, qty: -Math.abs(line.qty), rate: line.rate, uom: line.uom, warehouse: line.warehouse })),
+    items: selected.flatMap((quantity, index) => {
+      if (!quantity) return []
+      const line = invoice.items[index]
+      if (!line.name) throw new Error(`ERPNext no devolvió el identificador de la partida ${line.item_code}.`)
+      return [{ item_code: line.item_code, item_name: line.item_name, qty: -quantity, rate: line.rate, uom: line.uom, warehouse: line.warehouse, batch_no: line.batch_no, serial_no: line.serial_no, sales_invoice_item: line.name }]
+    }),
   }
 }
 

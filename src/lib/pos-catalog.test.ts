@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPriceIndex, defaultUom, priceForUom, priceForUomFromIndex, uomOptionLabel, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, uomOptionLabel, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -28,5 +28,10 @@ describe('POS catalog helpers', () => {
     const itemWithKgDefault = { ...item, sales_uom: 'Kg' }
     expect(uomOptionLabel(itemWithKgDefault, { uom: 'Bulto', conversion_factor: 20 })).toBe('Bulto · 20 Kg')
     expect(uomOptionLabel(itemWithKgDefault, { uom: 'Kg', conversion_factor: 1 })).toBe('Kg · Default')
+  })
+
+  it('matches a scanned barcode exactly across Item and child barcode fields', () => {
+    expect(findItemsByBarcode([{ name: 'A', barcode: ' 7501 ' }, { name: 'B', barcodes: [{ barcode: '7502' }] }], '7502')).toEqual([{ name: 'B', barcodes: [{ barcode: '7502' }] }])
+    expect(findItemsByBarcode([{ name: 'A', barcode: '7501' }], '750')).toEqual([])
   })
 })

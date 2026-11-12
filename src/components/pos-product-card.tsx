@@ -13,6 +13,7 @@ export function PosProductCard({ item, price, priceLabel, priceHref, currency, q
     <button type="button" className="pos-product-card-main" onClick={onOpenTemplate} aria-label={t('pos.product.configureSale', { title })}>
       <strong className="pos-product-title">{title}</strong>
       <span className="pos-product-meta">{item.brand || t('pos.product.noBrand')}{weight ? ` · ${weight}` : ''}</span>
+      <span className="pos-product-stock">{item.stock_known ? t('posExtra.availableStock', { qty: Number(item.available_qty ?? 0) }) : t('posExtra.stockUnknown')}</span>
       <b className={price === null && !priceLabel ? 'pos-product-price pos-product-price-missing' : 'pos-product-price'}>{priceLabel ?? (price === null ? t('pos.product.noPrice') : formatMoney(price, currency))}</b>
       {isTemplate && <span className="pos-product-template-label">{t('pos.product.templateVariants', { count: variantCount })}</span>}
       {!isTemplate && uomCount > 1 && <span className="pos-product-template-label">{t('pos.product.multipleUom')}</span>}

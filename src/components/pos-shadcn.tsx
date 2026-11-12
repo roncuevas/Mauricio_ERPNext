@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog'
 import { Button, Field, Input } from './ui'
@@ -11,10 +11,22 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHe
 import type { PosClosingSummary } from '../lib/pos'
 import type { PosPaymentLine, PosPaymentMethod } from '../lib/types'
 
-export function PosCustomerPicker({ enabled, value, search, customers, onSearch, onSelect }: { enabled: boolean; value: string; search: string; customers: Array<{ name: string; customer_name?: string }>; onSearch: (value: string) => void; onSelect: (name: string) => void }) {
+export function PosCustomerPicker({ enabled, value, search, customers, onSearch, onSelect, onCreate }: { enabled: boolean; value: string; search: string; customers: Array<{ name: string; customer_name?: string }>; onSearch: (value: string) => void; onSelect: (name: string) => void; onCreate?: () => void }) {
   const { t } = useTranslation()
   const matches = customers.filter((item) => `${item.name} ${item.customer_name ?? ''}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).slice(0, 8)
-  return <Popover open={Boolean(enabled && search)}><Field label={t('pos.customer.label')}><PopoverAnchor asChild><Input value={search || value} onChange={(event) => onSearch(event.target.value)} placeholder={t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></PopoverAnchor></Field><PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start"><Command><CommandInput placeholder={t('pos.customer.search')} value={search} onValueChange={onSearch} aria-label={t('pos.customer.filter')} /><CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={`${item.name} ${item.customer_name ?? ''}`} onSelect={() => onSelect(item.name)}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent></Popover>
+  return <Popover open={Boolean(enabled && search)}><Field label={t('pos.customer.label')}><PopoverAnchor asChild><Input data-pos-customer-search value={search || value} onChange={(event) => onSearch(event.target.value)} placeholder={t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></PopoverAnchor></Field><PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start"><Command><CommandInput placeholder={t('pos.customer.search')} value={search} onValueChange={onSearch} aria-label={t('pos.customer.filter')} /><CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={`${item.name} ${item.customer_name ?? ''}`} onSelect={() => onSelect(item.name)}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList></Command>{onCreate && <Button type="button" variant="secondary" size="compact" fullWidth onClick={onCreate}>{t('posExtra.createCustomer')}</Button>}</PopoverContent></Popover>
+}
+
+export function PosCustomerCreateSheet({ open, busy, error, onOpenChange, onCreate }: { open: boolean; busy: boolean; error?: string; onOpenChange: (open: boolean) => void; onCreate: (name: string, mobile: string) => Promise<void> }) {
+  const { t } = useTranslation()
+  const [name, setName] = useState('')
+  const [mobile, setMobile] = useState('')
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!name.trim() || busy) return
+    await onCreate(name.trim(), mobile.trim())
+  }
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="right"><SheetHeader><SheetTitle>{t('posExtra.createCustomer')}</SheetTitle><SheetDescription>{t('pos.customer.placeholder')}</SheetDescription></SheetHeader><form className="grid gap-4 p-4" onSubmit={submit}><Field label={t('posExtra.customerName')}><Input autoFocus required value={name} onChange={(event) => setName(event.target.value)} /></Field><Field label={t('posExtra.mobileOptional')}><Input type="tel" autoComplete="tel" value={mobile} onChange={(event) => setMobile(event.target.value)} /></Field>{error && <p role="alert" className="notice notice-error">{error}</p>}<Button type="submit" disabled={busy || !name.trim()}>{busy ? t('posExtra.saving') : t('posExtra.createCustomer')}</Button></form></SheetContent></Sheet>
 }
 
 type PosAuxiliaryActionsProps = {
