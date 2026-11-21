@@ -896,6 +896,7 @@ export default interface Resources {
       "showDescription": "Ver imágenes guardadas en POS y catálogo; no descarga imágenes automáticamente.",
       "syncAction": "Obtener imágenes faltantes",
       "syncComplete": "{{downloaded}} imágenes guardadas; {{failed}} fallidas de {{total}} pendientes.",
+      "syncFailureExample": "Primer error: {{error}}.",
       "syncError": "No se pudieron obtener las imágenes.",
       "syncProgress": "Procesadas {{completed}} de {{total}} imágenes",
       "syncing": "Descargando imágenes…"

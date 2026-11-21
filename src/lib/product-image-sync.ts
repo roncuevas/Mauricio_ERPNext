@@ -1,4 +1,4 @@
-import type { createErpNextClient } from './erpnext'
+import { ErpNextError, type createErpNextClient } from './erpnext'
 import { listProductImages, writeProductImage } from './product-image-cache'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -14,11 +14,12 @@ export async function downloadMissingProductImages(client: Client, profileId: st
     start += page.data.length
   }
 
-  const cached = new Set((await listProductImages(profileId)).map((record) => record.itemName))
-  const pending = records.filter((record) => record.image && !cached.has(record.name))
+  const cached = new Map((await listProductImages(profileId)).map((record) => [record.itemName, record.url]))
+  const pending = records.filter((record) => record.image && cached.get(record.name) !== record.image)
   let cursor = 0
   let downloaded = 0
   let failed = 0
+  let firstFailure = ''
   const worker = async () => {
     while (cursor < pending.length) {
       const record = pending[cursor++]
@@ -26,12 +27,16 @@ export async function downloadMissingProductImages(client: Client, profileId: st
         const blob = await client.getImage(record.image!)
         await writeProductImage({ profileId, itemName: record.name, url: record.image!, blob })
         downloaded += 1
-      } catch {
+      } catch (error) {
         failed += 1
+        if (!firstFailure) {
+          const detail = error instanceof ErpNextError ? `HTTP ${error.status}: ${error.message}` : error instanceof Error ? error.message : 'Error desconocido'
+          firstFailure = `${record.name}: ${detail}`
+        }
       }
       onProgress(downloaded + failed, pending.length)
     }
   }
   await Promise.all(Array.from({ length: Math.min(4, pending.length) }, () => worker()))
-  return { total: pending.length, downloaded, failed }
+  return { total: pending.length, downloaded, failed, firstFailure }
 }

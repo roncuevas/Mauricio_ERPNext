@@ -115,7 +115,7 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
     setImageSyncError('')
     try {
       const result = await downloadMissingProductImages(client, connection.id, (completed, total) => setImageSync({ completed, total }))
-      setImageSyncMessage(t('productImages.syncComplete', result))
+      setImageSyncMessage(`${t('productImages.syncComplete', result)}${result.firstFailure ? ` ${t('productImages.syncFailureExample', { error: result.firstFailure })}` : ''}`)
     } catch (error) {
       setImageSyncError(error instanceof Error ? error.message : t('productImages.syncError'))
     } finally { setImageSync(null) }
