@@ -3,6 +3,7 @@ import { listAllDocuments } from './pagination'
 import type { UomCatalogCache, VariantAttribute, VariantItem } from './types'
 
 export type ItemSearchDetails = { barcodes: string[]; sku?: unknown; barcode?: unknown }
+export type ItemTagLink = { document_name: string; tag: string }
 export type ItemUomRow = { parent: string; uom: string; conversion_factor: number }
 export type ItemVariantAttributeRow = { parent: string; attribute: string; attribute_value?: string }
 
@@ -59,6 +60,29 @@ export async function readItemSearchDetails(client: ErpNextClient, items: Array<
     }
   }
   return details
+}
+
+export async function readItemTags(client: ErpNextClient, onProgress?: (message: string) => void): Promise<Record<string, string[]> | null> {
+  try {
+    const rows = await listAllDocuments<ItemTagLink>(client, 'Tag Link', {
+      fields: ['document_name', 'tag'],
+      filters: [['document_type', '=', 'Item']],
+      orderBy: 'document_name asc',
+    }, (count) => onProgress?.(`Descargando etiquetas: ${count}`))
+    const tagsByItem: Record<string, string[]> = {}
+    for (const row of rows) {
+      if (!row.document_name || !row.tag) continue
+      const tags = tagsByItem[row.document_name] ??= []
+      if (!tags.includes(row.tag)) tags.push(row.tag)
+    }
+    return tagsByItem
+  } catch (error) {
+    if (error instanceof ErpNextError && [403, 404].includes(error.status)) {
+      onProgress?.('ERPNext no permitió leer Tag Link; no se actualizaron las etiquetas del catálogo.')
+      return null
+    }
+    throw error
+  }
 }
 
 export async function readItemVariantAttributes(client: ErpNextClient, items: Array<{ name: string }>, setMessage: (message: string) => void) {

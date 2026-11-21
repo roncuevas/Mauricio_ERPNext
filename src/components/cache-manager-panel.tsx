@@ -3,15 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, Notice, RefreshButton, Spinner } from './ui'
 import { localDate } from '../lib/sales-orders'
-import { cacheTtlLabel, readManagedCacheOverviews, runManagedCacheRefresh, type ManagedCacheId, type ManagedCacheOverview, type ManagedRefreshContext } from '../lib/cache-manager'
+import { cacheTtlLabel, contextCacheIds, managedCacheIdsForContext, managedCacheOrder, managedCacheQueryKeys, readManagedCacheOverviews, runManagedCacheRefresh, type ManagedCacheId, type ManagedCacheOverview, type ManagedRefreshContext } from '../lib/cache-manager'
 import { queryKeys } from '../lib/query-keys'
 import type { PosProfile } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
 
 type Client = ReturnType<typeof createErpNextClient>
-
-const cacheOrder: ManagedCacheId[] = ['products', 'variants', 'uom', 'prices', 'priceLists', 'stock', 'suppliers', 'customers', 'doctypes', 'posContext', 'shifts', 'salesOrders', 'quotations']
-const contextCacheIds: ManagedCacheId[] = ['salesOrders', 'quotations']
 
 function formatDate(value?: string, language = 'es') {
   if (!value) return ''
@@ -23,23 +20,6 @@ function statusTone(status: ManagedCacheOverview['status']) {
   if (status === 'fresh') return 'success' as const
   if (status === 'stale' || status === 'error') return 'warning' as const
   return 'neutral' as const
-}
-
-function relatedQueryKeys(profileId: string, id: ManagedCacheId) {
-  const keys: Array<readonly unknown[]> = []
-  if (id === 'products') keys.push(queryKeys.catalog.item(profileId))
-  if (id === 'variants' || id === 'uom') { keys.push(queryKeys.catalog.variant(profileId), queryKeys.uom.options(profileId)) }
-  if (id === 'prices') keys.push(queryKeys.catalog.price(profileId))
-  if (id === 'priceLists') keys.push(queryKeys.prices.lists(profileId))
-  if (id === 'stock') keys.push(queryKeys.catalog.stock(profileId))
-  if (id === 'suppliers') keys.push(queryKeys.catalog.supplier(profileId))
-  if (id === 'doctypes') keys.push(queryKeys.catalog.doctype(profileId))
-  if (id === 'customers') keys.push(queryKeys.salesOrders.customers(profileId), queryKeys.pos.customers(profileId))
-  if (id === 'salesOrders') keys.push(queryKeys.salesOrders.cache(profileId), ['sales-orders', profileId])
-  if (id === 'posContext') keys.push(queryKeys.pos.profiles(profileId), queryKeys.pos.settings(profileId), ['pos-payment-methods', profileId])
-  if (id === 'shifts') keys.push(queryKeys.pos.currentUser(profileId), queryKeys.pos.openings(profileId), queryKeys.pos.profiles(profileId), ['pos-shift-profile-details', profileId])
-  if (id === 'quotations') keys.push(queryKeys.quotations.list(profileId))
-  return keys
 }
 
 function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; busy: boolean; onRefresh: (id: ManagedCacheId, retryOnly?: boolean) => void }) {
@@ -64,11 +44,11 @@ export function CacheManagerPanel({ client, profileId, activeProfile, onChanged 
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const overview = useQuery({ queryKey: queryKeys.settings.cacheOverview(profileId), queryFn: () => readManagedCacheOverviews(profileId), staleTime: Infinity })
-  const entries = useMemo(() => cacheOrder.map((id) => overview.data?.find((entry) => entry.id === id)).filter(Boolean) as ManagedCacheOverview[], [overview.data])
+  const entries = useMemo(() => managedCacheOrder.map((id) => overview.data?.find((entry) => entry.id === id)).filter(Boolean) as ManagedCacheOverview[], [overview.data])
   const context: ManagedRefreshContext = { client, profileId, activeProfile, date: localDate() }
 
   async function invalidateRelated(id: ManagedCacheId) {
-    await Promise.all(relatedQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' })))
+    await Promise.all(managedCacheQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' })))
   }
 
   const refresh = useMutation({ mutationFn: async ({ id, retryOnly }: { id: ManagedCacheId; retryOnly?: boolean }) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress), retryOnly), onSuccess: async (_result, variables) => { await invalidateRelated(variables.id); await overview.refetch(); onChanged?.(); setMessage(t('cache.updateMessage', { label: t(`cache.labels.${variables.id}`) })) }, onError: async (reason) => { setError(reason instanceof Error ? reason.message : t('errors.unknown')); await overview.refetch(); onChanged?.() } })
@@ -80,8 +60,8 @@ export function CacheManagerPanel({ client, profileId, activeProfile, onChanged 
   }
 
   async function refreshAll() {
-    const refreshableIds = activeProfile?.company ? cacheOrder : cacheOrder.filter((id) => !contextCacheIds.includes(id))
-    const skippedCount = cacheOrder.length - refreshableIds.length
+    const refreshableIds = managedCacheIdsForContext(activeProfile)
+    const skippedCount = managedCacheOrder.length - refreshableIds.length
     setError(''); setMessage(t('cache.updating')); setBusyIds(refreshableIds)
     const results = await Promise.allSettled(refreshableIds.map((id) => runManagedCacheRefresh(id, context, (progress) => setMessage(progress))))
     const failed = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected')

@@ -28,8 +28,6 @@ const navigationGroups: NavigationGroup[] = [
   { id: 'administration', label: 'Administración', icon: 'settings', landing: '/settings', items: [{ to: '/settings', label: 'Configuración' }, { to: '/doctypes', label: 'DocTypes' }] },
 ]
 
-const navigationStorageKey = 'mauricio-erpnext:open-navigation-groups'
-
 function routeMatches(pathname: string, to: string) {
   return pathname === to || pathname.startsWith(`${to}/`)
 }
@@ -55,29 +53,19 @@ function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: bool
   const location = useLocation()
   const groups = useMemo(visibleGroups, [])
   const activeGroup = groups.find((group) => group.items.some((item) => routeMatches(location.pathname, item.to)))?.id ?? null
-  const [openGroups, setOpenGroups] = useState<string[]>(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(navigationStorageKey) ?? '[]')
-      return Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string') : []
-    } catch { return [] }
-  })
+  const [openGroups, setOpenGroups] = useState<string[]>(() => activeGroup ? [activeGroup] : [])
 
   useEffect(() => {
-    if (!activeGroup || openGroups.includes(activeGroup)) return
-    setOpenGroups((current) => [...current, activeGroup])
-  }, [activeGroup, openGroups])
-
-  useEffect(() => {
-    localStorage.setItem(navigationStorageKey, JSON.stringify(openGroups))
-  }, [openGroups])
+    setOpenGroups(activeGroup ? [activeGroup] : [])
+  }, [activeGroup])
 
   function toggleGroup(id: string) {
-    setOpenGroups((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id])
+    setOpenGroups((current) => current.includes(id) ? [] : [id])
   }
 
   return <div className={`navigation-groups${mobile ? ' navigation-groups-mobile' : ''}`}>
     {groups.map((group) => {
-      const isOpen = openGroups.includes(group.id) || activeGroup === group.id
+      const isOpen = openGroups.includes(group.id)
       const groupLabelId = `${mobile ? 'mobile-' : 'desktop-'}navigation-group-${group.id}`
       return <section className={`navigation-group${isOpen ? ' navigation-group-open' : ''}${activeGroup === group.id ? ' navigation-group-active' : ''}${collapsed ? ' navigation-group-collapsed' : ''}`} key={group.id}>
         <div className="navigation-group-heading">
@@ -118,14 +106,14 @@ export function MobileNavigation({ onLock, client }: { onLock: () => void; clien
 
   return <div className={`mobile-navigation${open ? ' mobile-navigation-open' : ''}`}>
     <div className="mobile-navigation-bar">
-      <div className="mobile-navigation-brand">
-        <img className="mobile-brand-logo" src="/icon-192.png" alt={t('common.appName')} />
+      <Link className="mobile-navigation-brand" to="/" aria-label={t('common.appName')} onClick={() => setOpen(false)}>
+        <img className="mobile-brand-logo" src="/icon-192.png" alt="" />
         <div className="mobile-navigation-heading">
           <strong>{currentPage}</strong>
           <span>{t('common.appName')}</span>
           <ConnectionStatus client={client} />
         </div>
-      </div>
+      </Link>
       <div className="mobile-navigation-actions">
         <ThemeModeToggle className="mobile-theme-toggle" />
         <button className="menu-lock-button" type="button" aria-label={t('navigation.lock')} title={t('navigation.lock')} onClick={onLock}><SidebarIcon name="lock" /></button>

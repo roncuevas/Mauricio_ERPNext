@@ -11,7 +11,7 @@ import { FilterSheet } from '../components/filter-sheet'
 import { EmptyState, LoadingState } from '../components/ui/states'
 import { filterItems, writeItemCatalog } from '../lib/item-cache'
 import { buildVariantTree, readVariantCatalog, writeVariantCatalog } from '../lib/variant-cache'
-import { readItemSearchDetails } from '../lib/catalog-sync'
+import { readItemSearchDetails, readItemTags } from '../lib/catalog-sync'
 import { syncProductCardDetails } from '../lib/product-details-sync'
 import type { CachedItem, ItemCatalogCache, VariantItem } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
@@ -61,17 +61,20 @@ export function ProductWorkspacePage({ client, profileId }: { client: Client; pr
       if (batch.data.length < batchSize) break
       start += batch.data.length
     }
-    const baseCache: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: items.map((item) => ({ ...item, barcodes: [] })) }
+    const tagsByItem = await readItemTags(client, setSyncMessage)
+    const previousTags = new Map((catalog.data?.items ?? []).map((item) => [item.name, item.tags ?? []]))
+    const taggedItems = items.map((item) => ({ ...item, tags: tagsByItem ? tagsByItem[item.name] ?? [] : previousTags.get(item.name) ?? [] }))
+    const baseCache: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: taggedItems.map((item) => ({ ...item, barcodes: [] })) }
     await writeItemCatalog(baseCache)
     queryClient.setQueryData(queryKeys.catalog.item(profileId), baseCache)
     const currentVariantCache = await readVariantCatalog(profileId)
     if (!currentVariantCache?.items.length) {
-      const baseVariantCache = { profileId, updatedAt: baseCache.updatedAt, items: items as VariantItem[] }
+      const baseVariantCache = { profileId, updatedAt: baseCache.updatedAt, items: taggedItems as VariantItem[] }
       await writeVariantCatalog(baseVariantCache)
       queryClient.setQueryData(queryKeys.catalog.variant(profileId), baseVariantCache)
     }
-    const searchDetails = await readItemSearchDetails(client, items, setSyncMessage)
-    const next: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) })) }
+    const searchDetails = await readItemSearchDetails(client, taggedItems, setSyncMessage)
+    const next: ItemCatalogCache = { profileId, updatedAt: new Date().toISOString(), items: taggedItems.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }) })) }
     return writeItemCatalog(next)
   }, onSuccess: (next) => { queryClient.setQueryData(queryKeys.catalog.item(profileId), next); setSyncMessage(t("productsPage.syncComplete", { count: next.items.length })) }, onError: () => setSyncMessage('') })
 

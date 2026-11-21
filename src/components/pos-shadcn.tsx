@@ -38,20 +38,13 @@ type PosAuxiliaryActionsProps = {
   historyDisabled?: boolean
   draftsDisabled?: boolean
   localCartsDisabled?: boolean
-  onShowProducts?: () => void
-  onShowCart?: () => void
   onToggleContext?: () => void
   contextOpen?: boolean
 }
 
-export function PosAuxiliaryActions({ showHistory, onToggleHistory, onOpenDrafts, onOpenLocalCarts, onOpenQuotations, historyDisabled, draftsDisabled, localCartsDisabled, onShowProducts, onShowCart, onToggleContext, contextOpen }: PosAuxiliaryActionsProps) {
+export function PosAuxiliaryActions({ showHistory, onToggleHistory, onOpenDrafts, onOpenLocalCarts, onOpenQuotations, historyDisabled, draftsDisabled, localCartsDisabled, onToggleContext, contextOpen }: PosAuxiliaryActionsProps) {
   const { t } = useTranslation()
   return <>
-    {onShowProducts && onShowCart && <>
-      <DropdownMenuItem onSelect={onShowProducts}>{t('pos.mobile.showProducts')}</DropdownMenuItem>
-      <DropdownMenuItem onSelect={onShowCart}>{t('pos.mobile.showCart')}</DropdownMenuItem>
-      <DropdownMenuSeparator />
-    </>}
     <DropdownMenuItem disabled={historyDisabled} onSelect={onToggleHistory}>{showHistory ? t('posPage.hideHistory') : t('posPage.history')}</DropdownMenuItem>
     <DropdownMenuItem className="pos-more-action" disabled={draftsDisabled} onSelect={onOpenDrafts}><span>{t('pos.drafts.title')}</span><small>{t('pos.drafts.scope')}</small></DropdownMenuItem>
     <DropdownMenuItem className="pos-more-action" disabled={localCartsDisabled} onSelect={onOpenLocalCarts}><span>{t('pos.localCarts.title')}</span><small>{t('pos.localCarts.scope')}</small></DropdownMenuItem>
@@ -66,7 +59,7 @@ export function PosAuxiliaryActions({ showHistory, onToggleHistory, onOpenDrafts
 export function PosMobileTabs({ value, count, fixed, showHistory, onChange, onToggleHistory, onOpenDrafts, onOpenQuotations, onOpenLocalCarts, draftsDisabled, localCartsDisabled }: { value: 'products' | 'cart'; count: number; fixed: boolean; showHistory: boolean; onChange: (value: 'products' | 'cart') => void; onToggleHistory: () => void; onOpenDrafts: () => void; onOpenQuotations?: () => void; onOpenLocalCarts: () => void; draftsDisabled: boolean; localCartsDisabled: boolean }) {
   const { t } = useTranslation()
   const [contextOpen, setContextOpen] = useState(false)
-  return <div className={`pos-mobile-tabs${fixed ? ' is-fixed' : ''}`} data-context-open={contextOpen || undefined}><Tabs value={value} onValueChange={(next) => onChange(next as 'products' | 'cart')}><TabsList aria-label={t('pos.mobile.view')}><TabsTrigger value="products">{t('common.products')}</TabsTrigger><TabsTrigger value="cart">{t('pos.mobile.cart')}{count > 0 && <span>{count}</span>}</TabsTrigger></TabsList></Tabs><DropdownMenu><DropdownMenuTrigger asChild><Button variant="secondary" size="compact" aria-label={t('pos.mobile.moreActions')}>{t('pos.mobile.moreActions')}</Button></DropdownMenuTrigger><DropdownMenuContent align="end"><PosAuxiliaryActions showHistory={showHistory} onToggleHistory={onToggleHistory} onOpenDrafts={onOpenDrafts} onOpenLocalCarts={onOpenLocalCarts} onOpenQuotations={onOpenQuotations} draftsDisabled={draftsDisabled} localCartsDisabled={localCartsDisabled} onShowProducts={() => onChange('products')} onShowCart={() => onChange('cart')} onToggleContext={() => setContextOpen((current) => !current)} contextOpen={contextOpen} /></DropdownMenuContent></DropdownMenu></div>
+  return <div className={`pos-mobile-tabs${fixed ? ' is-fixed' : ''}`} data-context-open={contextOpen || undefined}><Tabs value={value} onValueChange={(next) => onChange(next as 'products' | 'cart')}><TabsList aria-label={t('pos.mobile.view')}><TabsTrigger value="products">{t('common.products')}</TabsTrigger><TabsTrigger value="cart">{t('pos.mobile.cart')}{count > 0 && <span>{count}</span>}</TabsTrigger></TabsList></Tabs><DropdownMenu><DropdownMenuTrigger asChild><Button variant="secondary" size="compact" aria-label={t('pos.mobile.moreActions')}>{t('pos.mobile.moreActions')}</Button></DropdownMenuTrigger><DropdownMenuContent align="end"><PosAuxiliaryActions showHistory={showHistory} onToggleHistory={onToggleHistory} onOpenDrafts={onOpenDrafts} onOpenLocalCarts={onOpenLocalCarts} onOpenQuotations={onOpenQuotations} draftsDisabled={draftsDisabled} localCartsDisabled={localCartsDisabled} onToggleContext={() => setContextOpen((current) => !current)} contextOpen={contextOpen} /></DropdownMenuContent></DropdownMenu></div>
 }
 
 export function PosClosingPanel({ open, paymentMethods, balances, summary, recovery: _recovery, busy, error, onChange, onSubmit, onClose, onOpenChange }: { open?: boolean; paymentMethods: PosPaymentMethod[]; balances: PosPaymentLine[]; summary?: PosClosingSummary; recovery?: { name: string; status?: string } | null; busy: boolean; error?: string; onChange: (next: PosPaymentLine[]) => void; onSubmit?: () => void; onClose?: () => void; onOpenChange?: (open: boolean) => void }) {

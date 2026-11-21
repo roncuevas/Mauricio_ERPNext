@@ -56,6 +56,7 @@ export type CachedItem = {
   item_name?: string
   brand?: string
   item_group?: string
+  tags?: string[]
   stock_uom?: string
   sales_uom?: string
   purchase_uom?: string

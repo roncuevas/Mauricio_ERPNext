@@ -10,12 +10,37 @@ import { readSupplierCatalog, writeSupplierCatalog } from './supplier-cache'
 import { readDocTypeCatalog, writeDocTypeCatalog } from './doctype-cache'
 import { readCustomerCatalog, readSalesOrderCatalog, upsertSalesOrderBucket, writeCustomerCatalog, writeSalesOrderCatalog } from './sales-order-cache'
 import { loadStockData } from './stock'
-import { readItemSearchDetails, readItemUomsThroughItems, readItemVariantAttributes, syncUomCatalog } from './catalog-sync'
+import { readItemSearchDetails, readItemTags, readItemUomsThroughItems, readItemVariantAttributes, syncUomCatalog } from './catalog-sync'
 import { normalizeSalesOrder } from './sales-orders'
 import { CACHE_TTL_MS, getCacheStatus, type CacheKind, type CacheStatus } from './cache-policy'
+import { queryKeys } from './query-keys'
 import type { CachedItem, CustomerSummary, DocTypeCatalogCache, ItemCatalogCache, ItemPrice, ItemPriceCatalogCache, PosOpeningEntry, PosPaymentMethod, PosProfile, PosTaxTemplate, PriceList, QuotationSummary, SalesOrderCatalogCache, SalesOrderSummary, StockCache, Supplier, SupplierCatalogCache, VariantCatalogCache, VariantItem } from './types'
 
 export type ManagedCacheId = 'products' | 'variants' | 'uom' | 'prices' | 'priceLists' | 'stock' | 'suppliers' | 'customers' | 'doctypes' | 'salesOrders' | 'posContext' | 'shifts' | 'quotations'
+
+export const managedCacheOrder: ManagedCacheId[] = ['products', 'variants', 'uom', 'prices', 'priceLists', 'stock', 'suppliers', 'customers', 'doctypes', 'posContext', 'shifts', 'salesOrders', 'quotations']
+export const contextCacheIds: ManagedCacheId[] = ['salesOrders', 'quotations']
+
+export function managedCacheIdsForContext(activeProfile?: PosProfile) {
+  return activeProfile?.company ? managedCacheOrder : managedCacheOrder.filter((id) => !contextCacheIds.includes(id))
+}
+
+export function managedCacheQueryKeys(profileId: string, id: ManagedCacheId) {
+  const keys: Array<readonly unknown[]> = []
+  if (id === 'products') keys.push(queryKeys.catalog.item(profileId))
+  if (id === 'variants' || id === 'uom') { keys.push(queryKeys.catalog.variant(profileId), queryKeys.uom.options(profileId)) }
+  if (id === 'prices') keys.push(queryKeys.catalog.price(profileId))
+  if (id === 'priceLists') keys.push(queryKeys.prices.lists(profileId))
+  if (id === 'stock') keys.push(queryKeys.catalog.stock(profileId))
+  if (id === 'suppliers') keys.push(queryKeys.catalog.supplier(profileId))
+  if (id === 'doctypes') keys.push(queryKeys.catalog.doctype(profileId))
+  if (id === 'customers') keys.push(queryKeys.salesOrders.customers(profileId), queryKeys.pos.customers(profileId))
+  if (id === 'salesOrders') keys.push(queryKeys.salesOrders.cache(profileId), ['sales-orders', profileId])
+  if (id === 'posContext') keys.push(queryKeys.pos.profiles(profileId), queryKeys.pos.settings(profileId), ['pos-payment-methods', profileId])
+  if (id === 'shifts') keys.push(queryKeys.pos.currentUser(profileId), queryKeys.pos.openings(profileId), queryKeys.pos.profiles(profileId), ['pos-shift-profile-details', profileId])
+  if (id === 'quotations') keys.push(queryKeys.quotations.list(profileId))
+  return keys
+}
 
 export type ManagedCacheStatus = CacheStatus | 'error'
 
@@ -175,9 +200,11 @@ async function loadItems(client: ErpNextClient, profileId: string, onProgress?: 
     start += batch.data.length
   }
   const details = await readItemSearchDetails(client, items, (message) => onProgress?.(message))
+  const tagsByItem = await readItemTags(client, onProgress)
   const changed = items.map((item) => ({ ...item, ...(details[item.name] ?? { barcodes: [] }) }))
   const byName = new Map(existingItems.map((item) => [item.name, item]))
   changed.forEach((item) => byName.set(item.name, { ...byName.get(item.name), ...item }))
+  if (tagsByItem) for (const [name, item] of byName) byName.set(name, { ...item, tags: tagsByItem[name] ?? [] })
   return { profileId, updatedAt: now(), items: Array.from(byName.values()) }
 }
 

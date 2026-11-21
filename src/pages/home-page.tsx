@@ -1,11 +1,12 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CacheManagerPanel } from '../components/cache-manager-panel'
-import { Badge, Button, ButtonLink, Card, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Notice, PageHeader, Separator, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui'
-import { readHomeCacheData } from '../lib/cache-manager'
+import { Badge, Button, ButtonLink, Card, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Notice, PageHeader, Separator, Skeleton, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui'
+import { managedCacheIdsForContext, managedCacheOrder, managedCacheQueryKeys, readHomeCacheData, runManagedCacheRefresh } from '../lib/cache-manager'
 import { buildHomeStats } from '../lib/home-stats'
 import { localDate } from '../lib/sales-orders'
+import { queryKeys } from '../lib/query-keys'
 import type { createErpNextClient } from '../lib/erpnext'
 import { ArrowRight, Boxes, CircleDollarSign, ShoppingCart } from 'lucide-react'
 
@@ -25,10 +26,48 @@ function AccessCard({ title, description, action, to, icon }: { title: string; d
 export function HomePage({ client, profileId }: { client: Client; profileId: string }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const [fetching, setFetching] = useState<'products' | 'prices' | 'all' | null>(null)
+  const [fetchMessage, setFetchMessage] = useState('')
+  const [fetchError, setFetchError] = useState('')
   const query = useQuery({ queryKey: ['home-cache-data', profileId], queryFn: () => readHomeCacheData(profileId), staleTime: Infinity })
   const stats = useMemo(() => buildHomeStats(query.data, localDate()), [query.data])
   const hasCache = Boolean(query.data?.overview.some((entry) => entry.updatedAt))
   const refreshSummary = () => { void queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }) }
+  const refreshContext = { client, profileId, date: localDate() }
+
+  async function fetchShortcut(shortcut: 'products' | 'prices' | 'all') {
+    if (fetching) return
+    const ids = shortcut === 'all' ? managedCacheIdsForContext() : [shortcut]
+    const skippedCount = managedCacheOrder.length - ids.length
+    setFetching(shortcut)
+    setFetchError('')
+    setFetchMessage(t('cache.updating'))
+    try {
+      const results = await Promise.allSettled(ids.map(async (id) => {
+        await runManagedCacheRefresh(id, refreshContext, setFetchMessage)
+        await Promise.all(managedCacheQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+      }))
+      const failed = results.filter((result) => result.status === 'rejected').length
+      const succeeded = ids.length - failed
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.settings.cacheOverview(profileId) }),
+      ])
+      const skippedMessage = skippedCount ? t('cache.skippedContext', { count: skippedCount }) : ''
+      if (failed) {
+        setFetchError(t('cache.failed', { count: failed }))
+        setFetchMessage(succeeded ? t('cache.partialMessage', { count: succeeded }) : '')
+      } else {
+        setFetchMessage(shortcut === 'all' ? t('cache.allUpdated', { count: succeeded }) : t('cache.updateMessage', { label: t(`cache.labels.${shortcut}`) }))
+      }
+      if (skippedMessage) setFetchMessage((current) => [current, skippedMessage].filter(Boolean).join(' '))
+    } catch (error) {
+      setFetchMessage('')
+      setFetchError(error instanceof Error ? error.message : t('cache.failed', { count: 1 }))
+    } finally {
+      setFetching(null)
+    }
+  }
 
   return <section className="home-workspace">
     <PageHeader title={t('home.title')} description={t('home.description')} action={<Button type="button" onClick={refreshSummary}>{t('home.refreshSummary')}</Button>} />
@@ -36,7 +75,7 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
       <AccessCard title={t('home.posAccessTitle')} description={t('home.posAccessDescription')} action={t('home.openPos')} to="/pos" icon={<ShoppingCart />} />
       <AccessCard title={t('home.pricesAccessTitle')} description={t('home.pricesAccessDescription')} action={t('home.openPrices')} to="/prices" icon={<CircleDollarSign />} />
     </div>
-    <Card className="home-quick-actions"><div className="home-section-heading"><div><p className="settings-eyebrow">{t('home.shortcutsEyebrow')}</p><h2>{t('home.quickActions')}</h2><p className="muted">{t('home.quickActionsDescription')}</p></div><Boxes className="home-section-icon" aria-hidden="true" /></div><div className="home-quick-links"><ButtonLink to="/pos/ventas/nueva">{t('home.newSale')}</ButtonLink><ButtonLink to="/pos/turnos" variant="secondary">{t('home.openShift')}</ButtonLink><ButtonLink to="/prices" variant="secondary">{t('home.managePrices')}</ButtonLink><Button type="button" variant="secondary" onClick={refreshSummary}>{t('home.updateStats')}</Button></div></Card>
+    <Card className="home-quick-actions"><div className="home-section-heading"><div><p className="settings-eyebrow">{t('home.shortcutsEyebrow')}</p><h2>{t('home.quickActions')}</h2><p className="muted">{t('home.quickActionsDescription')}</p></div><Boxes className="home-section-icon" aria-hidden="true" /></div><div className="home-quick-links"><ButtonLink to="/pos/ventas/nueva">{t('home.newSale')}</ButtonLink><ButtonLink to="/pos/turnos" variant="secondary">{t('home.openShift')}</ButtonLink><ButtonLink to="/prices" variant="secondary">{t('home.managePrices')}</ButtonLink><Button type="button" variant="secondary" disabled={fetching !== null} onClick={() => void fetchShortcut('products')}>{fetching === 'products' ? <><Spinner /> {t('cache.refreshing')}</> : t('productsPage.refresh')}</Button><Button type="button" variant="secondary" disabled={fetching !== null} onClick={() => void fetchShortcut('prices')}>{fetching === 'prices' ? <><Spinner /> {t('cache.refreshing')}</> : t('pricesPage.refresh')}</Button><Button type="button" variant="secondary" disabled={fetching !== null} onClick={() => void fetchShortcut('all')}>{fetching === 'all' ? <><Spinner /> {t('cache.updating')}</> : t('cache.all')}</Button><Button type="button" variant="secondary" onClick={refreshSummary}>{t('home.updateStats')}</Button></div>{(fetchMessage || fetchError) && <Notice tone={fetchError ? 'warning' : 'info'}><span role="status" aria-live="polite">{fetchError || fetchMessage}</span></Notice>}</Card>
     {query.isError && <Notice>{query.error instanceof Error ? query.error.message : 'No se pudo leer el estado local.'}</Notice>}
     {query.isPending ? <div className="home-stat-grid">{Array.from({ length: 8 }, (_, index) => <Skeleton className="home-stat-skeleton" key={index} />)}</div> : <>
       <div className="home-dashboard-section"><div className="home-dashboard-section-heading"><h2>{t('home.operationalStats')}</h2><span>{t('home.localCache')}</span></div><div className="home-stat-grid">
