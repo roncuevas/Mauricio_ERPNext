@@ -115,7 +115,9 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
     setImageSyncError('')
     try {
       const result = await downloadMissingProductImages(client, connection.id, (completed, total) => setImageSync({ completed, total }))
-      setImageSyncMessage(`${t('productImages.syncComplete', result)}${result.firstFailure ? ` ${t('productImages.syncFailureExample', { error: result.firstFailure })}` : ''}`)
+      const failureExamples = result.failureDetails.map((error) => t('productImages.syncFailureExample', { error })).join(' ')
+      const remainingFailures = result.failed > result.failureDetails.length ? ` ${t('productImages.syncMoreFailures', { count: result.failed - result.failureDetails.length })}` : ''
+      setImageSyncMessage(`${t('productImages.syncComplete', result)} ${failureExamples}${remainingFailures}`.trim())
     } catch (error) {
       setImageSyncError(error instanceof Error ? error.message : t('productImages.syncError'))
     } finally { setImageSync(null) }

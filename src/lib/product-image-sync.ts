@@ -28,7 +28,7 @@ export async function downloadMissingProductImages(client: Client, profileId: st
   let cursor = 0
   let downloaded = 0
   let failed = 0
-  let firstFailure = ''
+  const failureDetails: string[] = []
   const worker = async () => {
     while (cursor < pending.length) {
       const record = pending[cursor++]
@@ -38,14 +38,14 @@ export async function downloadMissingProductImages(client: Client, profileId: st
         downloaded += 1
       } catch (error) {
         failed += 1
-        if (!firstFailure) {
+        if (failureDetails.length < 5) {
           const detail = error instanceof ErpNextError ? `HTTP ${error.status}: ${error.message}` : error instanceof Error ? error.message : 'Error desconocido'
-          firstFailure = `${record.name} (${imageLocation(record.image!)}): ${detail}`
+          failureDetails.push(`${record.name} (${imageLocation(record.image!)}): ${detail}`)
         }
       }
       onProgress(downloaded + failed, pending.length)
     }
   }
   await Promise.all(Array.from({ length: Math.min(4, pending.length) }, () => worker()))
-  return { total: pending.length, downloaded, failed, firstFailure }
+  return { total: pending.length, downloaded, failed, failureDetails }
 }
