@@ -8,6 +8,8 @@ import { calculateGrossMargin } from '../lib/pricing'
 import { VirtualizedCollection } from './virtualized-collection'
 import { clampProductTableWidth, defaultProductTableConfig, PRODUCT_TABLE_COLUMN_IDS, PRODUCT_TABLE_INITIAL_WIDTHS, PRODUCT_TABLE_WIDTH_LIMITS, readProductTableConfig, writeProductTableConfig, type ProductTableColumnId, type ProductTableConfig } from '../lib/product-table-config'
 import type { CachedItem, ItemPrice, VariantItem } from '../lib/types'
+import { ProductImage } from './product-image'
+import type { createErpNextClient } from '../lib/erpnext'
 
 type RowContext = { item: CachedItem; prices: ItemPrice[]; variant?: VariantItem; onOpen: () => void; onUom: () => void }
 type Column = { id: ProductTableColumnId; label: string; mobilePriority: number; render: (context: RowContext) => ReactNode; available?: (context: RowContext) => boolean }
@@ -29,7 +31,7 @@ function text(value: unknown) { return value === undefined || value === null || 
 
 function compactValue(value: ReactNode) { return <span className="product-table-compact-value">{value}</span> }
 
-export function ProductTable({ items, prices, variants, profileId, onOpen, onUom }: { items: CachedItem[]; prices: ItemPrice[]; variants: VariantItem[]; profileId: string; onOpen: (name: string) => void; onUom: (name: string) => void }) {
+export function ProductTable({ items, prices, variants, profileId, onOpen, onUom, client, showImages }: { items: CachedItem[]; prices: ItemPrice[]; variants: VariantItem[]; profileId: string; onOpen: (name: string) => void; onUom: (name: string) => void; client: ReturnType<typeof createErpNextClient>; showImages: boolean }) {
   const { t, i18n } = useTranslation()
   const [config, setConfig] = useState<ProductTableConfig>(() => readProductTableConfig(profileId))
   const [resizing, setResizing] = useState<ProductTableColumnId | null>(null)
@@ -40,7 +42,7 @@ export function ProductTable({ items, prices, variants, profileId, onOpen, onUom
   useEffect(() => { writeProductTableConfig(profileId, config) }, [config, profileId])
 
   const columns = useMemo<Column[]>(() => [
-    { id: 'product', label: t('catalog.table.product'), mobilePriority: 0, render: ({ item }) => <div className="product-table-product"><Link to={`/items/${encodeURIComponent(String(item.name))}`} onClick={(event) => event.stopPropagation()} className="product-table-title">{text(item.item_name ?? item.name)}</Link><code>{text(item.item_code ?? item.name)}</code></div> },
+    { id: 'product', label: t('catalog.table.product'), mobilePriority: 0, render: ({ item }) => <div className="product-table-product">{showImages && <ProductImage client={client} profileId={profileId} item={item} className="product-table-image" />}<div className="min-w-0"><Link to={`/items/${encodeURIComponent(String(item.name))}`} onClick={(event) => event.stopPropagation()} className="product-table-title">{text(item.item_name ?? item.name)}</Link><code>{text(item.item_code ?? item.name)}</code></div></div> },
     { id: 'group', label: t('catalog.table.group'), mobilePriority: 2, render: ({ item }) => text(item.item_group) },
     { id: 'brand', label: t('common.brand'), mobilePriority: 4, render: ({ item }) => text(item.brand) },
     { id: 'stockUom', label: t('catalog.product.stockUom'), mobilePriority: 1, render: ({ item, variant }) => <span className="variant-stock-badge">{text(item.stock_uom ?? variant?.stock_uom)}</span> },
@@ -54,7 +56,7 @@ export function ProductTable({ items, prices, variants, profileId, onOpen, onUom
     { id: 'margin', label: t('catalog.table.margin'), mobilePriority: 7, available: () => priceCacheAvailable, render: ({ item, prices }) => { const found = itemPrices(prices, item); const margin = found.purchase && found.sale && (found.purchase.uom || '') === (found.sale.uom || '') ? calculateGrossMargin(found.sale, found.purchase) : null; return margin ? t('catalog.table.marginValue', { value: margin.percentage.toFixed(1), price: money({ ...found.sale, price_list_rate: margin.amount }, i18n.language, t('catalog.table.noCache')) }) : t('catalog.product.notComparable') } },
     { id: 'status', label: t('common.status'), mobilePriority: 0, render: ({ item }) => <span className={`product-status ${item.disabled ? 'product-status-disabled' : 'product-status-active'}`}>{item.disabled ? t('common.disabled') : t('common.active')}</span> },
     { id: 'actions', label: t('catalog.table.actions'), mobilePriority: 0, render: ({ onOpen, onUom }) => <div className="product-table-actions"><Button type="button" variant="action" size="compact" onClick={(event) => { event.stopPropagation(); onOpen() }}>{t('catalog.product.edit')}</Button><Button type="button" variant="action" size="compact" onClick={(event) => { event.stopPropagation(); onUom() }}>{t('catalog.product.configureUom')}</Button></div> },
-  ], [i18n.language, priceCacheAvailable, t])
+  ], [client, i18n.language, priceCacheAvailable, profileId, showImages, t])
 
   const activeColumns = columns.filter((column) => config.visibleIds.includes(column.id) && (!column.available || items.some((item) => column.available?.({ item, prices, variant: variantByName.get(item.name), onOpen: () => undefined, onUom: () => undefined }))))
   const mobileDetailColumns = activeColumns.filter((column) => column.id !== 'product' && column.id !== 'status' && column.id !== 'actions').sort((a, b) => a.mobilePriority - b.mobilePriority)

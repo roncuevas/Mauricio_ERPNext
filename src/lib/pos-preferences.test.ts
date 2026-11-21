@@ -6,6 +6,7 @@ describe('POS preferences', () => {
 
   it('uses safe defaults and isolates preferences by connection', () => {
     expect(readPosPreferences('one')).toEqual(DEFAULT_POS_PREFERENCES)
+    expect(readPosPreferences('one').showProductImages).toBe(false)
     writePosPreferences('one', { ...DEFAULT_POS_PREFERENCES, profileName: 'Caja principal', defaultCustomer: 'CUST-001' })
     expect(readPosPreferences('one').profileName).toBe('Caja principal')
     expect(readPosPreferences('two')).toEqual(DEFAULT_POS_PREFERENCES)

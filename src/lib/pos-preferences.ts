@@ -4,6 +4,7 @@ export type PosPreferences = {
   defaultCustomer: string
   rememberCustomer: boolean
   autoFocusProductSearch: boolean
+  showProductImages: boolean
 }
 
 export const DEFAULT_POS_PREFERENCES: PosPreferences = {
@@ -12,6 +13,7 @@ export const DEFAULT_POS_PREFERENCES: PosPreferences = {
   defaultCustomer: '',
   rememberCustomer: true,
   autoFocusProductSearch: true,
+  showProductImages: false,
 }
 
 function storageKey(profileId: string) {
@@ -28,6 +30,7 @@ function normalize(value: unknown): PosPreferences {
     defaultCustomer: typeof candidate.defaultCustomer === 'string' ? candidate.defaultCustomer : '',
     rememberCustomer: typeof candidate.rememberCustomer === 'boolean' ? candidate.rememberCustomer : true,
     autoFocusProductSearch: typeof candidate.autoFocusProductSearch === 'boolean' ? candidate.autoFocusProductSearch : true,
+    showProductImages: typeof candidate.showProductImages === 'boolean' ? candidate.showProductImages : false,
   }
 }
 

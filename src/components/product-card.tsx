@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Button, ButtonLink } from './ui'
 import { calculateGrossMargin } from '../lib/pricing'
 import type { CachedItem, ItemPrice, VariantItem } from '../lib/types'
+import { ProductImage } from './product-image'
+import type { createErpNextClient } from '../lib/erpnext'
 
 function money(price: ItemPrice | null, locale: string, noPrice: string) {
   if (!price) return noPrice
@@ -21,7 +23,7 @@ function productUoms(item: CachedItem, variant?: VariantItem) {
   return variant?.uoms?.length ? variant.uoms : item.uoms ?? []
 }
 
-export function ProductCard({ item, prices, variant, onOpen }: { item: CachedItem; prices: ItemPrice[]; variant?: VariantItem; onOpen: () => void }) {
+export function ProductCard({ item, prices, variant, onOpen, client, profileId, showImage }: { item: CachedItem; prices: ItemPrice[]; variant?: VariantItem; onOpen: () => void; client: ReturnType<typeof createErpNextClient>; profileId: string; showImage: boolean }) {
   const { t, i18n } = useTranslation()
   const { purchase, sale } = priceForItem(prices, item)
   const comparablePrices = purchase && sale && (purchase.uom || '') === (sale.uom || '')
@@ -34,6 +36,7 @@ export function ProductCard({ item, prices, variant, onOpen }: { item: CachedIte
   const barcodes = Array.isArray(item.barcodes) ? item.barcodes.map(String).filter(Boolean) : []
 
   return <article className="product-card" onDoubleClick={onOpen}>
+    {showImage && <ProductImage client={client} profileId={profileId} item={item} className="product-card-image" />}
     <div className="product-card-heading">
       <div className="min-w-0">
         <p className="product-card-eyebrow">{item.item_group || t('catalog.product.noGroup')}</p>

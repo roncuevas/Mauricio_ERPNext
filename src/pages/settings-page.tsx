@@ -18,6 +18,7 @@ import { clearPosPreferences, DEFAULT_POS_PREFERENCES, readPosPreferences, write
 import { DEFAULT_APP_PREFERENCES, readAppPreferences, writeAppPreferences, type AppPreferences, type Density, type LandingRoute } from '../lib/app-preferences'
 import { useTranslation } from 'react-i18next'
 import { readPendingPreferences, writePendingPreferences, type PendingPreferences } from '../lib/pending-preferences'
+import { downloadMissingProductImages } from '../lib/product-image-sync'
 
 const TAB_VALUES = ['general', 'pos', 'appearance', 'language', 'data', 'navigation'] as const
 type SettingsTab = typeof TAB_VALUES[number]
@@ -69,6 +70,9 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   const [posDraft, setPosDraft] = useState<PosPreferences>(() => readPosPreferences(connection.id))
   const [posMessage, setPosMessage] = useState('')
   const [posError, setPosError] = useState('')
+  const [imageSync, setImageSync] = useState<{ completed: number; total: number } | null>(null)
+  const [imageSyncMessage, setImageSyncMessage] = useState('')
+  const [imageSyncError, setImageSyncError] = useState('')
   const [appPreferences, setAppPreferences] = useState<AppPreferences>(() => readAppPreferences())
   const [pendingPreferences, setPendingPreferences] = useState<PendingPreferences>(() => readPendingPreferences(connection.id))
   const [productView, setProductView] = useState<ProductView>(() => readProductView(connection.id))
@@ -103,6 +107,18 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
     setPosDraft({ ...DEFAULT_POS_PREFERENCES })
     setPosError('')
     setPosMessage(t('settings.posReset'))
+  }
+
+  async function refreshMissingImages() {
+    setImageSync({ completed: 0, total: 0 })
+    setImageSyncMessage('')
+    setImageSyncError('')
+    try {
+      const result = await downloadMissingProductImages(client, connection.id, (completed, total) => setImageSync({ completed, total }))
+      setImageSyncMessage(t('productImages.syncComplete', result))
+    } catch (error) {
+      setImageSyncError(error instanceof Error ? error.message : t('productImages.syncError'))
+    } finally { setImageSync(null) }
   }
 
   function saveAppPreferences(next: AppPreferences) {
@@ -164,7 +180,9 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
         {posProfilesQuery.isError && <Notice>{posProfilesQuery.error instanceof Error ? posProfilesQuery.error.message : t('settings.pos.profilesError')}</Notice>}
         {customersQuery.isError && <Notice>{customersQuery.error instanceof Error ? customersQuery.error.message : t('settings.pos.customersError')}</Notice>}
         <div className="settings-pos-form"><Field label={t('settings.pos.profile')}><EntityCombobox ariaLabel={t('settings.pos.profile')} value={posDraft.profileName} onValueChange={(value) => setPosDraft((current) => ({ ...current, profileName: value }))} placeholder={t('settings.pos.profilePlaceholder')} searchPlaceholder={t('settings.pos.profileSearch')} allowClear options={(posProfilesQuery.data ?? []).map((profile) => ({ value: profile.name, label: profile.name, searchText: `${profile.company ?? ''} ${profile.warehouse ?? ''}`, meta: profile.company }))} disabled={posProfilesQuery.isPending} loading={posProfilesQuery.isPending} /></Field><Field label={t('settings.pos.customer')}><EntityCombobox ariaLabel={t('settings.pos.customer')} value={posDraft.defaultCustomer} onValueChange={(value) => setPosDraft((current) => ({ ...current, defaultCustomer: value }))} placeholder={t('settings.pos.customerPlaceholder')} searchPlaceholder={t('settings.pos.customerSearch')} allowClear options={(customersQuery.data ?? []).map((customer) => ({ value: customer.name, label: customer.customer_name || customer.name, searchText: customer.name, meta: customer.customer_name ? customer.name : undefined }))} disabled={customersQuery.isPending} loading={customersQuery.isPending} /></Field></div>
-        <div className="settings-pos-options"><label className="settings-pos-option"><Checkbox checked={posDraft.rememberCustomer} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, rememberCustomer: checked === true }))} /><span><strong>{t('settings.pos.rememberCustomer')}</strong><small>{t('settings.pos.rememberCustomerDescription')}</small></span></label><label className="settings-pos-option"><Checkbox checked={posDraft.autoFocusProductSearch} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, autoFocusProductSearch: checked === true }))} /><span><strong>{t('settings.pos.autoFocus')}</strong><small>{t('settings.pos.autoFocusDescription')}</small></span></label></div>
+        <div className="settings-pos-options"><label className="settings-pos-option"><Checkbox checked={posDraft.rememberCustomer} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, rememberCustomer: checked === true }))} /><span><strong>{t('settings.pos.rememberCustomer')}</strong><small>{t('settings.pos.rememberCustomerDescription')}</small></span></label><label className="settings-pos-option"><Checkbox checked={posDraft.autoFocusProductSearch} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, autoFocusProductSearch: checked === true }))} /><span><strong>{t('settings.pos.autoFocus')}</strong><small>{t('settings.pos.autoFocusDescription')}</small></span></label><label className="settings-pos-option"><Checkbox checked={posDraft.showProductImages} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, showProductImages: checked === true }))} /><span><strong>{t('productImages.show')}</strong><small>{t('productImages.showDescription')}</small></span></label></div>
+        <div className="settings-image-cache"><div><strong>{t('productImages.cacheTitle')}</strong><p className="muted">{t('productImages.cacheDescription')}</p>{imageSync && <p role="status" className="muted">{t('productImages.syncProgress', imageSync)}</p>}</div><Button type="button" variant="secondary" onClick={() => void refreshMissingImages()} disabled={Boolean(imageSync)}>{imageSync ? <><Spinner /> {t('productImages.syncing')}</> : t('productImages.syncAction')}</Button></div>
+        {(imageSyncMessage || imageSyncError) && <div className="mt-4"><Notice tone={imageSyncError ? 'error' : 'info'}>{imageSyncError || imageSyncMessage}</Notice></div>}
         {(posMessage || posError) && <div className="mt-4"><Notice tone={posError ? 'error' : 'info'}>{posError || posMessage}</Notice></div>}<div className="settings-actions"><Button type="button" onClick={savePosPreferences}>{t('common.save')}</Button><Button type="button" variant="secondary" onClick={resetPosPreferences}>{t('settings.pos.restore')}</Button></div>
       </SettingSection></TabsContent>
 

@@ -745,6 +745,7 @@ export default interface Resources {
       "customerName": "Nombre del cliente",
       "filter": "Filtrar",
       "grid": "Cuadrícula",
+      "hideImages": "Ocultar imágenes",
       "lineDiscount": "Descuento %",
       "lineDiscountFor": "Descuento para {{name}}",
       "list": "Lista",
@@ -763,6 +764,7 @@ export default interface Resources {
       "returning": "Procesando devolución…",
       "saving": "Guardando…",
       "serverTotalNotice": "El total definitivo se calcula y valida en ERPNext al cobrar.",
+      "showImages": "Mostrar imágenes",
       "stockUnknown": "Existencia sin caché",
       "variantProducts": "Variantes"
     },
@@ -881,6 +883,22 @@ export default interface Resources {
       "validFrom": "Vigente desde {{date}}",
       "validUntil": "Vigente hasta {{date}}",
       "variant": "Variante"
+    },
+    "productImages": {
+      "cacheDescription": "Descarga imágenes faltantes de los productos y variantes guardados en esta conexión.",
+      "cacheTitle": "Caché de imágenes",
+      "loadError": "No se pudo cargar la imagen.",
+      "loadFor": "Obtener imagen de {{name}}",
+      "loadHint": "Haz clic para obtener imagen desde ERPNext.",
+      "loading": "Cargando imagen…",
+      "missing": "Este producto no tiene una imagen en ERPNext.",
+      "show": "Mostrar imágenes de productos",
+      "showDescription": "Ver imágenes guardadas en POS y catálogo; no descarga imágenes automáticamente.",
+      "syncAction": "Obtener imágenes faltantes",
+      "syncComplete": "{{downloaded}} imágenes guardadas; {{failed}} fallidas de {{total}} pendientes.",
+      "syncError": "No se pudieron obtener las imágenes.",
+      "syncProgress": "Procesadas {{completed}} de {{total}} imágenes",
+      "syncing": "Descargando imágenes…"
     },
     "productsPage": {
       "applyFilter": "Aplicar filtro",

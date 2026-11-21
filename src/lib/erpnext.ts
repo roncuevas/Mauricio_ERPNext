@@ -36,8 +36,28 @@ export function createErpNextClient(connection: ConnectionProfile) {
     } finally { window.clearTimeout(timeout) }
   }
 
+  async function requestImage(url: string): Promise<Blob> {
+    const origin = new URL(baseUrl).origin
+    const target = new URL(url, `${baseUrl}/`)
+    if (target.origin !== origin || target.username || target.password || !['http:', 'https:'].includes(target.protocol)) throw new Error('La URL de imagen no pertenece al servidor ERPNext configurado.')
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 20_000)
+    try {
+      const response = await fetch(target.href, { signal: controller.signal, headers: { Authorization: `token ${connection.apiKey}:${connection.apiSecret}`, Accept: 'image/*' } })
+      if (!response.ok) throw new ErpNextError(response.status, `No se pudo obtener la imagen (${response.status}).`)
+      const blob = await response.blob()
+      if (!blob.type.startsWith('image/') || blob.size === 0) throw new Error('ERPNext no devolvió una imagen válida.')
+      return blob
+    } catch (error) {
+      if (error instanceof ErpNextError || error instanceof Error && error.message === 'ERPNext no devolvió una imagen válida.') throw error
+      if (error instanceof DOMException && error.name === 'AbortError') throw new Error(i18n.t('errors.timeout'), { cause: error })
+      throw new Error(i18n.t('errors.connection'), { cause: error })
+    } finally { window.clearTimeout(timeout) }
+  }
+
   return {
     profileId: connection.id,
+    async getImage(url: string) { return requestImage(url) },
     async getCurrentUser() { return request<string>('/api/method/frappe.auth.get_logged_user') },
     async getUserProfile(user: string) { return request<ErpNextUserProfile>(`/api/resource/User/${encodeURIComponent(user)}`) },
     async callMethod<T>(method: string, args: Record<string, unknown> = {}) { return request<T>(`/api/method/${method}`, { method: 'POST', body: JSON.stringify(args) }) },

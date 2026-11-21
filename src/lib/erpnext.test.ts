@@ -29,4 +29,16 @@ describe('ERPNext REST client', () => {
     const submitCall = fetchMock.mock.calls[1] as unknown as [string, RequestInit]
     expect(JSON.parse(submitCall[1].body as string).doc).toContain('2026-10-15 17:47:13.569608')
   })
+
+  it('loads image blobs with the configured token and rejects cross-origin URLs', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, blob: async () => ({ type: 'image/png', size: 5 }) } as Response))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = createErpNextClient({ id: 'test', label: 'Test', baseUrl: 'https://erp.example.com', apiKey: 'key', apiSecret: 'secret' })
+    await expect(client.getImage('/files/item.png')).resolves.toMatchObject({ type: 'image/png', size: 5 })
+    const [, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(new Headers(request.headers).get('Authorization')).toBe('token key:secret')
+    await expect(client.getImage('https://other.example.com/private.png')).rejects.toThrow('no pertenece al servidor')
+    await expect(client.getImage('https://user@erp.example.com/private.png')).rejects.toThrow('no pertenece al servidor')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
 })

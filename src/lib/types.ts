@@ -51,6 +51,7 @@ export type ListResult<T> = { data: T[]; total?: number }
 
 export type CachedItem = {
   name: string
+  image?: string
   item_code?: string
   item_name?: string
   brand?: string
@@ -137,6 +138,7 @@ export type DocTypeCatalogCache = {
 
 export type VariantItem = {
   name: string
+  image?: string
   item_code?: string
   item_name?: string
   brand?: string
