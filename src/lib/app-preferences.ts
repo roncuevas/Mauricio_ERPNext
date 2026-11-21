@@ -8,6 +8,8 @@ export type AppPreferences = {
   landingRoute: LandingRoute
   sidebarCollapsed: boolean
   density: Density
+  sessionDurationHours: 4 | 8 | 12 | 24 | 48
+  refreshCachesOnLogin: boolean
 }
 
 export const DEFAULT_APP_PREFERENCES: AppPreferences = {
@@ -15,6 +17,8 @@ export const DEFAULT_APP_PREFERENCES: AppPreferences = {
   landingRoute: '/',
   sidebarCollapsed: false,
   density: 'comfortable',
+  sessionDurationHours: 12,
+  refreshCachesOnLogin: true,
 }
 
 function isLandingRoute(value: unknown): value is LandingRoute {
@@ -29,6 +33,8 @@ export function normalizeAppPreferences(value: unknown): AppPreferences {
     landingRoute: isLandingRoute(candidate.landingRoute) ? candidate.landingRoute : DEFAULT_APP_PREFERENCES.landingRoute,
     sidebarCollapsed: typeof candidate.sidebarCollapsed === 'boolean' ? candidate.sidebarCollapsed : DEFAULT_APP_PREFERENCES.sidebarCollapsed,
     density: candidate.density === 'compact' ? 'compact' : DEFAULT_APP_PREFERENCES.density,
+    sessionDurationHours: candidate.sessionDurationHours === 4 || candidate.sessionDurationHours === 8 || candidate.sessionDurationHours === 24 || candidate.sessionDurationHours === 48 ? candidate.sessionDurationHours : 12,
+    refreshCachesOnLogin: typeof candidate.refreshCachesOnLogin === 'boolean' ? candidate.refreshCachesOnLogin : true,
   }
 }
 

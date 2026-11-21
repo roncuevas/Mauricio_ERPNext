@@ -20,7 +20,9 @@ import { readVariantCatalogOrItems } from './lib/variant-cache'
 import { queryKeys } from './lib/query-keys'
 import { markPerformance } from './lib/performance'
 import { readAppPreferences, writeAppPreferences, type AppPreferences } from './lib/app-preferences'
-import type { ConnectionProfile } from './lib/types'
+import { readPosPreferences } from './lib/pos-preferences'
+import { runManagedCacheRefresh, type ManagedCacheId } from './lib/cache-manager'
+import type { ConnectionProfile, PosProfile } from './lib/types'
 import { useTranslation } from 'react-i18next'
 
 const ItemEditorPage = lazy(() => import('./pages/editors').then(({ ItemEditorPage }) => ({ default: ItemEditorPage })))
@@ -68,6 +70,7 @@ function App() {
   async function unlock(profile: ConnectionProfile) {
     await startLocalSession(profile)
     setConnection(profile)
+    if (readAppPreferences().refreshCachesOnLogin) void refreshCachesAfterLogin(profile)
   }
 
   async function lock() {
@@ -84,6 +87,20 @@ function App() {
   }
 
   return <AppShell connection={connection} onLock={lock} />
+}
+
+async function refreshCachesAfterLogin(profile: ConnectionProfile) {
+  const client = createErpNextClient(profile)
+  const ids: ManagedCacheId[] = ['products', 'variants', 'uom', 'prices', 'priceLists', 'stock', 'suppliers', 'customers', 'doctypes', 'posContext', 'shifts', 'salesOrders', 'quotations']
+  let activeProfile: PosProfile | undefined
+  const profileName = readPosPreferences(profile.id).profileName
+  if (profileName) {
+    try { activeProfile = await client.getDocument<PosProfile>('POS Profile', profileName) }
+    catch { /* Context-specific caches are skipped when the selected POS Profile is unavailable. */ }
+  }
+  const context = { client, profileId: profile.id, activeProfile, date: new Date().toISOString().slice(0, 10) }
+  const refreshable = activeProfile?.company ? ids : ids.filter((id) => id !== 'salesOrders' && id !== 'quotations')
+  await Promise.allSettled(refreshable.map((id) => runManagedCacheRefresh(id, context)))
 }
 
 function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {

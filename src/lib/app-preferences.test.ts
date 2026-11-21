@@ -8,6 +8,13 @@ describe('app preferences', () => {
     expect(normalizeAppPreferences({ landingRoute: '/unknown', density: 'wide', sidebarCollapsed: 'yes' })).toEqual(DEFAULT_APP_PREFERENCES)
   })
 
+  it('defaults sessions to 12 hours and cache refresh on sign-in', () => {
+    expect(DEFAULT_APP_PREFERENCES.sessionDurationHours).toBe(12)
+    expect(DEFAULT_APP_PREFERENCES.refreshCachesOnLogin).toBe(true)
+    expect(normalizeAppPreferences({ sessionDurationHours: 8, refreshCachesOnLogin: false })).toMatchObject({ sessionDurationHours: 8, refreshCachesOnLogin: false })
+    expect(normalizeAppPreferences({ sessionDurationHours: 7 }).sessionDurationHours).toBe(12)
+  })
+
   it('migrates the legacy collapsed sidebar preference', () => {
     localStorage.setItem('mauricio-erpnext:sidebar-collapsed', 'true')
     expect(readAppPreferences().sidebarCollapsed).toBe(true)

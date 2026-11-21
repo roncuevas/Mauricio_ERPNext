@@ -1251,6 +1251,15 @@ export default interface Resources {
       "posSaved": "Preferencias de POS guardadas en este navegador.",
       "profilePermission": "ERPNext no permite leer el perfil completo del usuario. Solicita permiso de lectura sobre User para mostrar más datos.",
       "sections": "Secciones de configuración",
+      "session": {
+        "description": "Elige cuánto permanece abierta tu sesión y si se actualizan las cachés al iniciar sesión.",
+        "duration": "Expirar sesión después de",
+        "eyebrow": "Sesión y caché",
+        "hours": "horas",
+        "refreshCaches": "Actualizar todas las cachés al iniciar sesión",
+        "refreshCachesDescription": "Descarga los catálogos y datos administrados en segundo plano. Las cachés que requieren una compañía se omiten si no hay un perfil POS configurado.",
+        "title": "Duración y actualización"
+      },
       "tabs": {
         "appearance": "Apariencia",
         "data": "Datos",

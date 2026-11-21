@@ -137,6 +137,10 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
       </TabsList>
 
       <TabsContent value="general"><div className="settings-grid">
+        <SettingSection eyebrow={t('settings.session.eyebrow')} title={t('settings.session.title')} description={t('settings.session.description')}>
+          <div className="settings-pos-form"><Field label={t('settings.session.duration')}><Select value={String(appPreferences.sessionDurationHours)} onValueChange={(value) => saveAppPreferences({ ...appPreferences, sessionDurationHours: Number(value) as AppPreferences['sessionDurationHours'] })}><SelectTrigger aria-label={t('settings.session.duration')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="4">4 {t('settings.session.hours')}</SelectItem><SelectItem value="8">8 {t('settings.session.hours')}</SelectItem><SelectItem value="12">12 {t('settings.session.hours')}</SelectItem><SelectItem value="24">24 {t('settings.session.hours')}</SelectItem><SelectItem value="48">48 {t('settings.session.hours')}</SelectItem></SelectContent></Select></Field></div>
+          <label className="settings-pos-option"><Checkbox checked={appPreferences.refreshCachesOnLogin} onCheckedChange={(checked) => saveAppPreferences({ ...appPreferences, refreshCachesOnLogin: checked === true })} /><span><strong>{t('settings.session.refreshCaches')}</strong><small>{t('settings.session.refreshCachesDescription')}</small></span></label>
+        </SettingSection>
         <SettingSection eyebrow={t('settings.pending.eyebrow')} title={t('settings.pending.title')} description={t('settings.pending.description')}>
           {pendingPriceListsQuery.isError && <Notice tone="error">{pendingPriceListsQuery.error instanceof Error ? pendingPriceListsQuery.error.message : t('settings.pending.loadError')}</Notice>}
           <div className="settings-pos-form">

@@ -1,12 +1,16 @@
 import type { ConnectionProfile } from './types'
+import { readAppPreferences } from './app-preferences'
 
 const databaseName = 'mauricio-erpnext-session'
 const storeName = 'session-keys'
 const databaseVersion = 1
 export const localSessionStorageKey = 'mauricio-erpnext:active-session'
-const sessionDuration = 8 * 60 * 60 * 1000
 
 type SessionEnvelope = { profileId: string; expiresAt: number; iv: string; ciphertext: string }
+
+export function localSessionExpiresAt(now = Date.now()) {
+  return now + readAppPreferences().sessionDurationHours * 60 * 60 * 1000
+}
 
 function encode(value: ArrayBuffer | Uint8Array<ArrayBufferLike>) {
   const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : value
@@ -43,7 +47,7 @@ export async function startLocalSession(profile: ConnectionProfile) {
     request.onsuccess = () => resolve()
     request.onerror = () => reject(request.error ?? new Error('No se pudo guardar la sesión local.'))
   })
-  const envelope: SessionEnvelope = { profileId: profile.id, expiresAt: Date.now() + sessionDuration, iv: encode(iv), ciphertext: encode(ciphertext) }
+  const envelope: SessionEnvelope = { profileId: profile.id, expiresAt: localSessionExpiresAt(), iv: encode(iv), ciphertext: encode(ciphertext) }
   localStorage.setItem(localSessionStorageKey, JSON.stringify(envelope))
   sessionStorage.removeItem(localSessionStorageKey)
 }
