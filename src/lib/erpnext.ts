@@ -43,7 +43,9 @@ export function createErpNextClient(connection: ConnectionProfile) {
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), 20_000)
     try {
-      const response = await fetch(target.href, { signal: controller.signal, headers: { Authorization: `token ${connection.apiKey}:${connection.apiSecret}`, Accept: 'image/*' } })
+      const downloadUrl = new URL('/api/method/frappe.core.doctype.file.file.download_file', origin)
+      downloadUrl.searchParams.set('file_url', target.pathname)
+      const response = await fetch(downloadUrl.href, { signal: controller.signal, headers: { Authorization: `token ${connection.apiKey}:${connection.apiSecret}`, Accept: 'image/*' } })
       if (!response.ok) throw new ErpNextError(response.status, `No se pudo obtener la imagen (${response.status}).`)
       const blob = await response.blob()
       if (!blob.type.startsWith('image/') || blob.size === 0) throw new Error('ERPNext no devolvió una imagen válida.')
