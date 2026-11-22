@@ -108,6 +108,8 @@ export function createErpNextClient(connection: ConnectionProfile) {
 
   return {
     profileId: connection.id,
+    /** Desk URL of a document, to open it in ERPNext from a success message. */
+    documentUrl(doctype: string, name: string) { return `${baseUrl}/app/${doctype.toLowerCase().replace(/ /g, '-')}/${encodeURIComponent(name)}` },
     async getImage(url: string) { return requestImage(url) },
     isExternalImageUrl(url: string) {
       try {

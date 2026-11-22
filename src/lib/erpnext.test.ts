@@ -41,4 +41,10 @@ describe('ERPNext REST client', () => {
     await expect(client.getImage('https://user@erp.example.com/private.png')).rejects.toThrow('no pertenece al servidor')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
+
+  it('builds the desk URL of a submitted document', () => {
+    const client = createErpNextClient({ id: 'test', label: 'Test', baseUrl: 'https://erp.example.com/', apiKey: 'key', apiSecret: 'secret' })
+    expect(client.documentUrl('Purchase Receipt', 'MAT-PRE-0001')).toBe('https://erp.example.com/app/purchase-receipt/MAT-PRE-0001')
+    expect(client.documentUrl('Stock Reconciliation', 'A/B 1')).toBe('https://erp.example.com/app/stock-reconciliation/A%2FB%201')
+  })
 })
