@@ -4,21 +4,21 @@ import { defaultProductTableConfig, normalizeProductTableConfig, readProductTabl
 describe('product table configuration', () => {
   it('uses the required default columns and initial widths', () => {
     const config = defaultProductTableConfig()
-    expect(config.visibleIds).toEqual(['product', 'group', 'stockUom', 'status', 'actions'])
-    expect(config.widths.product).toBe(280)
+    expect(config.visibleIds).toEqual(['product', 'stockUom', 'conversions', 'purchasePrice', 'salePrice', 'margin', 'actions'])
+    expect(config.widths.product).toBe(240)
   })
 
   it('persists independently by ERPNext profile', () => {
     writeProductTableConfig('profile-a', { ...defaultProductTableConfig(), visibleIds: ['product', 'brand', 'actions'] })
     expect(readProductTableConfig('profile-a').visibleIds).toEqual(['product', 'brand', 'actions'])
-    expect(readProductTableConfig('profile-b').visibleIds).toContain('group')
+    expect(readProductTableConfig('profile-b').visibleIds).toContain('conversions')
   })
 
   it('normalizes unknown, duplicate, required and invalid width values', () => {
     const config = normalizeProductTableConfig({ version: 1, visibleIds: ['brand', 'brand', 'unknown'], widths: { brand: 9999, product: 2 } })
     expect(config.visibleIds).toEqual(['brand', 'product', 'actions'])
     expect(config.widths.brand).toBe(240)
-    expect(config.widths.product).toBe(220)
+    expect(config.widths.product).toBe(200)
   })
 
   it('rejects an unsupported version and restores the complete default', () => {

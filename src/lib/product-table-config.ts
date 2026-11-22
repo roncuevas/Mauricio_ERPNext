@@ -1,7 +1,7 @@
 export const PRODUCT_TABLE_CONFIG_VERSION = 1
 export const PRODUCT_TABLE_CONFIG_KEY_PREFIX = 'mauricio-erpnext:product-table-config:v1:'
 
-export const PRODUCT_TABLE_COLUMN_IDS = ['product', 'group', 'brand', 'stockUom', 'salesUom', 'purchaseUom', 'weight', 'variants', 'barcode', 'purchasePrice', 'salePrice', 'margin', 'status', 'actions'] as const
+export const PRODUCT_TABLE_COLUMN_IDS = ['product', 'group', 'brand', 'stockUom', 'salesUom', 'purchaseUom', 'conversions', 'weight', 'variants', 'barcode', 'purchasePrice', 'salePrice', 'margin', 'status', 'actions'] as const
 export type ProductTableColumnId = typeof PRODUCT_TABLE_COLUMN_IDS[number]
 
 export type ProductTableConfig = {
@@ -10,30 +10,31 @@ export type ProductTableConfig = {
   widths: Partial<Record<ProductTableColumnId, number>>
 }
 
-export const PRODUCT_TABLE_DEFAULT_VISIBLE_IDS: ProductTableColumnId[] = ['product', 'group', 'stockUom', 'status', 'actions']
+export const PRODUCT_TABLE_DEFAULT_VISIBLE_IDS: ProductTableColumnId[] = ['product', 'stockUom', 'conversions', 'purchasePrice', 'salePrice', 'margin', 'actions']
 
 export const PRODUCT_TABLE_INITIAL_WIDTHS: Record<ProductTableColumnId, number> = {
-  product: 280,
+  product: 240,
   group: 170,
   brand: 140,
-  stockUom: 130,
+  stockUom: 110,
   salesUom: 150,
   purchaseUom: 160,
+  conversions: 190,
   weight: 120,
   variants: 110,
   barcode: 150,
-  purchasePrice: 150,
-  salePrice: 150,
-  margin: 150,
+  purchasePrice: 140,
+  salePrice: 140,
+  margin: 100,
   status: 130,
-  actions: 190,
+  actions: 170,
 }
 
 export const PRODUCT_TABLE_WIDTH_LIMITS: Record<ProductTableColumnId, { min: number; max: number }> = {
-  product: { min: 220, max: 480 }, group: { min: 130, max: 280 }, brand: { min: 110, max: 240 }, stockUom: { min: 110, max: 220 },
-  salesUom: { min: 130, max: 260 }, purchaseUom: { min: 140, max: 280 }, weight: { min: 100, max: 220 }, variants: { min: 100, max: 180 },
-  barcode: { min: 130, max: 280 }, purchasePrice: { min: 130, max: 240 }, salePrice: { min: 130, max: 240 }, margin: { min: 140, max: 260 },
-  status: { min: 115, max: 200 }, actions: { min: 175, max: 230 },
+  product: { min: 200, max: 480 }, group: { min: 130, max: 280 }, brand: { min: 110, max: 240 }, stockUom: { min: 100, max: 220 },
+  salesUom: { min: 130, max: 260 }, purchaseUom: { min: 140, max: 280 }, conversions: { min: 140, max: 320 }, weight: { min: 100, max: 220 }, variants: { min: 100, max: 180 },
+  barcode: { min: 130, max: 280 }, purchasePrice: { min: 130, max: 240 }, salePrice: { min: 130, max: 240 }, margin: { min: 90, max: 260 },
+  status: { min: 115, max: 200 }, actions: { min: 140, max: 230 },
 }
 
 export function clampProductTableWidth(id: ProductTableColumnId, value: number) {
