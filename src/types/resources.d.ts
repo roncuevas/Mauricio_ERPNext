@@ -355,7 +355,7 @@ export default interface Resources {
       "pricesAccessTitle": "Precios",
       "products": "Productos",
       "quickActions": "Acciones rápidas",
-      "quickActionsDescription": "Actualiza los datos desde la pestaña de cachés cuando lo necesites.",
+      "quickActionsDescription": "Actualiza productos, precios o todos los datos cuando lo necesites.",
       "quotations": "Cotizaciones",
       "realBins": "Bin reales",
       "refreshSummary": "Actualizar resumen",
@@ -455,6 +455,11 @@ export default interface Resources {
       "count_other": "{{count}} pendientes",
       "description": "Completa precios y variantes faltantes en el catálogo.",
       "editSalePrice": "Editar precio",
+      "imageMissing": "Imagen faltante",
+      "imagesClear": "Todos tienen imagen",
+      "imagesClearDescription": "Los productos, plantillas y variantes del catálogo tienen una imagen asignada.",
+      "imagesNeedRefresh": "Actualiza el catálogo para revisar imágenes",
+      "imagesNeedRefreshDescription": "La caché local es anterior al seguimiento de imágenes. Actualiza los catálogos para mostrar los productos sin imagen.",
       "kind": {
         "item": "Producto",
         "template": "Plantilla",
@@ -468,6 +473,7 @@ export default interface Resources {
       "noSearchResults": "Sin coincidencias",
       "noVariants": "Sin variantes",
       "notUpdated": "sin actualizar",
+      "openProduct": "Abrir producto",
       "priceLists": "Listas de referencia",
       "priceListsSummary": "{{buyingLabel}}: {{buying}} · {{sellingLabel}}: {{selling}}",
       "pricesClear": "Sin precios pendientes",
@@ -482,6 +488,8 @@ export default interface Resources {
       "sellingPrice": "Venta",
       "standardBuying": "Standard Buying",
       "tabs": {
+        "images": "Sin imagen",
+        "imagesDescription": "Productos, plantillas y variantes sin imagen asignada en ERPNext.",
         "label": "Tipos de pendientes",
         "margin": "Margen bajo",
         "marginDescription": "Cada precio de venta comparado con el costo Standard Buying.",
@@ -671,7 +679,7 @@ export default interface Resources {
         "availableCached": "{{available}} disponibles · {{cached}} en caché",
         "noMatches": "No hay coincidencias. Carga o refresca el catálogo en Productos.",
         "searchLabel": "Buscar productos POS",
-        "searchPlaceholder": "Buscar nombre, SKU o barcode",
+        "searchPlaceholder": "Buscar nombre, SKU, barcode o etiqueta",
         "selectCard": "Selecciona una tarjeta"
       },
       "sales": {
@@ -896,9 +904,9 @@ export default interface Resources {
       "showDescription": "Ver imágenes guardadas en POS y catálogo; no descarga imágenes automáticamente.",
       "syncAction": "Obtener imágenes faltantes",
       "syncComplete": "{{downloaded}} imágenes guardadas; {{failed}} fallidas de {{total}} pendientes.",
+      "syncError": "No se pudieron obtener las imágenes.",
       "syncFailureExample": "Falló: {{error}}.",
       "syncMoreFailures": "Y {{count}} más.",
-      "syncError": "No se pudieron obtener las imágenes.",
       "syncProgress": "Procesadas {{completed}} de {{total}} imágenes",
       "syncing": "Descargando imágenes…"
     },

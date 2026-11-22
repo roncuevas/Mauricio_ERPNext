@@ -14,7 +14,7 @@ export async function readVariantCatalogOrItems(profileId: string) {
   if (cached?.items.length) return cached
   const itemCache = await readItemCatalog(profileId)
   if (!itemCache) return cached
-  return { profileId, updatedAt: itemCache.updatedAt, items: itemCache.items as VariantItem[] } satisfies VariantCatalogCache
+  return { profileId, updatedAt: itemCache.updatedAt, imageFieldLoaded: itemCache.imageFieldLoaded, items: itemCache.items as VariantItem[] } satisfies VariantCatalogCache
 }
 
 export const writeVariantCatalog = store.write

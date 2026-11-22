@@ -194,7 +194,7 @@ async function loadItems(client: ErpNextClient, profileId: string, onProgress?: 
   let start = 0
   while (true) {
     onProgress?.(`Descargando productos: ${items.length}`)
-    const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'modified'], ...(since ? { filters: [['modified', '>', since] as [string, string, unknown]] } : {}), start, pageLength: 500, orderBy: 'modified desc' })
+    const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'image', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'modified'], ...(since ? { filters: [['modified', '>', since] as [string, string, unknown]] } : {}), start, pageLength: 500, orderBy: 'modified desc' })
     items.push(...batch.data)
     if (batch.data.length < 500) break
     start += batch.data.length
@@ -205,7 +205,7 @@ async function loadItems(client: ErpNextClient, profileId: string, onProgress?: 
   const byName = new Map(existingItems.map((item) => [item.name, item]))
   changed.forEach((item) => byName.set(item.name, { ...byName.get(item.name), ...item }))
   if (tagsByItem) for (const [name, item] of byName) byName.set(name, { ...item, tags: tagsByItem[name] ?? [] })
-  return { profileId, updatedAt: now(), items: Array.from(byName.values()) }
+  return { profileId, updatedAt: now(), imageFieldLoaded: true, items: Array.from(byName.values()) }
 }
 
 async function loadVariants(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void): Promise<VariantCatalogCache> {
@@ -213,7 +213,7 @@ async function loadVariants(client: ErpNextClient, profileId: string, onProgress
   let start = 0
   while (true) {
     onProgress?.(`Descargando variantes: ${items.length}`)
-    const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'is_stock_item', 'has_serial_no', 'has_batch_no'], start, pageLength: 500, orderBy: 'item_name asc' })
+    const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'image', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'is_stock_item', 'has_serial_no', 'has_batch_no'], start, pageLength: 500, orderBy: 'item_name asc' })
     items.push(...batch.data)
     if (batch.data.length < 500) break
     start += batch.data.length
@@ -236,7 +236,7 @@ async function loadVariants(client: ErpNextClient, profileId: string, onProgress
     onProgress?.('Sin permiso para leer UOM directamente; usando los Items…')
     rows = await readItemUomsThroughItems(client, enriched, (message) => onProgress?.(message))
   }
-  return { profileId, updatedAt: now(), items: mergeItemUoms(enriched, rows) }
+  return { profileId, updatedAt: now(), imageFieldLoaded: true, items: mergeItemUoms(enriched, rows) }
 }
 
 export async function readManagedCacheOverviews(profileId: string): Promise<ManagedCacheOverview[]> {

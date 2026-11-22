@@ -73,6 +73,7 @@ export type CachedItem = {
 export type ItemCatalogCache = {
   profileId: string
   updatedAt: string
+  imageFieldLoaded?: boolean
   locallyModified?: boolean
   items: CachedItem[]
 }
@@ -172,6 +173,7 @@ export type ItemUom = {
 export type VariantCatalogCache = {
   profileId: string
   updatedAt: string
+  imageFieldLoaded?: boolean
   locallyModified?: boolean
   items: VariantItem[]
 }

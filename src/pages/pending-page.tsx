@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowUpRight, CircleAlert, RefreshCw } from 'lucide-react'
+import { ArrowUpRight, CircleAlert, ImageOff, RefreshCw } from 'lucide-react'
 import { Badge, Button, ButtonLink, Input, PageHeader, Spinner } from '../components/ui'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { CatalogErrorNotice } from '../components/catalog-guidance'
@@ -15,7 +15,7 @@ import { runManagedCacheRefresh } from '../lib/cache-manager'
 import type { ItemPrice } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
-type PendingTab = 'prices' | 'templates' | 'margin'
+type PendingTab = 'prices' | 'templates' | 'margin' | 'images'
 
 function priceManagementUrl(itemCode: string, price: ItemPrice | undefined, kind: PendingPriceKind, priceList: string) {
   const params = new URLSearchParams({ returnTo: '/pendientes', kind, priceList })
@@ -72,7 +72,18 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const dateLabel = (date?: string) => date ? new Date(date).toLocaleString() : t('pendingPage.notUpdated')
   const notReady = variants.isPending || prices.isPending
   const formatPrice = (price: ItemPrice) => new Intl.NumberFormat(i18n.language, { style: 'currency', currency: price.currency || 'MXN', maximumFractionDigits: 2 }).format(Number(price.price_list_rate ?? 0))
-  const activeCount = activeTab === 'prices' ? filteredPrices.length : activeTab === 'templates' ? filteredTemplates.length : filteredMargins.length
+  const missingImageItems = useMemo(() => {
+    const items = variants.data?.items ?? []
+    const itemsWithVariants = new Set(items.filter((item) => item.has_variants === true || item.has_variants === 1 || String(item.has_variants) === '1').map((item) => item.name))
+    items.forEach((item) => { if (item.variant_of) itemsWithVariants.add(item.variant_of) })
+    return items.filter((item) => !item.image?.trim()).map((item) => ({
+      item,
+      kind: item.variant_of ? 'variant' as const : itemsWithVariants.has(item.name) ? 'template' as const : 'item' as const,
+    }))
+  }, [variants.data?.items])
+  const imagesReady = variants.data?.imageFieldLoaded === true
+  const filteredMissingImages = missingImageItems.filter(({ item }) => matchesSearch(item.name, item.item_code, item.item_name))
+  const activeCount = activeTab === 'prices' ? filteredPrices.length : activeTab === 'templates' ? filteredTemplates.length : activeTab === 'margin' ? filteredMargins.length : imagesReady ? filteredMissingImages.length : 0
 
   return <section className="pending-workspace">
     <PageHeader title={t('pendingPage.title')} description={t('pendingPage.description')} action={<Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}><RefreshCw className={`mr-2 size-4${refresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{refresh.isPending ? t('pendingPage.refreshing') : t('pendingPage.refresh')}</Button>} />
@@ -88,11 +99,12 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
     {notReady && <div className="flex justify-center p-12"><Spinner /></div>}
     {!notReady && variants.data && prices.data && <>
       <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value as PendingTab); setSearch('') }}>
-        <div className="pending-toolbar"><div><strong>{t('pendingPage.count', { count: activeCount })}</strong><span>{t(`pendingPage.tabs.${activeTab}Description`)}</span></div><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('pendingPage.search')} aria-label={t('pendingPage.search')} /></div>
+        <div className="pending-toolbar"><div><strong>{activeTab === 'images' && !imagesReady ? t('pendingPage.imagesNeedRefresh') : t('pendingPage.count', { count: activeCount })}</strong><span>{t(`pendingPage.tabs.${activeTab}Description`)}</span></div><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('pendingPage.search')} aria-label={t('pendingPage.search')} /></div>
         <TabsList aria-label={t('pendingPage.tabs.label')} className="pending-tabs">
           <TabsTrigger value="prices">{t('pendingPage.tabs.prices')} <span>{pending.filter(({ kind }) => kind !== 'template').length}</span></TabsTrigger>
           <TabsTrigger value="templates">{t('pendingPage.tabs.templates')} <span>{pending.filter(({ kind }) => kind === 'template').length}</span></TabsTrigger>
           <TabsTrigger value="margin">{t('pendingPage.tabs.margin')} <span>{lowMargins.length}</span></TabsTrigger>
+          <TabsTrigger value="images">{t('pendingPage.tabs.images')} <span>{imagesReady ? missingImageItems.length : '—'}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="prices">{filteredPrices.length ? <div className="pending-list" role="list">{filteredPrices.map(({ item, kind, missingPrices }) => {
           const name = item.item_name || item.name
@@ -102,6 +114,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
         })}</div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.pricesClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.pricesClearDescription')} linkLabel={t('pendingPage.viewCatalog')} />}</TabsContent>
         <TabsContent value="templates">{filteredTemplates.length ? <div className="pending-list" role="list">{filteredTemplates.map(({ item }) => <article className="pending-row" role="listitem" key={item.name}><div className="pending-item-main"><span className="pending-item-icon pending-item-icon-template" aria-hidden="true"><CircleAlert /></span><div className="min-w-0"><div className="pending-item-heading"><h2 title={item.item_name || item.name}>{item.item_name || item.name}</h2><Badge tone="neutral">{t('pendingPage.kind.template')}</Badge></div><p>{item.name}</p><div className="pending-missing-tags"><Badge tone="warning">{t('pendingPage.noVariants')}</Badge></div></div></div><ButtonLink variant="secondary" to={`/variants/new?template=${encodeURIComponent(item.name)}`}>{t('pendingPage.addVariant')}<ArrowUpRight className="ml-2 size-4" aria-hidden="true" /></ButtonLink></article>)}</div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.templatesClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.templatesClearDescription')} />}</TabsContent>
         <TabsContent value="margin">{filteredMargins.length ? <div className="pending-list" role="list">{filteredMargins.map(({ item, selling, purchase, marginPercentage }) => <article className="pending-row" role="listitem" key={selling.name}><div className="pending-item-main"><span className="pending-item-icon pending-item-icon-variant" aria-hidden="true"><CircleAlert /></span><div className="min-w-0"><div className="pending-item-heading"><h2 title={item.item_name || item.name}>{item.item_name || item.name}</h2><Badge tone="warning">{t('pendingPage.lowMargin')}</Badge></div><p>{item.name} · {selling.price_list || t('pendingPage.unknownPriceList')} · {selling.uom || item.stock_uom || '—'}</p><div className="pending-missing-tags"><Badge tone="neutral">{t('pendingPage.sellingPrice')}: {formatPrice(selling)}</Badge><Badge tone="neutral">{t('pendingPage.standardBuying')}: {formatPrice(purchase)}</Badge><Badge tone="warning">{t('pendingPage.marginValue', { value: marginPercentage.toFixed(1) })}</Badge></div></div></div><ButtonLink variant="secondary" to={priceManagementUrl(item.name, selling, 'selling', selling.price_list || preferences.sellingPriceList)}>{t('pendingPage.editSalePrice')}<ArrowUpRight className="ml-2 size-4" aria-hidden="true" /></ButtonLink></article>)}</div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.marginClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.marginClearDescription')} />}</TabsContent>
+        <TabsContent value="images">{!imagesReady ? <div className="pending-empty-state"><ImageOff aria-hidden="true" /><div><h2>{t('pendingPage.imagesNeedRefresh')}</h2><p>{t('pendingPage.imagesNeedRefreshDescription')}</p></div><Button type="button" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? t('pendingPage.refreshing') : t('pendingPage.refresh')}</Button></div> : filteredMissingImages.length ? <div className="pending-list" role="list">{filteredMissingImages.map(({ item, kind }) => <article className="pending-row" role="listitem" key={item.name}><div className="pending-item-main"><span className="pending-item-icon pending-item-icon-template" aria-hidden="true"><ImageOff /></span><div className="min-w-0"><div className="pending-item-heading"><h2 title={item.item_name || item.name}>{item.item_name || item.name}</h2><Badge tone={kind === 'variant' ? 'info' : kind === 'template' ? 'neutral' : 'warning'}>{t(`pendingPage.kind.${kind}`)}</Badge></div><p>{item.name}{item.variant_of ? ` · ${t('pendingPage.variantOf', { item: item.name, name: item.variant_of })}` : ''}</p><div className="pending-missing-tags"><Badge tone="warning">{t('pendingPage.imageMissing')}</Badge></div></div></div><ButtonLink variant="secondary" to={`/items/${encodeURIComponent(item.name)}`}>{t('pendingPage.openProduct')}<ArrowUpRight className="ml-2 size-4" aria-hidden="true" /></ButtonLink></article>)}</div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.imagesClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.imagesClearDescription')} />}</TabsContent>
       </Tabs>
       <div className="sr-only" aria-live="polite">{t('pendingPage.count', { count: activeCount })}</div>
     </>}
