@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, sellablePrice, uomOptionLabel, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, sellablePrice, stockLevel, uomOptionLabel, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -40,5 +40,14 @@ describe('POS catalog helpers', () => {
     expect(sellablePrice(-5)).toBeNull()
     expect(sellablePrice(Number.NaN)).toBeNull()
     expect(sellablePrice(12.5)).toBe(12.5)
+  })
+})
+
+describe('stockLevel', () => {
+  it('uses ERPNext POS thresholds', () => {
+    expect(stockLevel({ name: 'A', stock_known: true, available_qty: 0 })).toBe('out')
+    expect(stockLevel({ name: 'A', stock_known: true, available_qty: 10 })).toBe('low')
+    expect(stockLevel({ name: 'A', stock_known: true, available_qty: 11 })).toBe('ok')
+    expect(stockLevel({ name: 'A', stock_known: false, available_qty: 50 })).toBe('unknown')
   })
 })

@@ -66,3 +66,12 @@ export function variantPriceRange(variants: CachedItem[], prices: ItemPrice[], p
   const maximum = Math.max(...rates)
   return minimum === maximum ? formatMoney(minimum, currency) : `${formatMoney(minimum, currency)} – ${formatMoney(maximum, currency)}`
 }
+
+export type StockLevel = 'unknown' | 'out' | 'low' | 'ok'
+
+/** Same thresholds as ERPNext's POS item selector: red at 0 or less, orange up to 10, green above. */
+export function stockLevel(item: CachedItem): StockLevel {
+  if (!item.stock_known) return 'unknown'
+  const qty = Number(item.available_qty ?? 0)
+  return qty <= 0 ? 'out' : qty <= 10 ? 'low' : 'ok'
+}

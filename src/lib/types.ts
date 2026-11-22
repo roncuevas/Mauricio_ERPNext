@@ -246,6 +246,11 @@ export type PosProfile = {
   allow_rate_change?: number | boolean
   allow_discount_change?: number | boolean
   allow_user_to_edit_rate?: number | boolean
+  auto_add_item_to_cart?: number | boolean
+  hide_unavailable_items?: number | boolean
+  set_grand_total_to_default_mop?: number | boolean
+  print_receipt_on_order_complete?: number | boolean
+  disable_rounded_total?: number | boolean
   disabled?: number | boolean
   applicable_for_users?: Array<{ user?: string }>
   payments?: PosPaymentMethod[]

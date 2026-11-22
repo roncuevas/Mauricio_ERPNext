@@ -6,6 +6,7 @@ import { Badge, Button, Card, Notice, RefreshButton, Spinner } from './ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import { cacheTtlLabel, managedCacheOrder, readManagedCacheOverviews, type ManagedCacheId, type ManagedCacheOverview } from '../lib/cache-manager'
 import { useManagedCacheRefresh } from './use-managed-cache-refresh'
+import { relativeAge } from '../lib/relative-time'
 import { queryKeys } from '../lib/query-keys'
 import type { PosProfile } from '../lib/types'
 import type { createErpNextClient } from '../lib/erpnext'
@@ -37,17 +38,6 @@ function CacheCard({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; bu
     {entry.error && <div className="settings-cache-error" role="alert"><p>{entry.error}</p>{entry.issues?.map((issue, index) => <p key={`${issue.doctype}-${issue.operation}-${index}`}><strong>{issue.doctype}</strong>: {issue.message}{issue.field ? ` (${t('cache.removedField')}: ${issue.field})` : ''}</p>)}</div>}
     <div className="settings-cache-actions"><RefreshButton label={`${t('common.refresh')} ${t(`cache.labels.${entry.id}`)}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} />{entry.error && entry.issues?.length ? <Button type="button" variant="secondary" size="compact" disabled={busy} onClick={() => onRefresh(entry.id, true)}>{t('cache.retryErrors')}</Button> : null}<span className="settings-cache-attempt">{formatDate(entry.lastAttemptAt, i18n.language)}</span></div>
   </Card>
-}
-
-function relativeAge(value: string | undefined, language: string) {
-  if (!value) return undefined
-  const parsed = new Date(value.replace(' ', 'T'))
-  if (Number.isNaN(parsed.getTime())) return undefined
-  const seconds = Math.round((parsed.getTime() - Date.now()) / 1000)
-  const format = new Intl.RelativeTimeFormat(language === 'en' ? 'en-US' : 'es-MX', { numeric: 'auto' })
-  const steps: Array<[Intl.RelativeTimeFormatUnit, number]> = [['day', 86400], ['hour', 3600], ['minute', 60]]
-  for (const [unit, size] of steps) if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit)
-  return format.format(0, 'minute')
 }
 
 function cacheStatusLabel(entry: ManagedCacheOverview, t: TFunction) {

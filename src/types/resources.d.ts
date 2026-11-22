@@ -697,14 +697,17 @@ export default interface Resources {
         "add": "Agregar {{title}}",
         "chooseUom": "Elegir UOM",
         "chooseVariant": "Elegir variante",
-        "configureSale": "Configurar venta de {{title}}",
-        "multipleUom": "Varias UOM · configurar",
+        "chooseVariantOf": "Elegir variante de {{title}}",
+        "chooseVariants_one": "{{count}} variante · Elegir",
+        "chooseVariants_other": "{{count}} variantes · Elegir",
+        "inStock": "{{qty}} en existencia",
         "noBrand": "Sin marca",
         "noPrice": "Sin precio",
+        "otherUom": "Otra unidad",
+        "otherUomFor": "Elegir otra unidad para {{title}}",
+        "outOfStock": "Sin existencia ({{qty}})",
         "quantity": "Cantidad de {{title}}",
         "remove": "Quitar {{title}}",
-        "templateVariants_one": "Plantilla · {{count}} variante",
-        "templateVariants_other": "Plantilla · {{count}} variantes",
         "viewPrices": "Ver precios de {{title}}",
         "viewPricesShort": "Ver precios"
       },
@@ -713,7 +716,8 @@ export default interface Resources {
         "noMatches": "No hay coincidencias. Carga o refresca el catálogo en Productos.",
         "searchLabel": "Buscar productos POS",
         "searchPlaceholder": "Buscar nombre, SKU, barcode o etiqueta",
-        "selectCard": "Selecciona una tarjeta"
+        "selectCard": "Selecciona una tarjeta",
+        "stockAge": "Existencias actualizadas {{age}}"
       },
       "sales": {
         "activeShift": "Turno activo",
@@ -776,7 +780,6 @@ export default interface Resources {
     "posExtra": {
       "allProducts": "Todos",
       "availableProducts": "Disponibles",
-      "availableStock": "Disponible en caché: {{qty}}",
       "cashOnlyChange": "El cambio solo se admite con un pago exclusivo en efectivo.",
       "catalogView": "Vista del catálogo",
       "confirmReturn": "Confirmar devolución",

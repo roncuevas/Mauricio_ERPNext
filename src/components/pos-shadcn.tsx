@@ -12,7 +12,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHe
 import type { PosClosingSummary } from '../lib/pos'
 import type { PosPaymentLine, PosPaymentMethod } from '../lib/types'
 
-export function PosCustomerPicker({ enabled, value, customers, onSelect, onCreate, className }: { enabled: boolean; value: string; customers: Array<{ name: string; customer_name?: string }>; onSelect: (name: string) => void; onCreate?: () => void; className?: string }) {
+export function PosCustomerPicker({ enabled, value, customers, onSelect, onCreate, className, prompt }: { enabled: boolean; value: string; customers: Array<{ name: string; customer_name?: string }>; onSelect: (name: string) => void; onCreate?: () => void; className?: string; prompt?: string }) {
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [search, setSearch] = useState('')
@@ -23,8 +23,9 @@ export function PosCustomerPicker({ enabled, value, customers, onSelect, onCreat
   function select(name: string) { onSelect(name); close() }
   return <Command shouldFilter={false} loop className={cn('h-auto overflow-visible rounded-none bg-transparent', className)}>
     <Popover open={enabled && editing} onOpenChange={(open) => { if (!open) close() }}>
-      <Field label={t('pos.customer.label')}><PopoverAnchor asChild><div ref={anchorRef}><CommandInput data-pos-customer-search className="mb-0" value={editing ? search : value} onValueChange={(next) => { setEditing(true); setSearch(next) }} onFocus={() => setEditing(true)} onClick={() => setEditing(true)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); close() } }} placeholder={editing && value ? value : t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></div></PopoverAnchor></Field>
+      <Field label={t('pos.customer.label')}><PopoverAnchor asChild><div ref={anchorRef}><CommandInput data-pos-customer-search className="mb-0" value={editing ? search : value} onValueChange={(next) => { setEditing(true); setSearch(next) }} onFocus={() => setEditing(true)} onClick={() => setEditing(true)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); close() } }} placeholder={editing && value ? value : t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} aria-invalid={prompt ? true : undefined} /></div></PopoverAnchor></Field>
       <PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start" onOpenAutoFocus={(event) => event.preventDefault()} onInteractOutside={(event) => { if (anchorRef.current?.contains(event.target as Node)) event.preventDefault() }}>
+        {prompt && <p className="pos-customer-prompt" role="alert">{prompt}</p>}
         <CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={item.name} onSelect={() => select(item.name)} onMouseDown={(event) => event.preventDefault()}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList>
         {onCreate && <Button type="button" variant="secondary" size="compact" fullWidth onMouseDown={(event) => event.preventDefault()} onClick={() => { close(); onCreate() }}>{t('posExtra.createCustomer')}</Button>}
       </PopoverContent>

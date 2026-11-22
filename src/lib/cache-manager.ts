@@ -125,7 +125,7 @@ const cacheLabels: Record<ManagedCacheId, Omit<ManagedCacheOverview, 'id' | 'sta
 }
 
 const orderFields = ['name', 'customer', 'customer_name', 'company', 'transaction_date', 'delivery_date', 'status', 'docstatus', 'currency', 'selling_price_list', 'grand_total', 'total', 'modified']
-const profileFields = ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled', 'allow_rate_change']
+const profileFields = ['name', 'company', 'warehouse', 'currency', 'selling_price_list', 'customer', 'tax_category', 'taxes_and_charges', 'disabled', 'allow_rate_change', 'allow_discount_change', 'auto_add_item_to_cart', 'hide_unavailable_items', 'set_grand_total_to_default_mop', 'print_receipt_on_order_complete', 'disable_rounded_total']
 const openingFields = ['name', 'user', 'pos_profile', 'company', 'status', 'period_start_date', 'period_end_date', 'posting_date', 'pos_closing_entry', 'docstatus']
 
 function now() { return new Date().toISOString() }
