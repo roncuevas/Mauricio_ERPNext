@@ -1233,7 +1233,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-catalog-filter-trigger .ui-select-chevron, .pos-icon-action-label { display: none; }
 .pos-filter-value { font-size: .875rem; font-weight: 600; white-space: nowrap; }
 .pos-filter-dot { position: absolute; top: .3rem; right: .3rem; width: .42rem; height: .42rem; border: 1px solid var(--color-surface); border-radius: 50%; background: var(--color-primary); }
-.pos-view-toggle { display: flex; gap: .25rem; }
 .pos-display-controls { display: flex; align-items: center; justify-content: flex-end; gap: .35rem; }
 .pos-view-button { width: 2.5rem; min-height: 2.5rem; height: 2.5rem; padding: .45rem; }
 .pos-product-grid.is-list { grid-template-columns: 1fr; }
@@ -1256,7 +1255,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .pos-catalog-controls { width: 100%; flex: 1 1 100%; align-items: center; flex-direction: row; justify-content: space-between; }
   .pos-catalog-filter { width: auto; justify-content: flex-start; }
   .pos-catalog-filter-trigger { flex: 0 1 auto; }
-  .pos-view-toggle { justify-content: flex-end; }
   .pos-view-button { width: 2.5rem; min-width: 2.5rem; padding: .45rem; }
   .pos-product-grid.is-list .pos-product-card { grid-template-columns: minmax(0, 1fr) auto; }
   .pos-product-grid.is-list .pos-product-links { grid-column: 1; grid-row: 3; }
