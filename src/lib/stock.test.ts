@@ -67,6 +67,8 @@ describe('stock payloads', () => {
   it('allows active stock items without an existing Bin', () => {
     expect(itemCanReconcile({ name: 'ITEM-001', is_stock_item: 1, disabled: 0 })).toBe(true)
     expect(itemCanReconcile({ name: 'SERVICE', is_stock_item: 0 })).toBe(false)
+    expect(itemCanReconcile({ name: 'TEMPLATE', is_stock_item: 1, has_variants: 1 })).toBe(false)
+    expect(itemCanReconcile({ name: 'TEMPLATE-RED', is_stock_item: 1, has_variants: 0, variant_of: 'TEMPLATE' })).toBe(true)
   })
 
   it('ranks reconciliation products with fuzzy code and name search', () => {

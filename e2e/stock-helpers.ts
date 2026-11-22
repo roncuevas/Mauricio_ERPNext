@@ -12,6 +12,7 @@ export const warehouse = { name: 'Almacén Demo', warehouse_name: 'Almacén Demo
 export const items = [
   { name: 'ITEM-001', item_name: 'Croquetas Adulto Premium', stock_uom: 'Kg', is_stock_item: 1, disabled: 0, has_serial_no: 0, has_batch_no: 0 },
   { name: 'ITEM-002', item_name: 'Arena para gato', stock_uom: 'Pza', is_stock_item: 1, disabled: 0, has_serial_no: 0, has_batch_no: 0 },
+  { name: 'ITEM-TPL', item_name: 'Croquetas plantilla', stock_uom: 'Kg', is_stock_item: 1, disabled: 0, has_variants: 1, has_serial_no: 0, has_batch_no: 0 },
 ]
 
 export async function mockStock(page: Page) {

@@ -19,6 +19,10 @@ test('counts stock and submits only counted rows after confirming, keeping ERPNe
   await expect(search).toBeFocused()
   expect(erp.created).toHaveLength(0)
 
+  // Templates (items with variants) never hold stock, so the picker does not offer them.
+  await search.fill('Croquetas')
+  await expect(page.getByRole('option', { name: /Croquetas Adulto Premium/ })).toBeVisible()
+  await expect(page.getByRole('option', { name: /Croquetas plantilla/ })).toHaveCount(0)
   await search.fill('ITEM-002')
   await search.press('Enter')
   await expect(page.getByRole('spinbutton', { name: 'Cantidad contada de Arena para gato' })).toBeFocused()

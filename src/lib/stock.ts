@@ -167,7 +167,7 @@ export async function loadStockData(client: ErpNextClient, onProgress?: (message
   onProgress?.('Descargando almacenes...')
   const warehouses = (await client.listDocuments<Warehouse>('Warehouse', { fields: ['name', 'warehouse_name', 'parent_warehouse', 'company', 'warehouse_type', 'is_group', 'disabled'], orderBy: 'name asc', pageLength: 500 })).data
   onProgress?.('Descargando productos stockables...')
-  const items = await listAllDocuments<VariantItem>(client, 'Item', { fields: ['name', 'item_name', 'stock_uom', 'disabled', 'is_stock_item', 'has_serial_no', 'has_batch_no'], orderBy: 'item_name asc' }, (count) => onProgress?.(`Descargando productos: ${count}`))
+  const items = await listAllDocuments<VariantItem>(client, 'Item', { fields: ['name', 'item_name', 'stock_uom', 'disabled', 'is_stock_item', 'has_variants', 'has_serial_no', 'has_batch_no'], orderBy: 'item_name asc' }, (count) => onProgress?.(`Descargando productos: ${count}`))
   onProgress?.('Descargando existencias...')
   const bins: StockBin[] = []
   let start = 0
@@ -181,8 +181,9 @@ export async function loadStockData(client: ErpNextClient, onProgress?: (message
   return { companies, warehouses, bins, items }
 }
 
+/** ERPNext rejects templates (items with variants) in stock transactions; only their variants hold stock. */
 export function itemCanMove(item: VariantItem | undefined) {
-  return Boolean(item && !item.disabled && !item.has_serial_no && !item.has_batch_no)
+  return Boolean(item && !item.disabled && !item.has_variants && !item.has_serial_no && !item.has_batch_no)
 }
 
 export function itemCanReconcile(item: VariantItem) {

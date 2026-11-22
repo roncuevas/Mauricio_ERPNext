@@ -20,6 +20,8 @@ test('receives a purchase from a supplier with the suggested buying cost', async
   await page.getByRole('textbox', { name: 'Remisión del proveedor' }).fill('R-123')
 
   const search = page.getByRole('combobox', { name: 'Buscar producto' })
+  await search.fill('Croquetas')
+  await expect(page.getByRole('option', { name: /Croquetas plantilla/ })).toHaveCount(0)
   await search.fill('ITEM-001')
   await expect(page.getByRole('option', { name: /Croquetas Adulto Premium/ })).toContainText('$1,200.50 / Kg')
   await search.press('Enter')
