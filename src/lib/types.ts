@@ -67,6 +67,7 @@ export type CachedItem = {
   attributes?: VariantAttribute[]
   uoms?: ItemUom[]
   disabled?: number | boolean
+  modified?: string
   [key: string]: unknown
 }
 

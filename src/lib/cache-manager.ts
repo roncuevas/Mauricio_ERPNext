@@ -12,6 +12,7 @@ import { readCustomerCatalog, readSalesOrderCatalog, upsertSalesOrderBucket, wri
 import { loadStockData } from './stock'
 import { readItemSearchDetails, readItemTags, readItemUomsThroughItems, readItemVariantAttributes, syncUomCatalog } from './catalog-sync'
 import { normalizeSalesOrder } from './sales-orders'
+import { latestModified, mergeIncrementalRows } from './incremental-sync'
 import { CACHE_TTL_MS, getCacheStatus, type CacheKind, type CacheStatus } from './cache-policy'
 import { queryKeys } from './query-keys'
 import type { CachedItem, CustomerSummary, DocTypeCatalogCache, ItemCatalogCache, ItemPrice, ItemPriceCatalogCache, PosOpeningEntry, PosPaymentMethod, PosProfile, PosTaxTemplate, PriceList, QuotationSummary, SalesOrderCatalogCache, SalesOrderSummary, StockCache, Supplier, SupplierCatalogCache, VariantCatalogCache, VariantItem } from './types'
@@ -27,7 +28,8 @@ export function managedCacheIdsForContext(activeProfile?: PosProfile) {
 
 export function managedCacheQueryKeys(profileId: string, id: ManagedCacheId) {
   const keys: Array<readonly unknown[]> = []
-  if (id === 'products') keys.push(queryKeys.catalog.item(profileId))
+  // Products refresh also aligns the variant cache's base Item fields.
+  if (id === 'products') keys.push(queryKeys.catalog.item(profileId), queryKeys.catalog.variant(profileId))
   if (id === 'variants' || id === 'uom') { keys.push(queryKeys.catalog.variant(profileId), queryKeys.uom.options(profileId)) }
   if (id === 'prices') keys.push(queryKeys.catalog.price(profileId))
   if (id === 'priceLists') keys.push(queryKeys.prices.lists(profileId))
@@ -189,12 +191,13 @@ async function safeRead<T>(reader: () => Promise<T | null>) {
   try { return await reader() } catch { return null }
 }
 
-async function loadItems(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void, since?: string, existingItems: CachedItem[] = []): Promise<ItemCatalogCache> {
+async function loadItems(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void, existingItems: CachedItem[] = []): Promise<ItemCatalogCache> {
+  const since = existingItems.length ? latestModified(existingItems) : undefined
   const items: CachedItem[] = []
   let start = 0
   while (true) {
-    onProgress?.(`Descargando productos: ${items.length}`)
-    const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'image', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'modified'], ...(since ? { filters: [['modified', '>', since] as [string, string, unknown]] } : {}), start, pageLength: 500, orderBy: 'modified desc' })
+    onProgress?.(`${since ? 'Sincronizando' : 'Descargando'} productos: ${items.length}`)
+    const batch = await client.listDocuments<CachedItem>('Item', { fields: ['name', 'image', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'modified'], ...(since ? { filters: [['modified', '>=', since] as [string, string, unknown]] } : {}), start, pageLength: 500, orderBy: 'modified desc' })
     items.push(...batch.data)
     if (batch.data.length < 500) break
     start += batch.data.length
@@ -202,10 +205,22 @@ async function loadItems(client: ErpNextClient, profileId: string, onProgress?: 
   const details = await readItemSearchDetails(client, items, (message) => onProgress?.(message))
   const tagsByItem = await readItemTags(client, onProgress)
   const changed = items.map((item) => ({ ...item, ...(details[item.name] ?? { barcodes: [] }) }))
-  const byName = new Map(existingItems.map((item) => [item.name, item]))
-  changed.forEach((item) => byName.set(item.name, { ...byName.get(item.name), ...item }))
-  if (tagsByItem) for (const [name, item] of byName) byName.set(name, { ...item, tags: tagsByItem[name] ?? [] })
-  return { profileId, updatedAt: now(), imageFieldLoaded: true, items: Array.from(byName.values()) }
+  const merged = since ? mergeIncrementalRows(existingItems, changed, await listLiveNames(client, 'Item', onProgress)) : changed
+  const tagged = tagsByItem ? merged.map((item) => ({ ...item, tags: tagsByItem[item.name] ?? [] })) : merged
+  // Keep the same "recently modified first" order a full download produces.
+  const ordered = tagged.map((item, index) => ({ item, index })).sort((left, right) => compareModifiedDesc(left.item.modified, right.item.modified) || left.index - right.index).map(({ item }) => item)
+  return { profileId, updatedAt: now(), imageFieldLoaded: true, items: ordered }
+}
+
+async function listLiveNames(client: ErpNextClient, doctype: string, onProgress?: (message: string) => void) {
+  const rows = await listAllDocuments<{ name: string }>(client, doctype, { fields: ['name'], orderBy: 'name asc' }, (count) => onProgress?.(`Verificando registros eliminados (${doctype}): ${count}`))
+  return new Set(rows.map((row) => row.name))
+}
+
+function compareModifiedDesc(left: unknown, right: unknown) {
+  const a = typeof left === 'string' ? left : ''
+  const b = typeof right === 'string' ? right : ''
+  return a === b ? 0 : a > b ? -1 : 1
 }
 
 async function loadVariants(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void): Promise<VariantCatalogCache> {
@@ -284,19 +299,23 @@ export async function readHomeCacheData(profileId: string): Promise<HomeCacheDat
 
 async function refreshProducts(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void) {
   const cached = await readItemCatalog(profileId)
-  const next = await loadItems(client, profileId, onProgress, cached?.updatedAt, cached?.items)
+  const next = await loadItems(client, profileId, onProgress, cached?.items)
   await writeItemCatalog(next)
+  // Products and variants describe the same Item rows: keep the variant cache's
+  // base fields, additions and deletions aligned while preserving UOM/attribute details.
   const variantCache = await readVariantCatalog(profileId)
+  const liveNames = new Set(next.items.map((item) => item.name))
   if (!variantCache?.items.length) await writeVariantCatalog({ profileId, updatedAt: next.updatedAt, items: next.items as VariantItem[] })
+  else await writeVariantCatalog({ ...variantCache, items: mergeIncrementalRows(variantCache.items, next.items as VariantItem[], liveNames) })
   return next
 }
 
 async function refreshPrices(client: ErpNextClient, profileId: string, onProgress?: (message: string) => void) {
   const cached = await readItemPriceCatalog(profileId)
-  const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto', 'modified'], ...(cached ? { filters: [['modified', '>', cached.updatedAt] as [string, string, unknown]] } : {}), orderBy: 'item_code asc, price_list asc' }, (count) => onProgress?.(`${cached ? 'Sincronizando' : 'Descargando'} precios: ${count}`))
-  const byName = new Map((cached?.prices ?? []).map((price) => [price.name, price]))
-  prices.forEach((price) => byName.set(price.name, { ...byName.get(price.name), ...price }))
-  const next: ItemPriceCatalogCache = { profileId, updatedAt: now(), prices: Array.from(byName.values()) }
+  const since = cached?.prices.length ? latestModified(cached.prices) : undefined
+  const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto', 'modified'], ...(since ? { filters: [['modified', '>=', since] as [string, string, unknown]] } : {}), orderBy: 'item_code asc, price_list asc' }, (count) => onProgress?.(`${since ? 'Sincronizando' : 'Descargando'} precios: ${count}`))
+  const merged = since && cached ? mergeIncrementalRows(cached.prices, prices, await listLiveNames(client, 'Item Price', onProgress)) : prices
+  const next: ItemPriceCatalogCache = { profileId, updatedAt: now(), prices: merged }
   return writeItemPriceCatalog(next)
 }
 
