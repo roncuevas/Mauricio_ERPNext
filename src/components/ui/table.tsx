@@ -14,7 +14,7 @@ export function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
 }
 
 export function TableRow({ className, ...props }: ComponentProps<'tr'>) {
-  return <tr data-slot="table-row" className={cn('border-b transition-colors hover:bg-[var(--color-surface-muted)]', className)} {...props} />
+  return <tr data-slot="table-row" className={cn('border-b border-[var(--color-border-subtle)] transition-colors hover:bg-[var(--color-surface-muted)]', className)} {...props} />
 }
 
 export function TableHead({ className, ...props }: ComponentProps<'th'>) {
