@@ -577,9 +577,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .page-header-actions { display: flex; min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
 .page-header-mobile-primary { display: none; min-width: 0; }
 .page-header-actions > * { max-width: 100%; }
-.page-header-toolbar { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.page-header-toolbar { display: flex; min-width: 0; align-items: center; gap: .5rem; }
 .page-header-toolbar, .page-header-toolbar > form, .page-header + form, .product-search, .prices-search, .variants-search { width: 100%; max-width: none; }
-.page-header-toolbar > form { display: flex; min-width: min(100%, 24rem); flex: 1 1 24rem; gap: .5rem; }
+.page-header-toolbar > form { display: flex; min-width: 0; flex: 1 1 auto; gap: .5rem; }
 .page-header-toolbar > form > .control { min-width: 0; }
 .page-header-status { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; color: var(--color-muted); font-size: .75rem; }
 .page-header-status-row { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -741,8 +741,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .responsive-table { width: 100%; }
 .product-workspace { min-width: 0; }
-.catalog-search-hint { display: inline-flex; align-items: center; margin: 0; color: var(--color-muted); font-size: .62rem; line-height: 1; white-space: nowrap; }
-.catalog-search-hint kbd { border: 0; border-radius: .25rem; background: var(--color-surface-muted); padding: .1rem .25rem; color: var(--color-muted); font-size: .58rem; font-weight: 500; }
 .price-editor-advanced { min-width: 0; padding: 1rem; border: 1px solid var(--color-border); border-radius: .75rem; }
 .price-editor-advanced > summary { cursor: pointer; font-weight: 600; }
 .price-editor-advanced > summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
@@ -857,7 +855,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .price-management-entry strong { color: #0f172a; font-size: .9rem; white-space: nowrap; }
 .price-management-entry > div:nth-child(2) { color: #64748b; font-size: .7rem; }
 .price-management-entry:has(.price-kind-selling) > div:nth-child(2) > span:last-child { display: none; }
-.variants-search { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: .5rem; margin-bottom: 1rem; }
+.variants-search { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; grid-auto-flow: column; gap: .5rem; margin-bottom: 1rem; }
 .variants-toggle-button { display: inline-flex; width: var(--control-height); min-width: var(--control-height); min-height: var(--control-height); height: var(--control-height); align-items: center; justify-content: center; padding: .25rem; font-size: 0; }
 .variants-toggle-icon { display: block; width: 1rem; height: 1rem; flex: 0 0 1rem; }
 .variants-status { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-bottom: 1rem; color: #64748b; font-size: .72rem; line-height: 1.35; }
@@ -941,13 +939,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 639px) {
-  .catalog-search-hint { display: none; }
   .price-node > .price-node { margin-left: .45rem; border-left-width: 2px; }
   .price-node > .price-node::before { left: -2px; width: .7rem; border-top-width: 1px; }
   .page-header { gap: .65rem; margin-bottom: 1rem !important; }
   .page-header-main { align-items: flex-start; flex-direction: column; gap: .65rem; }
   .page-header-toolbar { align-items: stretch; }
-  .page-header-toolbar > form { flex-basis: 100%; }
   .page-header-status { font-size: .68rem; }
   .page-header-status-row { align-items: flex-start; flex-direction: column; gap: .55rem; }
   .page-header-status-row .segmented-control { align-self: flex-end; }
@@ -1057,7 +1053,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .price-management-entry > div:first-child { grid-column: 1 / -1; }
   .price-management-entry > div:nth-child(2) { grid-column: 1 / -1; gap: .2rem .5rem; font-size: .62rem; }
   .price-management-entry .button { min-height: 2.3rem; padding: .3rem .6rem; font-size: .68rem; }
-  .variants-search { grid-template-columns: minmax(0, 1fr) auto; max-width: none; margin-bottom: .75rem; }
+  .variants-search { max-width: none; margin-bottom: .75rem; }
   .variants-clear-button { grid-column: 1 / -1; }
   .variants-controls { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
   .variants-status { display: grid; gap: .2rem; margin-bottom: .75rem; padding: 0 .15rem; font-size: .65rem; }

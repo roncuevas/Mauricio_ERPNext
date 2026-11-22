@@ -151,7 +151,6 @@ export default interface Resources {
       "applicabilityHint": "La UOM inicia con la de stock. Cliente y proveedor son opcionales y limitan el precio a esa contraparte.",
       "attributeData": "atributos de variantes",
       "forbidden": "Tu usuario no tiene permiso para consultar o cambiar este dato en ERPNext. Revisa los permisos del DocType correspondiente.",
-      "globalSearch": "Buscar productos y precios guardados en la caché",
       "missing": "El registro ya no existe en ERPNext. Actualiza el catálogo antes de volver a intentarlo.",
       "openVariants": "Abrir Variantes",
       "priceDetails": "Precio",
