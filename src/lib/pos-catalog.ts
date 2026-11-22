@@ -49,6 +49,11 @@ function priceForUomFromMatches(item: CachedItem, uom: string, matches: ItemPric
   return 0
 }
 
+/** ERPNext's POS treats a missing or zero rate as "Price is not set"; mirror that for display. */
+export function sellablePrice(price: number) {
+  return Number.isFinite(price) && price > 0 ? price : null
+}
+
 export function defaultPrice(item: CachedItem, prices: ItemPrice[], priceList?: string) {
   return priceForUom(item, defaultUom(item).uom, prices, priceList)
 }

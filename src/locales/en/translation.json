@@ -136,6 +136,7 @@
     "sync": { "title": "Local data" }
   },
   "pos": {
+    "confirm": { "cancelSaleTitle": "Clear the sale?", "cancelSaleAction": "Clear sale", "replaceCartTitle": "Replace the current cart?", "replaceCartAction": "Replace cart", "returnTitle": "Confirm return", "returnAction": "Create return" },
     "missingPrice": { "title": "Product has no sale price", "description": "{{itemName}} has no valid price for UOM {{uom}}. The product was not added to the cart. You can enter the price now; your current cart will be kept.", "selectedUom": "selected", "add": "Add price now" },
     "customPrice": { "title": "Custom price", "description": "{{itemName}}. The original price remains as the list reference.", "listPrice": "List price", "salePrice": "Sale price", "customSalePrice": "Custom sale price", "difference": "{{value}}% versus list price", "positive": "Enter a price greater than zero.", "apply": "Apply price" },
     "drafts": { "title": "Held sales", "description": "Resume POS drafts saved in ERPNext.", "scope": "Drafts saved in ERPNext", "loading": "Loading drafts", "empty": "There are no held sales for this POS Profile.", "noCustomer": "No customer", "modified": "Modified {{date}}", "erpnextDraft": "ERPNext draft", "resume": "Continue", "discard": "Discard", "confirmTitle": "Discard held sale?", "confirmDescription": "The draft {{name}} will be removed from ERPNext. This action cannot be undone.", "discardDraft": "Discard draft" },

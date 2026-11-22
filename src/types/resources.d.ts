@@ -569,6 +569,14 @@ export default interface Resources {
         "summary": "Resumen del cierre",
         "taxes": "Impuestos"
       },
+      "confirm": {
+        "cancelSaleAction": "Vaciar venta",
+        "cancelSaleTitle": "¿Vaciar la venta?",
+        "replaceCartAction": "Reemplazar carrito",
+        "replaceCartTitle": "¿Reemplazar el carrito actual?",
+        "returnAction": "Crear devolución",
+        "returnTitle": "Confirmar devolución"
+      },
       "customPrice": {
         "apply": "Aplicar precio",
         "customSalePrice": "Precio de venta personalizado",

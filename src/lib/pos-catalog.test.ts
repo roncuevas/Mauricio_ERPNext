@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, uomOptionLabel, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, sellablePrice, uomOptionLabel, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -33,5 +33,12 @@ describe('POS catalog helpers', () => {
   it('matches a scanned barcode exactly across Item and child barcode fields', () => {
     expect(findItemsByBarcode([{ name: 'A', barcode: ' 7501 ' }, { name: 'B', barcodes: [{ barcode: '7502' }] }], '7502')).toEqual([{ name: 'B', barcodes: [{ barcode: '7502' }] }])
     expect(findItemsByBarcode([{ name: 'A', barcode: '7501' }], '750')).toEqual([])
+  })
+
+  it('treats zero or invalid prices as not set, like the ERPNext POS', () => {
+    expect(sellablePrice(0)).toBeNull()
+    expect(sellablePrice(-5)).toBeNull()
+    expect(sellablePrice(Number.NaN)).toBeNull()
+    expect(sellablePrice(12.5)).toBe(12.5)
   })
 })
