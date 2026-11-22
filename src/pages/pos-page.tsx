@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -60,11 +60,11 @@ function ProductPicker({ items, prices, priceList, currency, lines, variantsByTe
   const { t } = useTranslation()
   const { i18n } = useTranslation()
   const [input, setInput] = useState('')
-  const search = useDeferredValue(input.trim())
+  const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'available' | 'variants'>('all')
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [limit, setLimit] = useState(60)
-  const filtered = useMemo(() => {
+  const matchItems = useCallback((search: string) => {
     // ERPNext's hide_unavailable_items keeps non-stock items and drops stock items without stock in the profile warehouse.
     const available = (item: CachedItem) => !hideUnavailable || !item.stock_known || item.is_stock_item === 0 || item.is_stock_item === false || Number(item.available_qty ?? 0) > 0
     const roots = items.filter((item) => !item.disabled && !item.variant_of && available(item))
@@ -73,7 +73,8 @@ function ProductPicker({ items, prices, priceList, currency, lines, variantsByTe
     const included = new Set(matchingRoots.map((item) => item.name))
     const candidates = search ? [...matchingRoots, ...roots.filter((item) => matchingVariantParents.has(item.name) && !included.has(item.name))] : matchingRoots
     return candidates.filter((item) => filter === 'all' || (filter === 'variants' ? Boolean(item.has_variants) || Boolean(variantsByTemplate.get(item.name)?.length) : Number(item.available_qty ?? 0) > 0 || (variantsByTemplate.get(item.name) ?? []).some((variant) => Number(variant.available_qty ?? 0) > 0)))
-  }, [filter, hideUnavailable, items, search, variantsByTemplate])
+  }, [filter, hideUnavailable, items, variantsByTemplate])
+  const filtered = useMemo(() => matchItems(search), [matchItems, search])
   useEffect(() => setLimit(60), [filter, search, view])
   function submitSearch(event: FormEvent) {
     event.preventDefault()
@@ -83,24 +84,23 @@ function ProductPicker({ items, prices, priceList, currency, lines, variantsByTe
       if (match.has_variants || variantsByTemplate.has(match.name)) onOpenTemplate(match)
       else onAdd(match)
       setInput('')
+      setSearch('')
       return
     }
-    if (filtered.length === 1) addOrOpen(filtered[0])
+    // Filter only on submit (button or Enter) to keep typing responsive on large catalogs.
+    const term = input.trim()
+    const matches = term ? matchItems(term) : []
+    // POS Profile "auto_add_item_to_cart": like ERPNext, add the item when the search finds a single result.
+    if (autoAdd && matches.length === 1) {
+      const match = matches[0]
+      if (match.has_variants || variantsByTemplate.has(match.name)) onOpenTemplate(match)
+      else onAdd(match)
+      setInput('')
+      setSearch('')
+      return
+    }
+    setSearch(term)
   }
-  function addOrOpen(item: CachedItem) {
-    if (item.has_variants || variantsByTemplate.has(item.name)) onOpenTemplate(item)
-    else onAdd(item)
-    setInput('')
-  }
-  // POS Profile "auto_add_item_to_cart": like ERPNext, add the item once the search narrows to a single result.
-  const single = autoAdd && search.length > 1 && filtered.length === 1 ? filtered[0] : null
-  const onAddRef = useRef(onAdd)
-  useEffect(() => { onAddRef.current = onAdd })
-  useEffect(() => {
-    if (!single || single.has_variants || variantsByTemplate.has(single.name)) return
-    const timer = window.setTimeout(() => { onAddRef.current(single); setInput('') }, 300)
-    return () => window.clearTimeout(timer)
-  }, [single, variantsByTemplate])
   const stockAge = relativeAge(stockUpdatedAt, i18n.language)
   const visible = filtered.slice(0, limit)
   const filterLabel = t(filter === 'all' ? 'posExtra.allProducts' : filter === 'available' ? 'posExtra.availableProducts' : 'posExtra.variantProducts')
