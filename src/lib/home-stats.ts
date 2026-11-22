@@ -1,4 +1,5 @@
 import type { HomeCacheData } from './cache-manager'
+import type { PosOpeningEntry, PosProfile } from './types'
 
 export type HomeStats = {
   products: number
@@ -12,6 +13,8 @@ export type HomeStats = {
   quotations: number
   quotationsTotal: number
   openShifts: number
+  openShift?: PosOpeningEntry
+  shiftsKnown: boolean
   freshCaches: number
   staleCaches: number
   missingCaches: number
@@ -32,6 +35,7 @@ export function buildHomeStats(data: HomeCacheData | undefined, date: string): H
   const orders = data?.salesOrders?.buckets.find((bucket) => bucket.date === date)?.salesOrders ?? []
   const quotations = data?.quotations?.data.quotations ?? []
   const bins = data?.stock?.bins ?? []
+  const openShifts = data?.shifts?.data.openings.filter((opening) => opening.status === 'Open') ?? []
   const statuses = overview.reduce((result, entry) => ({ ...result, [entry.status]: result[entry.status] + 1 }), { fresh: 0, stale: 0, missing: 0, error: 0 } as Record<string, number>)
 
   return {
@@ -45,10 +49,17 @@ export function buildHomeStats(data: HomeCacheData | undefined, date: string): H
     ordersTodayTotal: orders.reduce((total, order) => total + amount(order.grand_total ?? order.total), 0),
     quotations: quotations.length || count(overview, 'quotations'),
     quotationsTotal: quotations.reduce((total, quotation) => total + amount(quotation.grand_total ?? quotation.total), 0),
-    openShifts: data?.shifts?.data.openings.filter((opening) => opening.status === 'Open').length ?? 0,
+    openShifts: openShifts.length,
+    openShift: openShifts[0],
+    shiftsKnown: Boolean(data?.shifts),
     freshCaches: statuses.fresh,
     staleCaches: statuses.stale,
     missingCaches: statuses.missing,
     errorCaches: statuses.error,
   }
+}
+
+export function activePosProfile(data: HomeCacheData | undefined, profileName?: string): PosProfile | undefined {
+  const profiles = data?.shifts?.data.profiles ?? []
+  return profiles.find((profile) => profile.name === profileName) ?? profiles[0]
 }

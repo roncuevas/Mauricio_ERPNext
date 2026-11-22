@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildHomeStats } from './home-stats'
+import { activePosProfile, buildHomeStats } from './home-stats'
 import type { HomeCacheData } from './cache-manager'
 
 const overview = (id: HomeCacheData['overview'][number]['id'], status: HomeCacheData['overview'][number]['status'], count = 0): HomeCacheData['overview'][number] => ({ id, label: id, description: '', doctypes: [], kind: 'catalog', status, count })
@@ -14,10 +14,17 @@ describe('buildHomeStats', () => {
       shifts: { profileId: 'p1', updatedAt: '2026-10-18T10:00:00Z', data: { user: 'user@example.com', profiles: [], openings: [{ name: 'POS-O-1', status: 'Open' }] } },
     }
 
-    expect(buildHomeStats(data, '2026-10-18')).toMatchObject({ products: 12, variants: 4, prices: 20, stockBins: 2, stockValue: 150, negativeStock: 1, ordersToday: 1, ordersTodayTotal: 250, quotations: 1, quotationsTotal: 90, openShifts: 1, freshCaches: 3, staleCaches: 1, missingCaches: 1, errorCaches: 0 })
+    expect(buildHomeStats(data, '2026-10-18')).toMatchObject({ products: 12, variants: 4, prices: 20, stockBins: 2, stockValue: 150, negativeStock: 1, ordersToday: 1, ordersTodayTotal: 250, quotations: 1, quotationsTotal: 90, openShifts: 1, openShift: { name: 'POS-O-1' }, shiftsKnown: true, freshCaches: 3, staleCaches: 1, missingCaches: 1, errorCaches: 0 })
   })
 
   it('returns safe empty values without caches', () => {
-    expect(buildHomeStats(undefined, '2026-10-18')).toMatchObject({ products: 0, stockBins: 0, stockValue: 0, ordersToday: 0, quotations: 0, openShifts: 0, freshCaches: 0, missingCaches: 0 })
+    expect(buildHomeStats(undefined, '2026-10-18')).toMatchObject({ products: 0, stockBins: 0, stockValue: 0, ordersToday: 0, quotations: 0, openShifts: 0, openShift: undefined, shiftsKnown: false, freshCaches: 0, missingCaches: 0 })
+  })
+
+  it('resolves the preferred POS profile from the local shift cache', () => {
+    const data = { overview: [], stock: null, salesOrders: null, quotations: null, shifts: { profileId: 'p1', updatedAt: '', data: { user: 'u', profiles: [{ name: 'Caja 1', company: 'C' }, { name: 'Caja 2', company: 'C' }], openings: [] } } } as unknown as HomeCacheData
+    expect(activePosProfile(data, 'Caja 2')?.name).toBe('Caja 2')
+    expect(activePosProfile(data, 'Otra')?.name).toBe('Caja 1')
+    expect(activePosProfile(undefined)).toBeUndefined()
   })
 })
