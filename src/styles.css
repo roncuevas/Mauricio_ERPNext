@@ -14,7 +14,8 @@
 .pending-tabs button span { border-radius: 999px; background: var(--color-surface-muted); color: var(--color-muted); padding: .1rem .35rem; font-size: .7rem; }
 .pending-list { overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-card); }
 .pending-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; }
-.pending-row + .pending-row { border-top: 1px solid var(--color-border-subtle); }
+/* Rows are wrapped by VirtualizedCollection, so separators target the wrappers. */
+.pending-list > div + div > .pending-row, .pending-list .virtualized-collection-item + .virtualized-collection-item > .pending-row { border-top: 1px solid var(--color-border-subtle); }
 .pending-item-main { display: flex; min-width: 0; flex: 1 1 24rem; align-items: flex-start; gap: .8rem; }
 .pending-item-icon { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: var(--radius-sm); background: var(--color-warning-soft); color: var(--color-warning); }
 .pending-item-icon svg { width: 1.1rem; height: 1.1rem; }
