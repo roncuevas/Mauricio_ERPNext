@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
-import { Badge, Button, Notice, RefreshButton, Spinner } from './ui'
+import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, Notice, RefreshButton, Spinner } from './ui'
+import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemGroup, ItemTitle } from './ui/item'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import { cacheTtlLabel, managedCacheOrder, readManagedCacheOverviews, type ManagedCacheId, type ManagedCacheOverview } from '../lib/cache-manager'
 import { useManagedCacheRefresh } from './use-managed-cache-refresh'
@@ -30,21 +31,23 @@ function CacheRow({ entry, busy, onRefresh }: { entry: ManagedCacheOverview; bus
   const label = t(`cache.labels.${entry.id}`)
   const locale = i18n.language === 'en' ? 'en-US' : 'es-MX'
   const showLastSuccess = entry.lastSuccessAt && entry.lastSuccessAt !== entry.updatedAt
-  return <li className="cache-row" data-status={entry.status}>
-    <div className="cache-row-main">
-      <div className="cache-row-title"><h3>{label}</h3><Badge tone={statusTone(entry.status)}>{busy ? t('cache.refreshing') : cacheStatusLabel(entry, t)}</Badge></div>
-      <p className="cache-row-description">{t(`cache.descriptions.${entry.id}`, { defaultValue: entry.description })}</p>
-      <p className="cache-row-doctypes">{entry.doctypes.join(' · ')}</p>
-    </div>
-    <dl className="cache-row-stats">
-      <div><dt>{t('cache.records')}</dt><dd className="tabular-nums">{entry.count === undefined || !entry.updatedAt ? '—' : entry.count.toLocaleString(locale)}</dd></div>
-      <div><dt>{t('cache.lastFetch')}</dt><dd><time dateTime={entry.updatedAt} title={formatDate(entry.updatedAt, i18n.language)}>{relativeAge(entry.updatedAt, i18n.language) ?? t('common.never')}</time></dd></div>
-      <div><dt>{t('cache.validity')}</dt><dd>{cacheTtlLabel(entry.id)}</dd></div>
-    </dl>
-    <div className="cache-row-actions">{entry.error && entry.issues?.length ? <Button type="button" variant="secondary" size="compact" disabled={busy} onClick={() => onRefresh(entry.id, true)}>{t('cache.retryErrors')}</Button> : null}<RefreshButton label={`${t('common.refresh')} ${label}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} /></div>
-    {entry.requiresContext && !entry.updatedAt && <p className="cache-row-note cache-row-hint">{t('cache.contextHint')}</p>}
-    {entry.error && <div className="cache-row-note cache-row-error" role="alert"><p>{entry.error}</p>{showLastSuccess && <p>{t('cache.lastSuccess')}: {formatDate(entry.lastSuccessAt, i18n.language)}</p>}{entry.issues?.map((issue, index) => <p key={`${issue.doctype}-${issue.operation}-${index}`}><strong>{issue.doctype}</strong>: {issue.message}{issue.field ? ` (${t('cache.removedField')}: ${issue.field})` : ''}</p>)}</div>}
-  </li>
+  return <Item role="listitem" size="sm" className="cache-item" data-status={entry.status}>
+    <ItemContent>
+      <ItemTitle><h3>{label}</h3><Badge tone={statusTone(entry.status)}>{busy ? t('cache.refreshing') : cacheStatusLabel(entry, t)}</Badge></ItemTitle>
+      <ItemDescription>{t(`cache.descriptions.${entry.id}`, { defaultValue: entry.description })}</ItemDescription>
+      <p className="cache-item-doctypes">{entry.doctypes.join(' · ')}</p>
+    </ItemContent>
+    <ItemContent className="cache-item-stats">
+      <dl>
+        <div><dt>{t('cache.records')}</dt><dd className="tabular-nums">{entry.count === undefined || !entry.updatedAt ? '—' : entry.count.toLocaleString(locale)}</dd></div>
+        <div><dt>{t('cache.lastFetch')}</dt><dd><time dateTime={entry.updatedAt} title={formatDate(entry.updatedAt, i18n.language)}>{relativeAge(entry.updatedAt, i18n.language) ?? t('common.never')}</time></dd></div>
+        <div><dt>{t('cache.validity')}</dt><dd>{cacheTtlLabel(entry.id)}</dd></div>
+      </dl>
+    </ItemContent>
+    <ItemActions>{entry.error && entry.issues?.length ? <Button type="button" variant="secondary" size="compact" disabled={busy} onClick={() => onRefresh(entry.id, true)}>{t('cache.retryErrors')}</Button> : null}<RefreshButton label={`${t('common.refresh')} ${label}`} loading={busy} disabled={busy} onClick={() => onRefresh(entry.id)} /></ItemActions>
+    {entry.requiresContext && !entry.updatedAt && <ItemFooter><Notice tone="info">{t('cache.contextHint')}</Notice></ItemFooter>}
+    {entry.error && <ItemFooter><Notice tone="warning"><p>{entry.error}</p>{showLastSuccess && <p>{t('cache.lastSuccess')}: {formatDate(entry.lastSuccessAt, i18n.language)}</p>}{entry.issues?.map((issue, index) => <p key={`${issue.doctype}-${issue.operation}-${index}`}><strong>{issue.doctype}</strong>: {issue.message}{issue.field ? ` (${t('cache.removedField')}: ${issue.field})` : ''}</p>)}</Notice></ItemFooter>}
+  </Item>
 }
 
 function cacheStatusLabel(entry: ManagedCacheOverview, t: TFunction) {
@@ -76,12 +79,12 @@ export function CacheManagerPanel({ client, profileId, activeProfile, onChanged 
   const { busyIds, message, error, refreshOne, refreshMany } = useManagedCacheRefresh({ client, profileId, activeProfile, onSettled: onChanged })
   const refreshAll = () => refreshMany()
 
-  return <section className="card settings-section" aria-labelledby="settings-cache-title">
-    <header className="settings-section-header settings-section-header-action"><div><h2 id="settings-cache-title">{t('cache.syncTitle')}</h2><p>{t('cache.syncDescription')}</p></div><Button type="button" onClick={() => void refreshAll()} disabled={busyIds.length > 0}>{busyIds.length > 0 ? <><Spinner /> {t('cache.updating')}</> : t('cache.all')}</Button></header>
-    <div className="settings-section-body">
+  return <Card className="settings-card">
+    <CardHeader><CardTitle as="h2">{t('cache.syncTitle')}</CardTitle><CardDescription>{t('cache.syncDescription')}</CardDescription><CardAction><Button type="button" onClick={() => void refreshAll()} disabled={busyIds.length > 0}>{busyIds.length > 0 ? <><Spinner /> {t('cache.updating')}</> : t('cache.all')}</Button></CardAction></CardHeader>
+    <CardContent>
       {(message || error) && <Notice tone={error ? 'warning' : 'info'}><span role="status" aria-live="polite">{error || message}</span></Notice>}
       {overview.isError && <Notice>{overview.error instanceof Error ? overview.error.message : t('cache.readError')}</Notice>}
-      {overview.isPending ? <div className="settings-loading"><Spinner /> {t('cache.reading')}</div> : <ul className="cache-list">{entries.map((entry) => <CacheRow key={entry.id} entry={entry} busy={busyIds.includes(entry.id)} onRefresh={(id, retryOnly) => void refreshOne(id, retryOnly)} />)}</ul>}
-    </div>
-  </section>
+      {overview.isPending ? <p className="settings-facts-pending"><Spinner /> {t('cache.reading')}</p> : <ItemGroup>{entries.map((entry) => <CacheRow key={entry.id} entry={entry} busy={busyIds.includes(entry.id)} onRefresh={(id, retryOnly) => void refreshOne(id, retryOnly)} />)}</ItemGroup>}
+    </CardContent>
+  </Card>
 }
