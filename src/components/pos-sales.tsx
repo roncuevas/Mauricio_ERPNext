@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Field, IconButton, Input, Notice, Spinner } from './ui'
 import { formatMoney, lineTotal, cartTotals } from '../lib/pos'
 import { fuzzyMatch } from '../lib/search'
+import { quickCashAmounts } from '../lib/shortcuts'
 import type { PosCartLine, PosPaymentLine, PosPaymentMethod, PosSaleSummary, PosTaxRow } from '../lib/types'
 
 function money(value: number, currency = 'MXN') { return formatMoney(value, currency) }
@@ -29,8 +30,24 @@ export function PosPayments({ methods, payments, total, currency, cashMethods = 
   const active = payments.filter((payment) => payment.amount > 0)
   const canChange = active.length === 1 && cashMethods.includes(active[0].modeOfPayment)
   const change = canChange ? Math.max(0, paid - total) : 0
+  const missing = Math.max(0, total - paid)
   const overpaidMixed = paid > total && !canChange
-  return <section className="pos-payment card"><div className="pos-section-heading"><div><h2>{t('pos.sales.payment')}</h2>{notice ? <span className="pos-payment-notice" role="status">{notice}</span> : <span>{t('pos.sales.mixedPayment')}</span>}</div><strong className="pos-payment-total">{money(total, currency)}</strong></div><div className="pos-payment-lines">{methods.map((method) => { const current = payments.find((payment) => payment.modeOfPayment === method.mode_of_payment)?.amount ?? 0; return <Field key={method.mode_of_payment} label={method.mode_of_payment}><Input type="number" min="0" step="0.01" value={current} onChange={(event) => onChange(methods.map((candidate) => candidate.mode_of_payment === method.mode_of_payment ? { modeOfPayment: method.mode_of_payment, amount: Number(event.target.value) } : { modeOfPayment: candidate.mode_of_payment, amount: payments.find((payment) => payment.modeOfPayment === candidate.mode_of_payment)?.amount ?? 0 }))} /></Field> })}</div><div className="pos-payment-summary"><span>{t('pos.sales.received')} <b>{money(paid, currency)}</b></span><span>{t('pos.sales.change')} <b>{money(change, currency)}</b></span></div>{overpaidMixed && <p className="notice notice-warning" role="alert">{t('posExtra.cashOnlyChange')}</p>}</section>
+  const defaultMethod = methods.find((method) => method.default) ?? methods[0]
+  const cashMethod = methods.find((method) => cashMethods.includes(method.mode_of_payment))
+  const amountOf = (mode: string) => payments.find((payment) => payment.modeOfPayment === mode)?.amount ?? 0
+  const setAmount = (mode: string, amount: number) => onChange(methods.map((method) => ({ modeOfPayment: method.mode_of_payment, amount: method.mode_of_payment === mode ? amount : amountOf(method.mode_of_payment) })))
+  // Quick cash replaces any split: the whole sale is paid in cash with the tapped amount.
+  const payCash = (amount: number) => cashMethod && onChange([{ modeOfPayment: cashMethod.mode_of_payment, amount }])
+  return <section className="pos-payment card">
+    <div className="pos-section-heading"><div><h2>{t('pos.sales.payment')}</h2>{notice ? <span className="pos-payment-notice" role="status">{notice}</span> : <span>{t('pos.sales.mixedPayment')}</span>}</div><strong className="pos-payment-total">{money(total, currency)}</strong></div>
+    {cashMethod && total > 0 && <div className="pos-quick-cash" role="group" aria-label={t('pos.payment.quickCash', { method: cashMethod.mode_of_payment })}>
+      <Button type="button" size="compact" variant="secondary" onClick={() => payCash(Math.round(total * 100) / 100)}>{t('pos.payment.exact')}</Button>
+      {quickCashAmounts(total).map((amount) => <Button key={amount} type="button" size="compact" variant="secondary" onClick={() => payCash(amount)}>{money(amount, currency)}</Button>)}
+    </div>}
+    <div className="pos-payment-lines">{methods.map((method) => <Field key={method.mode_of_payment} label={method.mode_of_payment}><Input type="number" min="0" step="0.01" inputMode="decimal" data-pos-payment={method.mode_of_payment} data-pos-payment-default={method === defaultMethod || undefined} value={amountOf(method.mode_of_payment) || ''} placeholder="0" onFocus={(event) => event.target.select()} onChange={(event) => setAmount(method.mode_of_payment, Number(event.target.value))} /></Field>)}</div>
+    <div className="pos-payment-summary"><span>{t('pos.sales.received')} <b>{money(paid, currency)}</b></span>{missing > 0.004 ? <span className="pos-payment-due">{t('pos.payment.due')} <b>{money(missing, currency)}</b></span> : <span className="pos-payment-change" aria-live="polite">{t('pos.sales.change')} <b>{money(change, currency)}</b></span>}</div>
+    {overpaidMixed && <p className="notice notice-warning" role="alert">{t('posExtra.cashOnlyChange')}</p>}
+  </section>
 }
 
 export function PosSaleHistory({ sales, loading, error, currency, onRefresh, onReturn, onPrint }: { sales: PosSaleSummary[]; loading: boolean; error?: string; currency: string; onRefresh: () => void; onReturn: (name: string) => void; onPrint: (name: string) => void }) {

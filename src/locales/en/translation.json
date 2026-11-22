@@ -136,6 +136,8 @@
     "sync": { "title": "Local data" }
   },
   "pos": {
+    "complete": { "title": "Sale complete", "total": "Total", "print": "Print receipt", "email": "Send by email", "emailLabel": "Customer email", "send": "Send", "sending": "Sending", "emailSent": "Receipt sent to {{email}}.", "emailError": "The email could not be sent.", "emailBody": "Please find receipt {{name}} attached. Thank you for your purchase.", "newOrder": "New sale" },
+    "payment": { "quickCash": "Quick cash in {{method}}", "exact": "Exact", "due": "Due" },
     "confirm": { "cancelSaleTitle": "Clear the sale?", "cancelSaleAction": "Clear sale", "replaceCartTitle": "Replace the current cart?", "replaceCartAction": "Replace cart", "returnTitle": "Confirm return", "returnAction": "Create return" },
     "missingPrice": { "title": "Product has no sale price", "description": "{{itemName}} has no valid price for UOM {{uom}}. The product was not added to the cart. You can enter the price now; your current cart will be kept.", "selectedUom": "selected", "add": "Add price now" },
     "customPrice": { "title": "Custom price", "description": "{{itemName}}. The original price remains as the list reference.", "listPrice": "List price", "salePrice": "Sale price", "customSalePrice": "Custom sale price", "difference": "{{value}}% versus list price", "positive": "Enter a price greater than zero.", "apply": "Apply price" },

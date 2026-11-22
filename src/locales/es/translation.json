@@ -136,6 +136,8 @@
     "sync": { "title": "Datos locales" }
   },
   "pos": {
+    "complete": { "title": "Venta completada", "total": "Total", "print": "Imprimir recibo", "email": "Enviar por correo", "emailLabel": "Correo del cliente", "send": "Enviar", "sending": "Enviando", "emailSent": "Recibo enviado a {{email}}.", "emailError": "No se pudo enviar el correo.", "emailBody": "Adjuntamos el comprobante {{name}}. Gracias por su compra.", "newOrder": "Nueva venta" },
+    "payment": { "quickCash": "Efectivo rápido en {{method}}", "exact": "Exacto", "due": "Falta" },
     "confirm": { "cancelSaleTitle": "¿Vaciar la venta?", "cancelSaleAction": "Vaciar venta", "replaceCartTitle": "¿Reemplazar el carrito actual?", "replaceCartAction": "Reemplazar carrito", "returnTitle": "Confirmar devolución", "returnAction": "Crear devolución" },
     "missingPrice": { "title": "Producto sin precio de venta", "description": "{{itemName}} no tiene un precio válido para la UOM {{uom}}. El producto no se agregó al carrito. Puedes capturar el precio ahora; tu carrito actual quedará guardado.", "selectedUom": "seleccionada", "add": "Agregar precio ahora" },
     "customPrice": { "title": "Precio personalizado", "description": "{{itemName}}. El precio original permanece como referencia de la lista.", "listPrice": "Precio de lista", "salePrice": "Precio de venta", "customSalePrice": "Precio de venta personalizado", "difference": "{{value}}% frente al precio de lista", "positive": "Captura un precio mayor que cero.", "apply": "Aplicar precio" },

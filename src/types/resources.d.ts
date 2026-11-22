@@ -569,6 +569,19 @@ export default interface Resources {
         "summary": "Resumen del cierre",
         "taxes": "Impuestos"
       },
+      "complete": {
+        "email": "Enviar por correo",
+        "emailBody": "Adjuntamos el comprobante {{name}}. Gracias por su compra.",
+        "emailError": "No se pudo enviar el correo.",
+        "emailLabel": "Correo del cliente",
+        "emailSent": "Recibo enviado a {{email}}.",
+        "newOrder": "Nueva venta",
+        "print": "Imprimir recibo",
+        "send": "Enviar",
+        "sending": "Enviando",
+        "title": "Venta completada",
+        "total": "Total"
+      },
       "confirm": {
         "cancelSaleAction": "Vaciar venta",
         "cancelSaleTitle": "¿Vaciar la venta?",
@@ -692,6 +705,11 @@ export default interface Resources {
         "showContext": "Mostrar contexto",
         "showProducts": "Mostrar productos",
         "view": "Vista del POS"
+      },
+      "payment": {
+        "due": "Falta",
+        "exact": "Exacto",
+        "quickCash": "Efectivo rápido en {{method}}"
       },
       "product": {
         "add": "Agregar {{title}}",

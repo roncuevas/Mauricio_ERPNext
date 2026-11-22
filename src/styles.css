@@ -1367,6 +1367,28 @@ button.pos-product-price-link { border: 0; background: transparent; padding: 0; 
 .pos-payment-lines .control, .pos-opening-lines .control { text-align: right; }
 .pos-payment-summary { display: flex; justify-content: space-between; gap: .75rem; margin-top: .85rem; border-top: 1px solid var(--color-border-subtle); padding-top: .75rem; color: var(--color-muted); font-size: .75rem; }
 .pos-payment-summary b { color: var(--color-heading); }
+.pos-payment-summary { align-items: baseline; }
+.pos-payment-change, .pos-payment-due { display: inline-flex; align-items: baseline; gap: .5rem; font-weight: 600; }
+.pos-payment-change b { color: var(--color-success); font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.pos-payment-due b { color: var(--color-warning); font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.pos-quick-cash { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: .4rem; margin-bottom: .75rem; }
+.pos-quick-cash .button { min-height: 2.5rem; padding-inline: .25rem; font-variant-numeric: tabular-nums; }
+.pos-complete-title { font-size: 1.25rem; font-weight: 700; }
+.pos-kbd { margin-left: .6rem; border-radius: .3rem; background: color-mix(in srgb, currentColor 14%, transparent); padding: .1rem .35rem; font: 600 .72rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; opacity: .85; }
+@media (pointer: coarse), (max-width: 640px) { .pos-kbd { display: none; } }
+.pos-complete { max-width: 28rem; }
+.pos-complete [data-slot="dialog-header"] { justify-items: center; text-align: center; }
+.pos-complete-icon { width: 2.5rem; height: 2.5rem; color: var(--color-success); }
+.pos-complete-figures { display: grid; gap: .4rem; margin: 0; border-block: 1px solid var(--color-border-subtle); padding-block: .75rem; }
+.pos-complete-figures div { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
+.pos-complete-figures dt { color: var(--color-muted); }
+.pos-complete-figures dd { margin: 0; font-weight: 650; }
+.pos-complete-change dd { color: var(--color-success); font-size: 1.75rem; line-height: 1.1; }
+.pos-complete-change dt { align-self: center; }
+.pos-complete-email { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: .5rem; }
+.pos-complete-status { margin: 0; font-size: .875rem; font-weight: 600; color: var(--color-success); }
+.pos-complete-status[data-tone="error"] { color: var(--color-danger); }
+.pos-complete-actions { gap: .5rem; }
 .pos-sale-actions { display: grid; gap: .5rem; }
 .pos-empty { display: grid; min-height: 7rem; place-items: center; border: 1px dashed var(--color-border); border-radius: .65rem; color: var(--color-muted); font-size: .78rem; }
 .pos-opening-lines { display: grid; gap: .75rem; grid-template-columns: repeat(4, minmax(0, 1fr)); }

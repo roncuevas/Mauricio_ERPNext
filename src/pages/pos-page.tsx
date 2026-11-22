@@ -29,6 +29,8 @@ import { featureFlags } from '../lib/feature-flags'
 import { localCartsScope, readLocalPosCarts, writeLocalPosCarts } from '../lib/pos-local-carts'
 import { readStockCache } from '../lib/stock-cache'
 import { relativeAge } from '../lib/relative-time'
+import { shortcutLabel } from '../lib/shortcuts'
+import { PosSaleComplete, type CompletedSale } from '../components/pos-sale-complete'
 
 type Client = ReturnType<typeof createErpNextClient>
 type ActiveShift = { name: string; profileName: string; user: string }
@@ -52,6 +54,22 @@ function readPendingSale(profileId: string): PendingSale | null {
 function money(value: number, currency = 'MXN') { return formatMoney(value, currency) }
 const posProfileFlagFields = ['auto_add_item_to_cart', 'hide_unavailable_items', 'set_grand_total_to_default_mop', 'print_receipt_on_order_complete', 'disable_rounded_total'] as const
 type PosProfileFlag = (typeof posProfileFlagFields)[number]
+/** Prints a receipt from a hidden frame, so it works after async steps without popup blockers. */
+function printHtml(html: string) {
+  const frame = document.createElement('iframe')
+  frame.setAttribute('aria-hidden', 'true')
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+  document.body.append(frame)
+  const remove = () => window.setTimeout(() => frame.remove(), 1000)
+  frame.onload = () => {
+    const view = frame.contentWindow
+    if (!view) return remove()
+    view.addEventListener('afterprint', remove, { once: true })
+    view.print()
+  }
+  frame.srcdoc = html
+}
+
 function focusCustomerSearch() {
   const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-pos-customer-search]'))
   inputs.find((input) => input.offsetParent !== null)?.focus()
@@ -130,6 +148,8 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   const [preparedClosing, setPreparedClosing] = useState<PreparedClosing | null>(null)
   const [closingDocument, setClosingDocument] = useState<{ name: string; status?: string } | null>(null)
   const [showPayment, setShowPayment] = useState(false)
+  const [completedSale, setCompletedSale] = useState<CompletedSale | null>(null)
+  const submitSaleRef = useRef<() => void>(() => undefined)
   const [showDrafts, setShowDrafts] = useState(false)
   const [showLocalCarts, setShowLocalCarts] = useState(false)
   const [localCarts, setLocalCarts] = useState<LocalPosCart[]>([])
@@ -289,6 +309,10 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       if (event.key === 'F4') { event.preventDefault(); document.querySelector<HTMLInputElement>('[data-pos-product-search]')?.focus() }
       if (event.key === 'F8') { event.preventDefault(); focusCustomerSearch() }
       if (event.key === 'F9') { event.preventDefault(); beginPaymentRef.current() }
+      // ERPNext POS shortcuts: Ctrl+I item search, Ctrl+Enter charge / confirm payment.
+      const modifier = event.ctrlKey || event.metaKey
+      if (modifier && event.key.toLowerCase() === 'i') { event.preventDefault(); document.querySelector<HTMLInputElement>('[data-pos-product-search]')?.focus() }
+      if (modifier && event.key === 'Enter' && !document.querySelector('.pos-complete')) { event.preventDefault(); submitSaleRef.current() }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -505,12 +529,20 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     if (pendingSale) return
     if (!lines.length) return
     if (!customer) return requireCustomer()
+    // POS Profile set_grand_total_to_default_mop (ERPNext default: on) fills the default payment with the total.
+    const prefill = selectedProfile?.set_grand_total_to_default_mop !== 0 && selectedProfile?.set_grand_total_to_default_mop !== false
+    const entered = payments.reduce((sum, payment) => sum + payment.amount, 0)
+    if (prefill && !entered) setPayments(paymentLines(paymentMethods, totals.total))
     setShowPayment(true)
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-  }, [customer, lines.length, pendingSale, requireCustomer])
+    window.requestAnimationFrame(() => {
+      const input = Array.from(document.querySelectorAll<HTMLInputElement>('[data-pos-payment-default]')).find((element) => element.offsetParent !== null)
+      input?.focus({ preventScroll: true })
+      input?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+  }, [customer, lines.length, paymentMethods, payments, pendingSale, requireCustomer, selectedProfile?.set_grand_total_to_default_mop, totals.total])
   beginPaymentRef.current = beginPayment
 
-  async function finishPendingSale(sale: PendingSale) {
+  async function finishPendingSale(sale: PendingSale, summary?: CompletedSale) {
     const sameProfile = profileName === sale.profileName
     try {
       const cache = await readLocalPosCarts(profileId, sale.profileName)
@@ -534,12 +566,17 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       return
     }
     storePendingSale(null)
-    setMessage(t('pos.messages.saleConfirmed', { name: sale.name }))
-    setShowHistory(true)
     void drafts.refetch()
+    if (!summary) {
+      setMessage(t('pos.messages.saleConfirmed', { name: sale.name }))
+      setShowHistory(true)
+      return
+    }
+    setCompletedSale(summary)
+    if (profileFlag('print_receipt_on_order_complete')) void printSale(sale.name)
   }
 
-  async function resolvePendingSale(sale: PendingSale) {
+  async function resolvePendingSale(sale: PendingSale, summary?: CompletedSale) {
     let current: { docstatus?: number }
     try {
       current = await client.getDocument<{ docstatus?: number }>(sale.doctype, sale.name)
@@ -549,7 +586,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       return
     }
 
-    if (current.docstatus === 1) return finishPendingSale(sale)
+    if (current.docstatus === 1) return finishPendingSale(sale, summary)
     if (current.docstatus !== 0) {
       storePendingSale({ ...sale, status: 'unknown' })
       setMessage(t('pos.messages.pendingSaleUnknown', { name: sale.name }))
@@ -571,7 +608,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       }
     }
 
-    if (current.docstatus === 1) return finishPendingSale(sale)
+    if (current.docstatus === 1) return finishPendingSale(sale, summary)
     if (current.docstatus === 0) {
       storePendingSale(draft)
       setMessage(t('pos.messages.pendingSaleDraft', { name: sale.name }))
@@ -609,10 +646,17 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       if (Number(verified.grand_total) !== serverTotal) throw new Error('El total de ERPNext cambió al guardar el pago; revisa la factura en borrador antes de continuar.')
       pending = { name, doctype: invoiceMode, profileName: selectedProfile.name, localCartId: activeLocalCartId, status: 'draft' }
       storePendingSale(pending)
-      await resolvePendingSale(pending)
+      const paid = confirmedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+      const received = payments.reduce((sum, payment) => sum + payment.amount, 0)
+      await resolvePendingSale(pending, { name, customer: selectedCustomer?.customer_name || customer, customerId: customer, total: serverTotal, paid: Math.max(paid, received), change: Math.max(0, received - serverTotal), currency })
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('pos.messages.confirmSaleError'))
     } finally { setBusy(false) }
+  }
+
+  submitSaleRef.current = () => {
+    if (!showPayment) return beginPayment()
+    if (!busy && !paymentError && lines.length) void submitSale()
   }
 
   async function saveDraft() {
@@ -710,18 +754,14 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   }
 
   async function printSale(name: string) {
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) { setMessage(t('posExtra.popupBlocked')); return }
-    printWindow.opener = null
     try {
       const invoice = await client.getDocument<{ name: string; customer: string; posting_date?: string; currency?: string; net_total?: number; total_taxes_and_charges?: number; grand_total?: number; items: Array<{ item_name?: string; item_code: string; qty: number; uom?: string; rate: number; amount?: number }> }>(invoiceMode, name)
       const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!)
       const currencyCode = escape(invoice.currency || currency)
       const rows = invoice.items.map((item) => `<tr><td>${escape(item.item_name || item.item_code)}<small>${escape(item.item_code)} · ${escape(item.uom || '')}</small></td><td>${escape(item.qty)}</td><td>${escape(formatMoney(Number(item.rate), currencyCode))}</td><td>${escape(formatMoney(Number(item.amount ?? item.qty * item.rate), currencyCode))}</td></tr>`).join('')
-      printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escape(invoice.name)}</title><style>body{font:14px system-ui,sans-serif;margin:24px;color:#172033}h1{font-size:20px}small{display:block;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{text-align:left;padding:8px 4px;border-bottom:1px solid #ddd}td:nth-child(n+2),th:nth-child(n+2){text-align:right}.totals{margin:20px 0 0 auto;width:240px}.totals p{display:flex;justify-content:space-between} @media print{body{margin:8mm}}</style></head><body><h1>${escape(invoice.name)}</h1><p>${escape(invoice.customer)} · ${escape(invoice.posting_date || '')}</p><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Importe</th></tr></thead><tbody>${rows}</tbody></table><div class="totals"><p><span>Subtotal</span><b>${escape(formatMoney(Number(invoice.net_total ?? 0), currencyCode))}</b></p><p><span>Impuestos</span><b>${escape(formatMoney(Number(invoice.total_taxes_and_charges ?? 0), currencyCode))}</b></p><p><span>Total</span><b>${escape(formatMoney(Number(invoice.grand_total ?? 0), currencyCode))}</b></p></div><script>window.onload=()=>{window.focus();window.print()}</script></body></html>`)
-      printWindow.document.close()
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escape(invoice.name)}</title><style>body{font:14px system-ui,sans-serif;margin:24px;color:#172033}h1{font-size:20px}small{display:block;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{text-align:left;padding:8px 4px;border-bottom:1px solid #ddd}td:nth-child(n+2),th:nth-child(n+2){text-align:right}.totals{margin:20px 0 0 auto;width:240px}.totals p{display:flex;justify-content:space-between} @media print{body{margin:8mm}}</style></head><body><h1>${escape(invoice.name)}</h1><p>${escape(invoice.customer)} · ${escape(invoice.posting_date || '')}</p><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Importe</th></tr></thead><tbody>${rows}</tbody></table><div class="totals"><p><span>Subtotal</span><b>${escape(formatMoney(Number(invoice.net_total ?? 0), currencyCode))}</b></p><p><span>Impuestos</span><b>${escape(formatMoney(Number(invoice.total_taxes_and_charges ?? 0), currencyCode))}</b></p><p><span>Total</span><b>${escape(formatMoney(Number(invoice.grand_total ?? 0), currencyCode))}</b></p></div></body></html>`
+      printHtml(html)
     } catch (error) {
-      printWindow.close()
       setMessage(error instanceof Error ? error.message : t('posExtra.receiptFailed'))
     }
   }
@@ -736,6 +776,20 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
       return null
     }
   }, [client, customer, invoiceMode, selectedProfile])
+
+  async function emailReceipt(name: string, recipient: string) {
+    await client.callMethod('frappe.core.doctype.communication.email.make', { recipients: recipient, subject: `${invoiceMode} ${name}`, content: t('pos.complete.emailBody', { name }), doctype: invoiceMode, name, send_email: 1, attach_document_print: 1 })
+  }
+  async function customerEmail() {
+    if (!completedSale?.customerId) return ''
+    const doc = await client.getDocument<{ email_id?: string }>('Customer', completedSale.customerId)
+    return doc.email_id || ''
+  }
+  function startNewOrder() {
+    setCompletedSale(null)
+    setMobileView('products')
+    window.requestAnimationFrame(() => document.querySelector<HTMLInputElement>('[data-pos-product-search]')?.focus())
+  }
 
   function updatePayment(next: PosPaymentLine[]) { if (!pendingSale) setPayments(next.filter((payment) => payment.amount > 0)) }
 
@@ -776,5 +830,5 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     return <BasePosClosingPanel {...props} open={showClosing} paymentMethods={closingPaymentMethods} summary={preparedSummary} busy={busy || closingLoading} error={closingError || (closingLoading ? t('pos.messages.closingLoading') : undefined)} onSubmit={props.onClose ?? closeShift} onOpenChange={setShowClosing} />
   }
 
-  return <><section className="pos-workspace"><PageHeader title={t("posPage.title")} action={<div className="pos-page-header-actions"><div className="pos-page-context"><span>{shift ? t("posPage.shiftStatus", { name: shift.name }) : t("posPage.noShift")}</span>{selectedProfile && <small>{selectedProfile.company} · {selectedProfile.warehouse}</small>}</div><div className="pos-toolbar-actions">{!shift ? <Button onClick={openShift} disabled={busy || Boolean(pendingSale) || !selectedProfile || !paymentMethods.length || methods.isPending || openEntries.isPending}>{busy ? <><Spinner /> {t("posPage.opening")}</> : methods.isPending ? <><Spinner /> {t("posPage.loadingPayments")}</> : t("posPage.openShift")}</Button> : <IconButton variant="danger" label={t("posPage.prepareClose")} onClick={prepareClose} disabled={busy || Boolean(pendingSale)} loading={busy} icon={<ClipboardCheck aria-hidden="true" />} />}<DropdownMenu><DropdownMenuTrigger asChild><IconButton variant="secondary" label={t("pos.mobile.moreActions")} disabled={busy} icon={<Ellipsis aria-hidden="true" />} /></DropdownMenuTrigger><DropdownMenuContent align="end"><PosAuxiliaryActions showHistory={showHistory} onToggleHistory={() => setShowHistory((current) => !current)} onOpenDrafts={() => { if (!pendingSale) setShowDrafts(true) }} onOpenLocalCarts={() => { if (!pendingSale) setShowLocalCarts(true) }} onOpenQuotations={featureFlags.quotationsView ? () => navigate('/pos/cotizaciones?profile=' + encodeURIComponent(selectedProfile?.name ?? '')) : undefined} historyDisabled={!shift} draftsDisabled={!shift || Boolean(pendingSale)} localCartsDisabled={Boolean(pendingSale)} /></DropdownMenuContent></DropdownMenu></div></div>} /><div className="pos-toolbar card"><div className="pos-toolbar-main"><Field label={t("posPage.profileLabel")}><Select value={selectedProfile?.name ?? undefined} onValueChange={(value) => { setProfileName(value); setCustomer(posPreferences.defaultCustomer) }} disabled={Boolean(shift) || Boolean(pendingSale)}><SelectTrigger aria-label={t("posPage.profileLabel")} className="pos-shift-selector"><SelectValue placeholder={t("posPage.selectProfile")} /></SelectTrigger><SelectContent align="start">{(profiles.data ?? []).map((item) => <SelectItem value={item.name} key={item.name}>{item.name}</SelectItem>)}</SelectContent></Select></Field>{customerPicker('pos-toolbar-customer')}</div></div>{message && <div className="pos-status-message" role="status" aria-live="polite"><span>{message}</span><button type="button" onClick={() => setMessage('')} aria-label={t('common.close')}><X aria-hidden="true" /></button></div>}{!profiles.isPending && !profiles.data?.length && <Notice>{t("posPage.noProfiles")}</Notice>}{methods.isError && <Notice>{methods.error instanceof Error ? methods.error.message : t("posPage.paymentMethodsError")}</Notice>}{!methods.isPending && !methods.data?.length && <Notice tone="warning">{t("posPage.paymentMethodsInvalid")}</Notice>}{(!methods.isPending && !paymentMethods.length) && <Notice tone="warning">{t("posPage.paymentMethodsMissing")}</Notice>}{posSettings.isError && <Notice tone="warning">{t("posPage.settingsFallback")}</Notice>}{!catalog.data && <Notice tone="warning">{t("posPage.catalogMissing")}</Notice>}{shift && <PosMobileTabs value={mobileView} count={cartCount} fixed={showMobileTabs} showHistory={showHistory} onChange={setMobileView} onToggleHistory={() => setShowHistory((current) => !current)} onOpenDrafts={() => { if (!pendingSale) setShowDrafts(true) }} onOpenQuotations={featureFlags.quotationsView ? () => navigate('/pos/cotizaciones?profile=' + encodeURIComponent(selectedProfile?.name ?? '')) : undefined} onOpenLocalCarts={() => { if (!pendingSale) setShowLocalCarts(true) }} draftsDisabled={!shift || Boolean(pendingSale)} localCartsDisabled={Boolean(pendingSale)} />}{showScrollTop && <button type="button" className="pos-scroll-top is-visible" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label={t("posPage.scrollTop")}>↑</button>}{cartFeedback && <div className="pos-cart-feedback" role="status" aria-live="polite">{cartFeedback.text}</div>}{pendingSale && <Notice tone="warning"><div className="pos-pending-sale" role="status"><div><strong>{pendingSale.status === 'draft' ? t('pos.messages.pendingSaleDraft', { name: pendingSale.name }) : pendingSale.status === 'submitted' ? t('pos.messages.pendingSaleSubmitted', { name: pendingSale.name }) : t('pos.messages.pendingSaleUnknown', { name: pendingSale.name })}</strong><span>{t('pos.sales.linesTotal', { count: lines.length, total: money(totals.total, currency) })}</span></div><Button variant="secondary" size="compact" onClick={submitSale} disabled={busy}>{busy ? <><Spinner /> {t('posPage.confirming')}</> : t('pos.messages.verifyPendingSale')}</Button></div></Notice>}{shift && <div className="pos-layout" inert={Boolean(pendingSale)}><div className={`pos-mobile-products ${mobileView === 'products' ? 'is-visible' : ''}`}><ProductPicker items={posItems} autoAdd={profileFlag('auto_add_item_to_cart')} hideUnavailable={profileFlag('hide_unavailable_items')} showPriceLinks={canEditRate} stockUpdatedAt={stock.data?.updatedAt} prices={prices.data?.prices ?? []} priceList={selectedProfile?.selling_price_list} currency={currency} lines={lines} variantsByTemplate={variantsByTemplate} autoFocus={posPreferences.autoFocusProductSearch} client={client} profileId={profileId} showImages={posPreferences.showProductImages} onToggleImages={() => { const next = { ...posPreferences, showProductImages: !posPreferences.showProductImages }; setPosPreferences(next); writePosPreferences(profileId, next) }} onAdd={addItem} onDecrease={decreaseItem} onOpenTemplate={openTemplate} /></div><div className={`pos-mobile-cart ${mobileView === 'cart' ? 'is-visible' : ''}`}><div className="pos-sale-column"><Cart lines={lines} taxRows={taxRows} currency={currency} canEditRate={canEditRate} canDiscount={canDiscount} onEditPrice={(index) => { if (!pendingSale) { setPriceLineIndex(index); setShowPriceSheet(true) } }} onChange={(index, patch) => { if (!pendingSale) setLines((current) => current.map((line, lineIndex) => lineIndex === index ? { ...line, ...patch } : line)) }} onRemove={(index) => { if (!pendingSale) setLines((current) => current.filter((_, lineIndex) => lineIndex !== index)) }} />{customerPicker('pos-sale-customer')}{showPayment && <Payments methods={paymentMethods} payments={payments} total={totals.total} currency={currency} cashMethods={cashMethods} notice={paymentError || undefined} onChange={updatePayment} />}<div className="pos-sale-actions">{showPayment ? <Button fullWidth onClick={submitSale} disabled={busy || Boolean(pendingSale) || !lines.length || Boolean(paymentError)}>{busy ? <><Spinner /> {t("posPage.confirming")}</> : t("posPage.confirmCharge", { total: money(totals.total, currency) })}</Button> : <Button fullWidth onClick={beginPayment} disabled={busy || Boolean(pendingSale) || !lines.length}>{t("posPage.charge", { total: money(totals.total, currency) })}</Button>}<Button fullWidth onClick={saveDraft} disabled={busy || Boolean(pendingSale) || !lines.length}>{activeDraftName ? t("posPage.saveChanges") : t("posPage.saveCart")}</Button><Button fullWidth variant="secondary" onClick={cancelSale} disabled={Boolean(pendingSale) || !lines.length}>{t("posPage.cancelSale")}</Button></div></div></div></div>}{variantTemplate && <PosVariantSheet template={variantTemplate} variants={variantOptions} prices={prices.data?.prices ?? []} priceList={selectedProfile?.selling_price_list} currency={currency} cartLines={lines} open={Boolean(variantTemplate)} loading={variantLoading} error={variantError} onClose={closeTemplate} onAdd={(item, uom, rate) => { addConfiguredItem(item, uom, rate); closeTemplate() }} resolvePrice={resolvePosPrice} onMissingPrice={(item, uom) => setMissingPrice({ item, uom })} />}{showClosing && shift && <PosClosingPanel paymentMethods={paymentMethods} balances={closingBalances} busy={busy} onChange={setClosingBalances} onClose={closeShift} />}{showHistory && shift && <SaleHistory sales={history.data ?? []} loading={history.isPending} error={history.error instanceof Error ? history.error.message : undefined} currency={currency} onRefresh={() => history.refetch()} onReturn={returnSale} onPrint={printSale} />}{!shift && selectedProfile && <section className="pos-opening card"><div className="pos-section-heading"><div><h2>{t("posPage.openingTitle")}</h2><span>{selectedProfile.company} · {selectedProfile.warehouse}</span></div><span>{t("posPage.openingFund")}</span></div><div className="pos-opening-lines">{paymentMethods.map((method) => <Field label={method.mode_of_payment} key={method.mode_of_payment}><Input type="number" min="0" step="0.01" value={openingBalances.find((line) => line.modeOfPayment === method.mode_of_payment)?.amount ?? 0} onChange={(event) => setOpeningBalances((current) => paymentMethods.map((candidate) => ({ modeOfPayment: candidate.mode_of_payment, amount: candidate.mode_of_payment === method.mode_of_payment ? Number(event.target.value) : current.find((line) => line.modeOfPayment === candidate.mode_of_payment)?.amount ?? 0 })))} /></Field>)}</div><p className="muted">{t("posPage.openingHelp")}</p></section>}</section><PosLocalCartsSheet carts={localCarts} activeCartId={activeLocalCartId} open={showLocalCarts} currency={currency} onOpenChange={setShowLocalCarts} onSave={saveLocalCart} onResume={resumeLocalCart} onRename={renameLocalCart} onDelete={deleteLocalCart} />{shift && selectedProfile && <PosDraftsSheet drafts={drafts.data ?? []} open={showDrafts} loading={drafts.isPending || busy} error={drafts.error instanceof Error ? drafts.error.message : undefined} currency={currency} onOpenChange={setShowDrafts} onResume={resumeDraft} onDelete={deleteDraft} />}<PosPriceSheet line={priceLine} currency={currency} canEdit={canEditRate} open={showPriceSheet} onClose={() => setShowPriceSheet(false)} onApply={applyManualRate} /><PosMissingPriceDialog itemName={missingPrice?.item.item_name || missingPrice?.item.name || ''} uom={missingPrice?.uom.uom || ''} open={Boolean(missingPrice)} onOpenChange={(open) => { if (!open) setMissingPrice(null) }} onAddPrice={addMissingPrice} /><PosReturnSheet invoice={returnInvoice} remaining={returnRemaining} quantities={returnQuantities} open={Boolean(returnInvoice)} busy={busy} error={returnError} currency={currency} onChange={(index, quantity) => setReturnQuantities((current) => current.map((value, lineIndex) => lineIndex === index ? quantity : value))} onClose={() => { if (!returnDraftName) setReturnInvoice(null) }} onSubmit={submitReturn} />{confirmDialog}<PosCustomerCreateSheet open={showCustomerCreate} busy={busy} error={customerCreateError} onOpenChange={setShowCustomerCreate} onCreate={createCustomer} /></>
+  return <><section className="pos-workspace"><PageHeader title={t("posPage.title")} action={<div className="pos-page-header-actions"><div className="pos-page-context"><span>{shift ? t("posPage.shiftStatus", { name: shift.name }) : t("posPage.noShift")}</span>{selectedProfile && <small>{selectedProfile.company} · {selectedProfile.warehouse}</small>}</div><div className="pos-toolbar-actions">{!shift ? <Button onClick={openShift} disabled={busy || Boolean(pendingSale) || !selectedProfile || !paymentMethods.length || methods.isPending || openEntries.isPending}>{busy ? <><Spinner /> {t("posPage.opening")}</> : methods.isPending ? <><Spinner /> {t("posPage.loadingPayments")}</> : t("posPage.openShift")}</Button> : <IconButton variant="danger" label={t("posPage.prepareClose")} onClick={prepareClose} disabled={busy || Boolean(pendingSale)} loading={busy} icon={<ClipboardCheck aria-hidden="true" />} />}<DropdownMenu><DropdownMenuTrigger asChild><IconButton variant="secondary" label={t("pos.mobile.moreActions")} disabled={busy} icon={<Ellipsis aria-hidden="true" />} /></DropdownMenuTrigger><DropdownMenuContent align="end"><PosAuxiliaryActions showHistory={showHistory} onToggleHistory={() => setShowHistory((current) => !current)} onOpenDrafts={() => { if (!pendingSale) setShowDrafts(true) }} onOpenLocalCarts={() => { if (!pendingSale) setShowLocalCarts(true) }} onOpenQuotations={featureFlags.quotationsView ? () => navigate('/pos/cotizaciones?profile=' + encodeURIComponent(selectedProfile?.name ?? '')) : undefined} historyDisabled={!shift} draftsDisabled={!shift || Boolean(pendingSale)} localCartsDisabled={Boolean(pendingSale)} /></DropdownMenuContent></DropdownMenu></div></div>} /><div className="pos-toolbar card"><div className="pos-toolbar-main"><Field label={t("posPage.profileLabel")}><Select value={selectedProfile?.name ?? undefined} onValueChange={(value) => { setProfileName(value); setCustomer(posPreferences.defaultCustomer) }} disabled={Boolean(shift) || Boolean(pendingSale)}><SelectTrigger aria-label={t("posPage.profileLabel")} className="pos-shift-selector"><SelectValue placeholder={t("posPage.selectProfile")} /></SelectTrigger><SelectContent align="start">{(profiles.data ?? []).map((item) => <SelectItem value={item.name} key={item.name}>{item.name}</SelectItem>)}</SelectContent></Select></Field>{customerPicker('pos-toolbar-customer')}</div></div>{message && <div className="pos-status-message" role="status" aria-live="polite"><span>{message}</span><button type="button" onClick={() => setMessage('')} aria-label={t('common.close')}><X aria-hidden="true" /></button></div>}{!profiles.isPending && !profiles.data?.length && <Notice>{t("posPage.noProfiles")}</Notice>}{methods.isError && <Notice>{methods.error instanceof Error ? methods.error.message : t("posPage.paymentMethodsError")}</Notice>}{!methods.isPending && !methods.data?.length && <Notice tone="warning">{t("posPage.paymentMethodsInvalid")}</Notice>}{(!methods.isPending && !paymentMethods.length) && <Notice tone="warning">{t("posPage.paymentMethodsMissing")}</Notice>}{posSettings.isError && <Notice tone="warning">{t("posPage.settingsFallback")}</Notice>}{!catalog.data && <Notice tone="warning">{t("posPage.catalogMissing")}</Notice>}{shift && <PosMobileTabs value={mobileView} count={cartCount} fixed={showMobileTabs} showHistory={showHistory} onChange={setMobileView} onToggleHistory={() => setShowHistory((current) => !current)} onOpenDrafts={() => { if (!pendingSale) setShowDrafts(true) }} onOpenQuotations={featureFlags.quotationsView ? () => navigate('/pos/cotizaciones?profile=' + encodeURIComponent(selectedProfile?.name ?? '')) : undefined} onOpenLocalCarts={() => { if (!pendingSale) setShowLocalCarts(true) }} draftsDisabled={!shift || Boolean(pendingSale)} localCartsDisabled={Boolean(pendingSale)} />}{showScrollTop && <button type="button" className="pos-scroll-top is-visible" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label={t("posPage.scrollTop")}>↑</button>}{cartFeedback && <div className="pos-cart-feedback" role="status" aria-live="polite">{cartFeedback.text}</div>}{pendingSale && <Notice tone="warning"><div className="pos-pending-sale" role="status"><div><strong>{pendingSale.status === 'draft' ? t('pos.messages.pendingSaleDraft', { name: pendingSale.name }) : pendingSale.status === 'submitted' ? t('pos.messages.pendingSaleSubmitted', { name: pendingSale.name }) : t('pos.messages.pendingSaleUnknown', { name: pendingSale.name })}</strong><span>{t('pos.sales.linesTotal', { count: lines.length, total: money(totals.total, currency) })}</span></div><Button variant="secondary" size="compact" onClick={submitSale} disabled={busy}>{busy ? <><Spinner /> {t('posPage.confirming')}</> : t('pos.messages.verifyPendingSale')}</Button></div></Notice>}{shift && <div className="pos-layout" inert={Boolean(pendingSale)}><div className={`pos-mobile-products ${mobileView === 'products' ? 'is-visible' : ''}`}><ProductPicker items={posItems} autoAdd={profileFlag('auto_add_item_to_cart')} hideUnavailable={profileFlag('hide_unavailable_items')} showPriceLinks={canEditRate} stockUpdatedAt={stock.data?.updatedAt} prices={prices.data?.prices ?? []} priceList={selectedProfile?.selling_price_list} currency={currency} lines={lines} variantsByTemplate={variantsByTemplate} autoFocus={posPreferences.autoFocusProductSearch} client={client} profileId={profileId} showImages={posPreferences.showProductImages} onToggleImages={() => { const next = { ...posPreferences, showProductImages: !posPreferences.showProductImages }; setPosPreferences(next); writePosPreferences(profileId, next) }} onAdd={addItem} onDecrease={decreaseItem} onOpenTemplate={openTemplate} /></div><div className={`pos-mobile-cart ${mobileView === 'cart' ? 'is-visible' : ''}`}><div className="pos-sale-column"><Cart lines={lines} taxRows={taxRows} currency={currency} canEditRate={canEditRate} canDiscount={canDiscount} onEditPrice={(index) => { if (!pendingSale) { setPriceLineIndex(index); setShowPriceSheet(true) } }} onChange={(index, patch) => { if (!pendingSale) setLines((current) => current.map((line, lineIndex) => lineIndex === index ? { ...line, ...patch } : line)) }} onRemove={(index) => { if (!pendingSale) setLines((current) => current.filter((_, lineIndex) => lineIndex !== index)) }} />{customerPicker('pos-sale-customer')}{showPayment && <Payments methods={paymentMethods} payments={payments} total={totals.total} currency={currency} cashMethods={cashMethods} notice={paymentError || undefined} onChange={updatePayment} />}<div className="pos-sale-actions">{showPayment ? <Button fullWidth onClick={submitSale} disabled={busy || Boolean(pendingSale) || !lines.length || Boolean(paymentError)}>{busy ? <><Spinner /> {t("posPage.confirming")}</> : <>{t("posPage.confirmCharge", { total: money(totals.total, currency) })}<kbd className="pos-kbd">{shortcutLabel('Enter')}</kbd></>}</Button> : <Button fullWidth onClick={beginPayment} disabled={busy || Boolean(pendingSale) || !lines.length}>{t("posPage.charge", { total: money(totals.total, currency) })}<kbd className="pos-kbd">F9</kbd></Button>}<Button fullWidth variant="secondary" onClick={saveDraft} disabled={busy || Boolean(pendingSale) || !lines.length}>{activeDraftName ? t("posPage.saveChanges") : t("posPage.saveCart")}</Button><Button fullWidth variant="secondary" onClick={cancelSale} disabled={Boolean(pendingSale) || !lines.length}>{t("posPage.cancelSale")}</Button></div></div></div></div>}{variantTemplate && <PosVariantSheet template={variantTemplate} variants={variantOptions} prices={prices.data?.prices ?? []} priceList={selectedProfile?.selling_price_list} currency={currency} cartLines={lines} open={Boolean(variantTemplate)} loading={variantLoading} error={variantError} onClose={closeTemplate} onAdd={(item, uom, rate) => { addConfiguredItem(item, uom, rate); closeTemplate() }} resolvePrice={resolvePosPrice} onMissingPrice={(item, uom) => setMissingPrice({ item, uom })} />}{showClosing && shift && <PosClosingPanel paymentMethods={paymentMethods} balances={closingBalances} busy={busy} onChange={setClosingBalances} onClose={closeShift} />}{showHistory && shift && <SaleHistory sales={history.data ?? []} loading={history.isPending} error={history.error instanceof Error ? history.error.message : undefined} currency={currency} onRefresh={() => history.refetch()} onReturn={returnSale} onPrint={printSale} />}{!shift && selectedProfile && <section className="pos-opening card"><div className="pos-section-heading"><div><h2>{t("posPage.openingTitle")}</h2><span>{selectedProfile.company} · {selectedProfile.warehouse}</span></div><span>{t("posPage.openingFund")}</span></div><div className="pos-opening-lines">{paymentMethods.map((method) => <Field label={method.mode_of_payment} key={method.mode_of_payment}><Input type="number" min="0" step="0.01" value={openingBalances.find((line) => line.modeOfPayment === method.mode_of_payment)?.amount ?? 0} onChange={(event) => setOpeningBalances((current) => paymentMethods.map((candidate) => ({ modeOfPayment: candidate.mode_of_payment, amount: candidate.mode_of_payment === method.mode_of_payment ? Number(event.target.value) : current.find((line) => line.modeOfPayment === candidate.mode_of_payment)?.amount ?? 0 })))} /></Field>)}</div><p className="muted">{t("posPage.openingHelp")}</p></section>}</section><PosLocalCartsSheet carts={localCarts} activeCartId={activeLocalCartId} open={showLocalCarts} currency={currency} onOpenChange={setShowLocalCarts} onSave={saveLocalCart} onResume={resumeLocalCart} onRename={renameLocalCart} onDelete={deleteLocalCart} />{shift && selectedProfile && <PosDraftsSheet drafts={drafts.data ?? []} open={showDrafts} loading={drafts.isPending || busy} error={drafts.error instanceof Error ? drafts.error.message : undefined} currency={currency} onOpenChange={setShowDrafts} onResume={resumeDraft} onDelete={deleteDraft} />}<PosPriceSheet line={priceLine} currency={currency} canEdit={canEditRate} open={showPriceSheet} onClose={() => setShowPriceSheet(false)} onApply={applyManualRate} /><PosMissingPriceDialog itemName={missingPrice?.item.item_name || missingPrice?.item.name || ''} uom={missingPrice?.uom.uom || ''} open={Boolean(missingPrice)} onOpenChange={(open) => { if (!open) setMissingPrice(null) }} onAddPrice={addMissingPrice} /><PosReturnSheet invoice={returnInvoice} remaining={returnRemaining} quantities={returnQuantities} open={Boolean(returnInvoice)} busy={busy} error={returnError} currency={currency} onChange={(index, quantity) => setReturnQuantities((current) => current.map((value, lineIndex) => lineIndex === index ? quantity : value))} onClose={() => { if (!returnDraftName) setReturnInvoice(null) }} onSubmit={submitReturn} />{confirmDialog}<PosSaleComplete sale={completedSale} onPrint={(name) => void printSale(name)} onEmail={emailReceipt} loadEmail={customerEmail} onNewOrder={startNewOrder} /><PosCustomerCreateSheet open={showCustomerCreate} busy={busy} error={customerCreateError} onOpenChange={setShowCustomerCreate} onCreate={createCustomer} /></>
 }
