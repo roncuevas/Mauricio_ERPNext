@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog'
 import { Button, Field, Input } from './ui'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
 import { Popover, PopoverAnchor, PopoverContent } from './ui/popover'
+import { cn } from '../lib/utils'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
@@ -11,10 +12,24 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHe
 import type { PosClosingSummary } from '../lib/pos'
 import type { PosPaymentLine, PosPaymentMethod } from '../lib/types'
 
-export function PosCustomerPicker({ enabled, value, search, customers, onSearch, onSelect, onCreate }: { enabled: boolean; value: string; search: string; customers: Array<{ name: string; customer_name?: string }>; onSearch: (value: string) => void; onSelect: (name: string) => void; onCreate?: () => void }) {
+export function PosCustomerPicker({ enabled, value, customers, onSelect, onCreate, className }: { enabled: boolean; value: string; customers: Array<{ name: string; customer_name?: string }>; onSelect: (name: string) => void; onCreate?: () => void; className?: string }) {
   const { t } = useTranslation()
-  const matches = customers.filter((item) => `${item.name} ${item.customer_name ?? ''}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).slice(0, 8)
-  return <Popover open={Boolean(enabled && search)}><Field label={t('pos.customer.label')}><PopoverAnchor asChild><Input data-pos-customer-search value={search || value} onChange={(event) => onSearch(event.target.value)} placeholder={t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></PopoverAnchor></Field><PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start"><Command><CommandInput placeholder={t('pos.customer.search')} value={search} onValueChange={onSearch} aria-label={t('pos.customer.filter')} /><CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={`${item.name} ${item.customer_name ?? ''}`} onSelect={() => onSelect(item.name)}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList></Command>{onCreate && <Button type="button" variant="secondary" size="compact" fullWidth onClick={onCreate}>{t('posExtra.createCustomer')}</Button>}</PopoverContent></Popover>
+  const [editing, setEditing] = useState(false)
+  const [search, setSearch] = useState('')
+  const anchorRef = useRef<HTMLDivElement>(null)
+  const term = search.trim().toLocaleLowerCase()
+  const matches = customers.filter((item) => `${item.name} ${item.customer_name ?? ''}`.toLocaleLowerCase().includes(term)).slice(0, 8)
+  function close() { setEditing(false); setSearch('') }
+  function select(name: string) { onSelect(name); close() }
+  return <Command shouldFilter={false} loop className={cn('h-auto overflow-visible rounded-none bg-transparent', className)}>
+    <Popover open={enabled && editing} onOpenChange={(open) => { if (!open) close() }}>
+      <Field label={t('pos.customer.label')}><PopoverAnchor asChild><div ref={anchorRef}><CommandInput data-pos-customer-search className="mb-0" value={editing ? search : value} onValueChange={(next) => { setEditing(true); setSearch(next) }} onFocus={() => setEditing(true)} onClick={() => setEditing(true)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); close() } }} placeholder={editing && value ? value : t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} /></div></PopoverAnchor></Field>
+      <PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start" onOpenAutoFocus={(event) => event.preventDefault()} onInteractOutside={(event) => { if (anchorRef.current?.contains(event.target as Node)) event.preventDefault() }}>
+        <CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={item.name} onSelect={() => select(item.name)} onMouseDown={(event) => event.preventDefault()}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList>
+        {onCreate && <Button type="button" variant="secondary" size="compact" fullWidth onMouseDown={(event) => event.preventDefault()} onClick={() => { close(); onCreate() }}>{t('posExtra.createCustomer')}</Button>}
+      </PopoverContent>
+    </Popover>
+  </Command>
 }
 
 export function PosCustomerCreateSheet({ open, busy, error, onOpenChange, onCreate }: { open: boolean; busy: boolean; error?: string; onOpenChange: (open: boolean) => void; onCreate: (name: string, mobile: string) => Promise<void> }) {
