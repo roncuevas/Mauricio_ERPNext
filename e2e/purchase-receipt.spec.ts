@@ -1,0 +1,39 @@
+import { expect, test } from '@playwright/test'
+import { company, connect, mockStock, refreshFrom, warehouse } from './stock-helpers'
+
+test('receives a purchase from a supplier with the suggested buying cost', async ({ page }) => {
+  const erp = await mockStock(page)
+  await connect(page)
+  await refreshFrom(page, '/suppliers', 'Proveedores', 'Refrescar proveedores')
+  await expect(page.getByText('PROVEEDOR A').first()).toBeVisible()
+  await refreshFrom(page, '/prices', 'Precios por producto', 'Refrescar precios')
+  await expect(page.getByText('$1,200.50').first()).toBeVisible()
+  await refreshFrom(page, '/stock', 'Inventario', 'Refrescar inventario')
+  await expect(page.getByRole('link', { name: 'Ajustar' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Recibir compra' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Recibir compra' })).toBeVisible()
+  await page.getByRole('combobox', { name: 'Proveedor' }).click()
+  await page.getByRole('option', { name: 'PROVEEDOR A' }).click()
+  await page.getByRole('combobox', { name: 'Almacén que recibe' }).click()
+  await page.getByRole('option', { name: warehouse.warehouse_name }).click()
+  await page.getByRole('textbox', { name: 'Remisión del proveedor' }).fill('R-123')
+
+  const search = page.getByRole('textbox', { name: 'Buscar producto' })
+  await search.fill('ITEM-001')
+  await expect(page.getByRole('list', { name: 'Coincidencias' })).toContainText('$1,200.50 / Kg')
+  await search.press('Enter')
+  const qty = page.getByRole('spinbutton', { name: 'Cantidad recibida de Croquetas Adulto Premium' })
+  await expect(qty).toBeFocused()
+  await qty.fill('5')
+  await expect(page.getByRole('spinbutton', { name: 'Costo unitario de Croquetas Adulto Premium' })).toHaveValue('1200.5')
+  await expect(page.getByRole('status').filter({ hasText: 'Total' })).toContainText('$6,002.50')
+
+  await page.getByRole('button', { name: 'Recibir compra (1)' }).click()
+  await expect(page.getByText('Recepción MAT-PRE-0001 registrada: 1 producto de PROVEEDOR A.')).toBeVisible()
+  expect(erp.submitted).toEqual(['MAT-PRE-0001'])
+  expect(erp.created[0]).toMatchObject({ doctype: 'Purchase Receipt', supplier: 'PROVEEDOR A', company: company.name, currency: 'MXN', set_warehouse: warehouse.name, supplier_delivery_note: 'R-123' })
+  expect(erp.created[0]).not.toHaveProperty('set_posting_time')
+  expect(erp.created[0].items).toEqual([{ item_code: 'ITEM-001', item_name: 'Croquetas Adulto Premium', qty: 5, received_qty: 5, uom: 'Kg', stock_uom: 'Kg', conversion_factor: 1, rate: 1200.5, warehouse: warehouse.name }])
+  await expect(page.locator('.stock-card-current strong')).toHaveText('15')
+})

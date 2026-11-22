@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { featureFlags } from '../lib/feature-flags'
 
-type WorkspaceTab = { value: string; labelKey: string; to: string; matches: (pathname: string) => boolean }
+type WorkspaceTab = { value: string; labelKey: string; descriptionKey?: string; to: string; matches: (pathname: string) => boolean }
 type Workspace = { id: string; labelKey: string; descriptionKey: string; tabs: WorkspaceTab[] }
 
 const workspaces: Workspace[] = [
@@ -34,8 +34,9 @@ const workspaces: Workspace[] = [
     labelKey: 'navigation.inventory',
     descriptionKey: 'navigation.inventoryDescription',
     tabs: [
-      { value: 'stock', labelKey: 'navigation.stock', to: '/stock', matches: (pathname) => pathname === '/stock' },
-      { value: 'reconciliation', labelKey: 'navigation.reconciliation', to: '/stock/reconciliation', matches: (pathname) => pathname.startsWith('/stock/reconciliation') },
+      { value: 'stock', labelKey: 'navigation.stock', descriptionKey: 'navigation.stockDescription', to: '/stock', matches: (pathname) => pathname === '/stock' },
+      { value: 'receipt', labelKey: 'navigation.receipt', descriptionKey: 'navigation.receiptDescription', to: '/stock/receipt', matches: (pathname) => pathname.startsWith('/stock/receipt') },
+      { value: 'reconciliation', labelKey: 'navigation.reconciliation', descriptionKey: 'navigation.reconciliationDescription', to: '/stock/reconciliation', matches: (pathname) => pathname.startsWith('/stock/reconciliation') },
     ],
   },
 ]
@@ -54,7 +55,7 @@ export function WorkspaceNavigation() {
     <div className="workspace-navigation-header flex min-w-0 flex-wrap items-end justify-between gap-3">
       <div className="workspace-navigation-copy min-w-0">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">{translate(workspace.labelKey)}</p>
-        <p className="workspace-navigation-description mt-1 text-sm text-[var(--color-muted)]">{translate(workspace.descriptionKey)}</p>
+        <p className="workspace-navigation-description mt-1 text-sm text-[var(--color-muted)]">{translate(activeTab.descriptionKey ?? workspace.descriptionKey)}</p>
       </div>
       <span className="workspace-navigation-hint text-xs text-[var(--color-muted)]">{t('navigation.lazyLoading')}</span>
     </div>

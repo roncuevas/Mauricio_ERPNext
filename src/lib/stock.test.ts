@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { itemCanReconcile, movementPayload, paginateStock, reconciliationPayload, searchReconciliationItems, stockSearch, visibleStockBins } from './stock'
+import { describe, expect, it, vi } from 'vitest'
+import { isOpeningEntryError, itemCanReconcile, localPostingNow, movementPayload, paginateStock, reconciliationDifference, reconciliationPayload, refreshStockBins, searchReconciliationItems, stockErrorMessage, stockSearch, visibleStockBins } from './stock'
 import type { StockBin, VariantItem } from './types'
 
 describe('stock payloads', () => {
@@ -13,16 +13,55 @@ describe('stock payloads', () => {
     expect(() => movementPayload({ company: 'Empresa Demo', kind: 'Material Transfer', sourceWarehouse: 'Sucursal 1 - ED', targetWarehouse: 'Sucursal 1 - ED', postingDate: '2026-10-14', postingTime: '10:00:00', remarks: '', lines: [{ itemCode: 'ITEM-001', qty: 1, uom: 'Kg' }] })).toThrow('almacenes de origen y destino distintos')
   })
 
-  it('builds exact stock reconciliation quantities', () => {
-    const payload = reconciliationPayload({ company: 'Empresa Demo', warehouse: 'Sucursal 1 - ED', postingDate: '2026-10-14', postingTime: '10:00:00', lines: [{ itemCode: 'ITEM-001', qty: 7, valuationRate: 125 }] })
+  it('keeps ERPNext current valuation when the rate is omitted and posts now by default', () => {
+    const payload = reconciliationPayload({ company: 'Empresa Demo', warehouse: 'Sucursal 1 - ED', lines: [{ itemCode: 'ITEM-001', qty: 7 }] })
     expect(payload.purpose).toBe('Stock Reconciliation')
-    expect(payload.items).toEqual([{ item_code: 'ITEM-001', warehouse: 'Sucursal 1 - ED', qty: 7, valuation_rate: 125 }])
+    expect(payload).not.toHaveProperty('set_posting_time')
+    expect(payload).not.toHaveProperty('posting_date')
+    expect(payload.items).toEqual([{ item_code: 'ITEM-001', warehouse: 'Sucursal 1 - ED', qty: 7 }])
   })
 
-  it('builds a multi-line reconciliation payload', () => {
-    const payload = reconciliationPayload({ company: 'Empresa Demo', warehouse: 'Sucursal 1 - ED', postingDate: '2026-10-14', postingTime: '10:00:00', lines: [{ itemCode: 'ITEM-001', qty: 7, valuationRate: 125 }, { itemCode: 'ITEM-002', qty: 3, valuationRate: 80 }] })
-    expect(payload.items).toHaveLength(2)
-    expect(payload.items[1]).toEqual({ item_code: 'ITEM-002', warehouse: 'Sucursal 1 - ED', qty: 3, valuation_rate: 80 })
+  it('sends set_posting_time only for a custom posting date and time', () => {
+    const payload = reconciliationPayload({ company: 'Empresa Demo', warehouse: 'Sucursal 1 - ED', posting: { date: '2026-10-14', time: '10:00:00' }, lines: [{ itemCode: 'ITEM-001', qty: 7, valuationRate: 125 }] })
+    expect(payload).toMatchObject({ set_posting_time: 1, posting_date: '2026-10-14', posting_time: '10:00:00' })
+    expect(payload.items[0]).toEqual({ item_code: 'ITEM-001', warehouse: 'Sucursal 1 - ED', qty: 7, valuation_rate: 125 })
+  })
+
+  it('supports opening stock with an explicit difference account and cost center', () => {
+    const payload = reconciliationPayload({ company: 'Empresa Demo', warehouse: 'A', purpose: 'Opening Stock', expenseAccount: 'Temporary Opening - ED', costCenter: 'Main - ED', lines: [{ itemCode: 'ITEM-001', qty: 3, valuationRate: 80 }] })
+    expect(payload).toMatchObject({ purpose: 'Opening Stock', expense_account: 'Temporary Opening - ED', cost_center: 'Main - ED' })
+  })
+
+  it('requires the explicit zero-valuation flag for a zero rate', () => {
+    const base = { company: 'Empresa Demo', warehouse: 'A', lines: [{ itemCode: 'ITEM-001', qty: 3, valuationRate: 0 }] }
+    expect(() => reconciliationPayload(base)).toThrow('Permitir valoración cero')
+    expect(reconciliationPayload({ ...base, allowZeroValuationRate: true }).items[0]).toEqual({ item_code: 'ITEM-001', warehouse: 'A', qty: 3, valuation_rate: 0, allow_zero_valuation_rate: 1 })
+  })
+
+  it('uses the local calendar date for posting', () => {
+    expect(localPostingNow(new Date(2026, 10, 22, 23, 45, 12))).toEqual({ date: '2026-11-22', time: '23:45:00' })
+  })
+
+  it('computes the counted difference only after a count is entered', () => {
+    expect(reconciliationDifference(10, '')).toBeNull()
+    expect(reconciliationDifference(10, '7')).toBe(-3)
+    expect(reconciliationDifference(0, '4')).toBe(4)
+  })
+
+  it('translates common ERPNext reconciliation errors', () => {
+    expect(stockErrorMessage(new Error('None of the items have any change in quantity or value.'))).toContain('Ningún producto cambia')
+    const opening = new Error('Difference Account must be a Asset/Liability type account, since this Stock Reconciliation is an Opening Entry')
+    expect(isOpeningEntryError(opening)).toBe(true)
+    expect(stockErrorMessage(opening)).toContain('aún no tiene movimientos de inventario')
+  })
+
+  it('refreshes only the touched bins', async () => {
+    const cache = { profileId: 'p', updatedAt: 'x', companies: [], warehouses: [], bins: [{ item_code: 'A', warehouse: 'W', actual_qty: 1 }, { item_code: 'B', warehouse: 'W', actual_qty: 2 }, { item_code: 'A', warehouse: 'Z', actual_qty: 5 }] }
+    const listDocuments = vi.fn().mockResolvedValue({ data: [{ item_code: 'A', warehouse: 'W', actual_qty: 9 }] })
+    const next = await refreshStockBins({ listDocuments } as never, cache, 'W', ['A'])
+    expect(listDocuments.mock.calls[0][1].filters).toEqual([['warehouse', '=', 'W'], ['item_code', 'in', ['A']]])
+    expect(next.bins).toEqual([{ item_code: 'B', warehouse: 'W', actual_qty: 2 }, { item_code: 'A', warehouse: 'Z', actual_qty: 5 }, { item_code: 'A', warehouse: 'W', actual_qty: 9 }])
+    expect(next.updatedAt).toBe('x')
   })
 
   it('allows active stock items without an existing Bin', () => {

@@ -154,6 +154,7 @@ export type VariantItem = {
   stock_uom?: string
   safety_stock?: number
   sales_uom?: string
+  purchase_uom?: string
   weight_per_unit?: number
   weight_uom?: string
   variant_of?: string

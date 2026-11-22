@@ -32,7 +32,8 @@ const PricesPage = lazy(() => import('./pages/prices-page').then(({ PricesPage }
 const PriceManagementPage = lazy(() => import('./pages/prices-page').then(({ PriceManagementPage }) => ({ default: PriceManagementPage })))
 const SuppliersPage = lazy(() => import('./pages/suppliers-page').then(({ SuppliersPage }) => ({ default: SuppliersPage })))
 const StockPage = lazy(() => import('./pages/stock-page').then(({ StockPage }) => ({ default: StockPage })))
-const StockReconciliationPage = lazy(() => import('./pages/stock-page').then(({ StockReconciliationPage }) => ({ default: StockReconciliationPage })))
+const PurchaseReceiptPage = lazy(() => import('./pages/purchase-receipt-page').then(({ PurchaseReceiptPage }) => ({ default: PurchaseReceiptPage })))
+const StockReconciliationPage = lazy(() => import('./pages/stock-reconciliation-page').then(({ StockReconciliationPage }) => ({ default: StockReconciliationPage })))
 const PosPage = lazy(() => import('./pages/pos-page').then(({ PosPage }) => ({ default: PosPage })))
 const PosShiftsPage = lazy(() => import('./pages/pos-shifts-page').then(({ PosShiftsPage }) => ({ default: PosShiftsPage })))
 const QuotationsPage = lazy(() => import('./pages/quotations-page').then(({ QuotationsPage }) => ({ default: QuotationsPage })))
@@ -156,6 +157,7 @@ function AppShell({ connection, onLock }: { connection: ConnectionProfile; onLoc
         <Route path="/pendientes" element={<PendingPage client={client} profileId={connection.id} />} />
         <Route path="/prices/manage/:itemName" element={<PriceManagementPage client={client} profileId={connection.id} />} />
         <Route path="/stock" element={<StockPage client={client} profileId={connection.id} />} />
+        <Route path="/stock/receipt" element={<PurchaseReceiptPage client={client} profileId={connection.id} />} />
         <Route path="/stock/reconciliation" element={<StockReconciliationPage client={client} profileId={connection.id} />} />
         <Route path="/suppliers" element={<SuppliersPage client={client} profileId={connection.id} />} />
         <Route path="/doctypes" element={<DocTypesPage client={client} profileId={connection.id} />} />
