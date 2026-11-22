@@ -58,6 +58,7 @@ export type CachedItem = {
   item_group?: string
   tags?: string[]
   stock_uom?: string
+  safety_stock?: number
   sales_uom?: string
   purchase_uom?: string
   weight_per_unit?: number
@@ -151,6 +152,7 @@ export type VariantItem = {
   brand?: string
   item_group?: string
   stock_uom?: string
+  safety_stock?: number
   sales_uom?: string
   weight_per_unit?: number
   weight_uom?: string

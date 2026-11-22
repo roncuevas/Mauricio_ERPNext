@@ -442,6 +442,7 @@ export default interface Resources {
       "variants": "Variantes"
     },
     "pendingPage": {
+      "actualStock": "Físico",
       "addPrice": "Agregar precio",
       "addVariant": "Agregar variante",
       "allClear": "Catálogo al día",
@@ -452,11 +453,20 @@ export default interface Resources {
       "buyingList": "Compra",
       "cacheMissing": "Faltan catálogos locales",
       "cacheMissingDescription": "Actualiza variantes, precios y listas para calcular pendientes.",
+      "catalogData": "Dato incompleto",
+      "completeItem": "Completar artículo",
       "countDescription": "Productos, plantillas y variantes con datos faltantes.",
       "count_one": "{{count}} pendiente",
       "count_other": "{{count}} pendientes",
+      "dataClear": "Catálogo completo",
+      "dataClearDescription": "Todos los artículos tienen grupo y UOM; la marca está completada cuando aplica.",
       "description": "Completa precios y variantes faltantes en el catálogo.",
       "editSalePrice": "Editar precio",
+      "fields": {
+        "brand": "Marca · recomendado",
+        "item_group": "Grupo de artículos · requerido",
+        "stock_uom": "UOM de stock · requerido"
+      },
       "imageChooseFile": "Selecciona un archivo de imagen.",
       "imageDialogDescription": "Elige cómo agregar la imagen de {{item}}.",
       "imageDialogTitle": "Imagen del producto",
@@ -504,16 +514,33 @@ export default interface Resources {
       "priceListsSummary": "{{buyingLabel}}: {{buying}} · {{sellingLabel}}: {{selling}}",
       "pricesClear": "Sin precios pendientes",
       "pricesClearDescription": "Todos los productos y variantes tienen los precios principales.",
+      "projectedStock": "Proyectado",
       "refresh": "Actualizar catálogos",
       "refreshComplete": "Catálogos actualizados.",
       "refreshProgress": "Actualizando catálogo {{current}} de {{total}}…",
       "refreshing": "Actualizando…",
+      "safetyStock": "Stock de seguridad",
       "search": "Buscar producto…",
       "selling": "Precio de venta faltante",
       "sellingList": "Venta",
       "sellingPrice": "Venta",
       "standardBuying": "Standard Buying",
+      "stockCacheMissing": "Existencias sin descargar",
+      "stockCacheMissingDescription": "Actualiza el inventario para comparar la cantidad física y proyectada con el stock de seguridad del artículo.",
+      "stockClear": "Sin faltantes de stock",
+      "stockClearDescription": "No hay artículos agotados ni por debajo de su stock de seguridad configurado.",
+      "stockRefresh": "Actualizar existencias",
+      "stockRefreshComplete": "Existencias actualizadas.",
+      "stockRefreshError": "No se encontró la caché de inventario después de actualizar.",
+      "stockRefreshing": "Actualizando existencias…",
+      "stockStatus": {
+        "low": "Bajo stock de seguridad",
+        "out": "Sin existencia"
+      },
+      "stockUpdated": "Inventario actualizado: {{date}}",
       "tabs": {
+        "data": "Datos incompletos",
+        "dataDescription": "Artículos sin grupo, UOM de stock o marca recomendada.",
         "images": "Sin imagen",
         "imagesDescription": "Productos, plantillas y variantes sin imagen asignada en ERPNext.",
         "label": "Tipos de pendientes",
@@ -521,6 +548,8 @@ export default interface Resources {
         "marginDescription": "Cada precio de venta comparado con el costo Standard Buying.",
         "prices": "Precios",
         "pricesDescription": "Productos y variantes sin precio en las listas principales.",
+        "stock": "Falta de stock",
+        "stockDescription": "Agotados o por debajo del stock de seguridad según el inventario proyectado.",
         "templates": "Plantillas sin variantes",
         "templatesDescription": "Plantillas de producto que todavía no tienen variantes."
       },
@@ -530,7 +559,8 @@ export default interface Resources {
       "unknownPriceList": "Lista sin nombre",
       "updated": "Variantes: {{variants}} · precios: {{prices}}",
       "variantOf": "{{item}} · Variante de {{name}}",
-      "viewCatalog": "Ver productos"
+      "viewCatalog": "Ver productos",
+      "viewStock": "Ver inventario"
     },
     "pos": {
       "closing": {

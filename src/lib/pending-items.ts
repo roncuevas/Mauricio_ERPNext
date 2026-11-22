@@ -1,4 +1,4 @@
-import type { ItemPrice, VariantItem } from './types'
+import type { ItemPrice, StockBin, VariantItem, Warehouse } from './types'
 
 export type PendingPriceKind = 'buying' | 'selling'
 export type PendingItem = {
@@ -8,6 +8,9 @@ export type PendingItem = {
 }
 
 export type LowMarginPrice = { item: VariantItem; selling: ItemPrice; purchase: ItemPrice; marginPercentage: number }
+export type PendingStockItem = { item: VariantItem; actualQty: number; projectedQty: number; safetyStock: number; status: 'out' | 'low' }
+export type IncompleteCatalogField = 'item_group' | 'stock_uom' | 'brand'
+export type IncompleteCatalogItem = { item: VariantItem; missingFields: IncompleteCatalogField[] }
 
 function todayLocal() {
   const date = new Date()
@@ -20,6 +23,38 @@ function notDisabled(value: number | boolean | undefined) {
 
 function isFlagSet(value: number | boolean | undefined) {
   return value === true || value === 1 || String(value) === '1'
+}
+
+export function findStockShortages(items: VariantItem[], bins: StockBin[], warehouses: Warehouse[]): PendingStockItem[] {
+  const children = new Set(items.flatMap((item) => item.variant_of ? [item.variant_of] : []))
+  const activeLeafWarehouses = new Set(warehouses.filter((warehouse) => notDisabled(warehouse.disabled) && !isFlagSet(warehouse.is_group)).map((warehouse) => warehouse.name))
+  const quantities = new Map<string, { actualQty: number; projectedQty: number }>()
+  for (const bin of bins) {
+    if (warehouses.length && !activeLeafWarehouses.has(bin.warehouse)) continue
+    const current = quantities.get(bin.item_code) ?? { actualQty: 0, projectedQty: 0 }
+    current.actualQty += Number(bin.actual_qty ?? 0)
+    current.projectedQty += Number(bin.projected_qty ?? bin.actual_qty ?? 0)
+    quantities.set(bin.item_code, current)
+  }
+  return items.flatMap((item) => {
+    if (!notDisabled(item.disabled) || !isFlagSet(item.is_stock_item) || isFlagSet(item.has_variants) || children.has(item.name)) return []
+    const quantity = quantities.get(item.name) ?? { actualQty: 0, projectedQty: 0 }
+    const safetyStockValue = Number(item.safety_stock ?? 0)
+    const safetyStock = Number.isFinite(safetyStockValue) ? Math.max(0, safetyStockValue) : 0
+    const status: PendingStockItem['status'] | null = quantity.actualQty <= 0 ? 'out' : safetyStock > 0 && quantity.projectedQty < safetyStock ? 'low' : null
+    return status ? [{ item, ...quantity, safetyStock, status }] : []
+  }).sort((left, right) => left.actualQty - right.actualQty || (left.item.item_name || left.item.name).localeCompare(right.item.item_name || right.item.name, 'es'))
+}
+
+export function findIncompleteCatalogItems(items: VariantItem[]): IncompleteCatalogItem[] {
+  return items.flatMap((item) => {
+    if (!notDisabled(item.disabled)) return []
+    const missingFields: IncompleteCatalogField[] = []
+    if (!item.item_group?.trim()) missingFields.push('item_group')
+    if (!item.stock_uom?.trim()) missingFields.push('stock_uom')
+    if (!item.brand?.trim()) missingFields.push('brand')
+    return missingFields.length ? [{ item, missingFields }] : []
+  }).sort((left, right) => right.missingFields.length - left.missingFields.length || (left.item.item_name || left.item.name).localeCompare(right.item.item_name || right.item.name, 'es'))
 }
 
 function activePrice(price: ItemPrice, today: string) {

@@ -228,7 +228,7 @@ async function loadVariants(client: ErpNextClient, profileId: string, onProgress
   let start = 0
   while (true) {
     onProgress?.(`Descargando variantes: ${items.length}`)
-    const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'image', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'is_stock_item', 'has_serial_no', 'has_batch_no'], start, pageLength: 500, orderBy: 'item_name asc' })
+    const batch = await client.listDocuments<VariantItem>('Item', { fields: ['name', 'image', 'item_code', 'item_name', 'brand', 'item_group', 'stock_uom', 'safety_stock', 'sales_uom', 'purchase_uom', 'weight_per_unit', 'weight_uom', 'variant_of', 'has_variants', 'disabled', 'is_stock_item', 'has_serial_no', 'has_batch_no'], start, pageLength: 500, orderBy: 'item_name asc' })
     items.push(...batch.data)
     if (batch.data.length < 500) break
     start += batch.data.length

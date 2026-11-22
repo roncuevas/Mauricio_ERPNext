@@ -10,17 +10,18 @@ import { CatalogErrorNotice } from '../components/catalog-guidance'
 import { createErpNextClient } from '../lib/erpnext'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { queryKeys } from '../lib/query-keys'
-import { findLowMarginPrices, findPendingItems, type PendingPriceKind } from '../lib/pending-items'
+import { findIncompleteCatalogItems, findLowMarginPrices, findPendingItems, findStockShortages, type PendingPriceKind } from '../lib/pending-items'
 import { readPendingPreferences } from '../lib/pending-preferences'
 import { runManagedCacheRefresh } from '../lib/cache-manager'
 import { VirtualizedCollection } from '../components/virtualized-collection'
 import { rankProductSearch } from '../lib/search'
 import { patchItemCatalog } from '../lib/item-cache'
 import { patchVariantCatalog } from '../lib/variant-cache'
-import type { ItemCatalogCache, ItemPrice, VariantCatalogCache, VariantItem } from '../lib/types'
+import { readStockCache } from '../lib/stock-cache'
+import type { ItemCatalogCache, ItemPrice, StockCache, VariantCatalogCache, VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
-type PendingTab = 'prices' | 'templates' | 'margin' | 'images'
+type PendingTab = 'prices' | 'templates' | 'margin' | 'images' | 'stock' | 'data'
 
 function priceManagementUrl(itemCode: string, price: ItemPrice | undefined, kind: PendingPriceKind, priceList: string) {
   const params = new URLSearchParams({ returnTo: '/pendientes', kind, priceList })
@@ -38,10 +39,12 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const [refreshMessage, setRefreshMessage] = useState('')
   const [imageSaveMessage, setImageSaveMessage] = useState('')
   const [templateImageItem, setTemplateImageItem] = useState<string | null>(null)
+  const [stockRefreshMessage, setStockRefreshMessage] = useState('')
   const preferences = readPendingPreferences(profileId)
   const variants = useQuery(catalogQueryOptions.variant(profileId))
   const prices = useQuery(catalogQueryOptions.price(profileId))
   const itemCatalog = useQuery(catalogQueryOptions.item(profileId))
+  const stock = useQuery({ queryKey: queryKeys.catalog.stock(profileId), queryFn: () => readStockCache(profileId), staleTime: Infinity })
   const refresh = useMutation({
     mutationFn: async () => {
       const context = { client, profileId, date: new Date().toISOString().slice(0, 10) }
@@ -67,6 +70,19 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
       setRefreshMessage('')
     },
   })
+  const stockRefresh = useMutation({
+    mutationFn: async () => {
+      await runManagedCacheRefresh('stock', { client, profileId, date: new Date().toISOString().slice(0, 10) }, setStockRefreshMessage)
+      const cache = await readStockCache(profileId)
+      if (!cache) throw new Error(t('pendingPage.stockRefreshError'))
+      return cache
+    },
+    onSuccess: (cache) => {
+      queryClient.setQueryData<StockCache>(queryKeys.catalog.stock(profileId), cache)
+      setStockRefreshMessage(t('pendingPage.stockRefreshComplete'))
+    },
+    onError: (error) => setStockRefreshMessage(error instanceof Error ? error.message : t('pendingPage.stockRefreshError')),
+  })
   const pending = useMemo(() => findPendingItems(variants.data?.items ?? [], prices.data?.prices ?? [], { buying: preferences.buyingPriceList, selling: preferences.sellingPriceList }), [preferences.buyingPriceList, preferences.sellingPriceList, prices.data?.prices, variants.data?.items])
   const lowMargins = useMemo(() => findLowMarginPrices(variants.data?.items ?? [], prices.data?.prices ?? [], preferences.lowMarginThreshold), [preferences.lowMarginThreshold, prices.data?.prices, variants.data?.items])
   const itemTagsByName = useMemo(() => new Map((itemCatalog.data?.items ?? []).map((item) => [item.name, item.tags ?? []])), [itemCatalog.data?.items])
@@ -75,10 +91,15 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const filteredTemplates = filteredPending.filter(({ kind }) => kind === 'template')
   const filteredPrices = filteredPending.filter(({ kind }) => kind !== 'template')
   const filteredMargins = rankProductSearch(lowMargins, search, ({ item }) => searchableItem(item))
+  const stockShortages = useMemo(() => findStockShortages(variants.data?.items ?? [], stock.data?.bins ?? [], stock.data?.warehouses ?? []), [stock.data?.bins, stock.data?.warehouses, variants.data?.items])
+  const filteredStockShortages = rankProductSearch(stockShortages, search, ({ item }) => searchableItem(item))
+  const incompleteItems = useMemo(() => findIncompleteCatalogItems(variants.data?.items ?? []), [variants.data?.items])
+  const filteredIncompleteItems = rankProductSearch(incompleteItems, search, ({ item }) => searchableItem(item))
   const missing = (kind: PendingPriceKind) => t(kind === 'buying' ? 'pendingPage.buying' : 'pendingPage.selling')
   const dateLabel = (date?: string) => date ? new Date(date).toLocaleString() : t('pendingPage.notUpdated')
   const notReady = variants.isPending || prices.isPending
   const formatPrice = (price: ItemPrice) => new Intl.NumberFormat(i18n.language, { style: 'currency', currency: price.currency || 'MXN', maximumFractionDigits: 2 }).format(Number(price.price_list_rate ?? 0))
+  const formatQuantity = (quantity: number) => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(quantity)
   const missingImageItems = useMemo(() => {
     const items = variants.data?.items ?? []
     const itemsWithVariants = new Set(items.filter((item) => item.has_variants === true || item.has_variants === 1 || String(item.has_variants) === '1').map((item) => item.name))
@@ -91,7 +112,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const itemsByName = useMemo(() => new Map((variants.data?.items ?? []).map((item) => [item.name, item])), [variants.data?.items])
   const imagesReady = variants.data?.imageFieldLoaded === true
   const filteredMissingImages = rankProductSearch(missingImageItems, search, ({ item }) => searchableItem(item))
-  const activeCount = activeTab === 'prices' ? filteredPrices.length : activeTab === 'templates' ? filteredTemplates.length : activeTab === 'margin' ? filteredMargins.length : imagesReady ? filteredMissingImages.length : 0
+  const activeCount = activeTab === 'prices' ? filteredPrices.length : activeTab === 'templates' ? filteredTemplates.length : activeTab === 'margin' ? filteredMargins.length : activeTab === 'images' ? imagesReady ? filteredMissingImages.length : 0 : activeTab === 'stock' ? filteredStockShortages.length : filteredIncompleteItems.length
 
   async function updateImageCache(item: VariantItem, imageUrl: string) {
     const updatedItem = { ...item, image: imageUrl }
@@ -137,12 +158,14 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
     {notReady && <div className="flex justify-center p-12"><Spinner /></div>}
     {!notReady && variants.data && prices.data && <>
       <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value as PendingTab); setSearch('') }}>
-        <div className="pending-toolbar"><div><strong>{activeTab === 'images' && !imagesReady ? t('pendingPage.imagesNeedRefresh') : t('pendingPage.count', { count: activeCount })}</strong><span>{t(`pendingPage.tabs.${activeTab}Description`)}</span></div><PendingSearchForm key={activeTab} onSearch={setSearch} /></div>
+        <div className="pending-toolbar"><div><strong>{activeTab === 'images' && !imagesReady ? t('pendingPage.imagesNeedRefresh') : activeTab === 'stock' && !stock.data ? t('pendingPage.stockCacheMissing') : t('pendingPage.count', { count: activeCount })}</strong><span>{activeTab === 'stock' && stock.data ? t('pendingPage.stockUpdated', { date: new Date(stock.data.updatedAt).toLocaleString(i18n.language) }) : t(`pendingPage.tabs.${activeTab}Description`)}</span></div><div className="flex flex-wrap items-center gap-2">{activeTab === 'stock' && <Button type="button" variant="secondary" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}><RefreshCw className={`mr-2 size-4${stockRefresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button>}<PendingSearchForm key={activeTab} onSearch={setSearch} /></div></div>
         <TabsList aria-label={t('pendingPage.tabs.label')} className="pending-tabs">
           <TabsTrigger value="prices">{t('pendingPage.tabs.prices')} <span>{pending.filter(({ kind }) => kind !== 'template').length}</span></TabsTrigger>
           <TabsTrigger value="templates">{t('pendingPage.tabs.templates')} <span>{pending.filter(({ kind }) => kind === 'template').length}</span></TabsTrigger>
           <TabsTrigger value="margin">{t('pendingPage.tabs.margin')} <span>{lowMargins.length}</span></TabsTrigger>
           <TabsTrigger value="images">{t('pendingPage.tabs.images')} <span>{imagesReady ? missingImageItems.length : '—'}</span></TabsTrigger>
+          <TabsTrigger value="stock">{t('pendingPage.tabs.stock')} <span>{stock.data ? stockShortages.length : '—'}</span></TabsTrigger>
+          <TabsTrigger value="data">{t('pendingPage.tabs.data')} <span>{incompleteItems.length}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="prices">{filteredPrices.length ? <div role="list"><VirtualizedCollection className="pending-list" items={filteredPrices} getKey={(entry) => entry.item.name} estimateSize={96} renderItem={({ item, kind, missingPrices }) => {
           const name = item.item_name || item.name
@@ -156,6 +179,8 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
           const template = item.variant_of ? itemsByName.get(item.variant_of) : undefined
           return <article className="pending-row" role="listitem" key={item.name}><div className="pending-item-main"><span className="pending-item-icon pending-item-icon-template" aria-hidden="true"><ImageOff /></span><div className="min-w-0"><div className="pending-item-heading"><h2 title={item.item_name || item.name}>{item.item_name || item.name}</h2><Badge tone={kind === 'variant' ? 'info' : kind === 'template' ? 'neutral' : 'warning'}>{t(`pendingPage.kind.${kind}`)}</Badge></div><p>{item.name}{item.variant_of ? ` · ${t('pendingPage.variantOf', { item: item.name, name: item.variant_of })}` : ''}</p><div className="pending-missing-tags"><Badge tone="warning">{t('pendingPage.imageMissing')}</Badge></div></div></div><div className="flex flex-wrap items-center gap-2">{template?.image?.trim() && <Button type="button" variant="secondary" onClick={() => { void assignTemplateImage(item, template) }} loading={templateImageItem === item.name} disabled={templateImageItem !== null}>{t('pendingPage.assignTemplateImage')}<ImagePlus className="size-4" aria-hidden="true" /></Button>}<Button type="button" variant="secondary" onClick={() => { setImageSaveMessage(''); setImageItem(item) }}>{t('pendingPage.assignImage')}<ImagePlus className="size-4" aria-hidden="true" /></Button></div></article>
         }} /></div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.imagesClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.imagesClearDescription')} />}</TabsContent>
+        <TabsContent value="stock">{stockRefreshMessage && <p className="pending-refresh-message" role="status">{stockRefreshMessage}</p>}{stockRefresh.error && <CatalogErrorNotice error={stockRefresh.error} />}{!stock.data ? <div className="pending-empty-state"><CircleAlert aria-hidden="true" /><div><h2>{t('pendingPage.stockCacheMissing')}</h2><p>{t('pendingPage.stockCacheMissingDescription')}</p></div><Button type="button" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}>{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button></div> : filteredStockShortages.length ? <div role="list"><VirtualizedCollection className="pending-list" items={filteredStockShortages} getKey={({ item }) => item.name} estimateSize={96} renderItem={({ item, actualQty, projectedQty, safetyStock, status }) => <article className="pending-row" role="listitem" key={item.name}><div className="pending-item-main"><span className="pending-item-icon pending-item-icon-variant" aria-hidden="true"><CircleAlert /></span><div className="min-w-0"><div className="pending-item-heading"><h2 title={item.item_name || item.name}>{item.item_name || item.name}</h2><Badge tone={status === 'out' ? 'danger' : 'warning'}>{t(`pendingPage.stockStatus.${status}`)}</Badge></div><p>{item.name} · {item.stock_uom || '—'}</p><div className="pending-missing-tags"><Badge tone="neutral">{t('pendingPage.actualStock')}: {formatQuantity(actualQty)}</Badge><Badge tone="neutral">{t('pendingPage.projectedStock')}: {formatQuantity(projectedQty)}</Badge>{status === 'low' && <Badge tone="warning">{t('pendingPage.safetyStock')}: {formatQuantity(safetyStock)}</Badge>}</div></div></div><ButtonLink variant="secondary" to={`/stock?search=${encodeURIComponent(item.name)}`}>{t('pendingPage.viewStock')}<ArrowUpRight className="ml-2 size-4" aria-hidden="true" /></ButtonLink></article>} /></div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.stockClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.stockClearDescription')} />}</TabsContent>
+        <TabsContent value="data">{filteredIncompleteItems.length ? <div role="list"><VirtualizedCollection className="pending-list" items={filteredIncompleteItems} getKey={({ item }) => item.name} estimateSize={96} renderItem={({ item, missingFields }) => <article className="pending-row" role="listitem" key={item.name}><div className="pending-item-main"><span className="pending-item-icon pending-item-icon-template" aria-hidden="true"><CircleAlert /></span><div className="min-w-0"><div className="pending-item-heading"><h2 title={item.item_name || item.name}>{item.item_name || item.name}</h2><Badge tone="neutral">{t('pendingPage.catalogData')}</Badge></div><p>{item.name}</p><div className="pending-missing-tags">{missingFields.map((field) => <Badge key={field} tone={field === 'brand' ? 'neutral' : 'warning'}>{t(`pendingPage.fields.${field}`)}</Badge>)}</div></div></div><ButtonLink variant="secondary" to={`/items/${encodeURIComponent(item.name)}`}>{t('pendingPage.completeItem')}<ArrowUpRight className="ml-2 size-4" aria-hidden="true" /></ButtonLink></article>} /></div> : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t('pendingPage.dataClear')} description={search ? t('pendingPage.noSearchDescription') : t('pendingPage.dataClearDescription')} />}</TabsContent>
       </Tabs>
       <div className="sr-only" aria-live="polite">{t('pendingPage.count', { count: activeCount })}</div>
     </>}
