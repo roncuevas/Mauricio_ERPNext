@@ -45,6 +45,7 @@ export function WorkspaceNavigation() {
   const translate = (key: string) => String((t as unknown as (key: string) => unknown)(key))
   const location = useLocation()
   const navigate = useNavigate()
+  const catalogSearch = ['/items', '/prices'].includes(location.pathname) ? new URLSearchParams(location.search).get('search') : null
   const workspace = workspaces.find((candidate) => candidate.tabs.some((tab) => tab.matches(location.pathname)))
   if (!workspace || workspace.tabs.length < 2) return null
   const activeTab = workspace.tabs.find((tab) => tab.matches(location.pathname)) ?? workspace.tabs[0]
@@ -58,7 +59,7 @@ export function WorkspaceNavigation() {
       <span className="workspace-navigation-hint text-xs text-[var(--color-muted)]">{t('navigation.lazyLoading')}</span>
     </div>
     <div className="workspace-navigation-tabs">
-      <Tabs value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(tab.to) }}>
+      <Tabs value={activeTab.value} onValueChange={(value) => { const tab = workspace.tabs.find((candidate) => candidate.value === value); if (tab && tab.value !== activeTab.value) navigate(catalogSearch && ['/items', '/prices'].includes(tab.to) ? `${tab.to}?search=${encodeURIComponent(catalogSearch)}` : tab.to) }}>
         <TabsList aria-label={t('navigation.currentSection', { section: translate(workspace.labelKey) })} className="workspace-navigation-tab-list">
           {workspace.tabs.map((tab) => <TabsTrigger key={tab.value} value={tab.value} className="workspace-navigation-tab whitespace-nowrap">{translate(tab.labelKey)}</TabsTrigger>)}
         </TabsList>

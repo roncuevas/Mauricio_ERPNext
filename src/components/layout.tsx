@@ -44,13 +44,16 @@ function navigationItemKey(label: string) {
 export function NavLink({ to, children, className = '', ariaLabel }: { to: string; children: ReactNode; className?: string; ariaLabel?: string }) {
   const location = useLocation()
   const active = routeMatches(location.pathname, to)
-  return <Link className={`app-nav-link whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${active ? 'app-nav-link-active bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'} ${className}`.trim()} aria-current={active ? 'page' : undefined} aria-label={ariaLabel} to={to}>{children}</Link>
+  const currentCatalogSearch = ['/items', '/prices'].includes(location.pathname) ? new URLSearchParams(location.search).get('search') : null
+  const target = currentCatalogSearch && ['/items', '/prices'].includes(to) ? `${to}?search=${encodeURIComponent(currentCatalogSearch)}` : to
+  return <Link className={`app-nav-link whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${active ? 'app-nav-link-active bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'} ${className}`.trim()} aria-current={active ? 'page' : undefined} aria-label={ariaLabel} to={target}>{children}</Link>
 }
 
 function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: boolean; collapsed?: boolean }) {
   const { t } = useTranslation()
   const translate = (key: string, options?: Record<string, unknown>) => String((t as unknown as (key: string, options?: Record<string, unknown>) => unknown)(key, options))
   const location = useLocation()
+  const currentCatalogSearch = ['/items', '/prices'].includes(location.pathname) ? new URLSearchParams(location.search).get('search') : null
   const groups = useMemo(visibleGroups, [])
   const activeGroup = groups.find((group) => group.items.some((item) => routeMatches(location.pathname, item.to)))?.id ?? null
   const [openGroups, setOpenGroups] = useState<string[]>(() => activeGroup ? [activeGroup] : [])
@@ -69,7 +72,7 @@ function NavigationGroups({ mobile = false, collapsed = false }: { mobile?: bool
       const groupLabelId = `${mobile ? 'mobile-' : 'desktop-'}navigation-group-${group.id}`
       return <section className={`navigation-group${isOpen ? ' navigation-group-open' : ''}${activeGroup === group.id ? ' navigation-group-active' : ''}${collapsed ? ' navigation-group-collapsed' : ''}`} key={group.id}>
         <div className="navigation-group-heading">
-          <Link className="navigation-group-link" to={group.landing} title={collapsed ? translate(`navigation.${group.id}`) : undefined} aria-current={activeGroup === group.id ? 'page' : undefined}>
+          <Link className="navigation-group-link" to={currentCatalogSearch && group.landing === '/items' ? `${group.landing}?search=${encodeURIComponent(currentCatalogSearch)}` : group.landing} title={collapsed ? translate(`navigation.${group.id}`) : undefined} aria-current={activeGroup === group.id ? 'page' : undefined}>
             <span className="navigation-group-icon"><SidebarIcon name={group.icon} /></span>
             <span className="navigation-group-label">{translate(`navigation.${group.id}`)}</span>
           </Link>

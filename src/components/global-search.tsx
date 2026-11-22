@@ -38,7 +38,7 @@ export function GlobalSearch({ profileId, children }: { profileId: string; child
       const next: GlobalSearchEntry[] = []
       const text = (entry: Omit<GlobalSearchEntry, 'match'>): GlobalSearchEntry => ({ ...entry, match: textMatcher(entry.title, entry.detail) })
       const itemsByCode = new Map(items?.items.map((item) => [item.name, item]))
-      items?.items.forEach((item) => next.push({ id: `item-${item.name}`, title: item.item_name || item.name, detail: `${item.item_code || item.name} · ${t('globalSearch.products')}`, kind: 'product', href: `/items/${encodeURIComponent(item.name)}`, match: productMatcher(item) }))
+      items?.items.forEach((item) => next.push({ id: `item-${item.name}`, title: item.item_name || item.name, detail: `${item.item_code || item.name} · ${t('globalSearch.products')}`, kind: 'product', href: `/items?search=${encodeURIComponent(search.trim() || item.item_name || item.name)}`, match: productMatcher(item) }))
       prices?.prices.forEach((price) => {
         const code = price.item_code || price.name
         const item = price.item_code ? itemsByCode.get(price.item_code) : undefined
@@ -57,7 +57,6 @@ export function GlobalSearch({ profileId, children }: { profileId: string; child
 
   function select(result: GlobalSearchEntry) {
     setOpen(false)
-    setSearch('')
     navigate(result.href)
   }
 
