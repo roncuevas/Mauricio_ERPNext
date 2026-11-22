@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Button } from './ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
@@ -45,7 +46,7 @@ export function EntityCombobox({ value = '', onValueChange, options, placeholder
     <PopoverTrigger asChild>
       <Button type="button" variant="secondary" className={cn('entity-combobox-trigger control flex w-full items-center justify-between gap-2 text-left font-normal', !selected && 'text-[var(--color-muted)]', className)} disabled={disabled || loading} aria-label={ariaLabel} aria-expanded={open} aria-required={required || undefined} role="combobox">
         <span className="min-w-0 truncate">{loading ? 'Cargando…' : selected?.label || placeholder}</span>
-        <span aria-hidden="true" className="shrink-0 text-xs">⌄</span>
+        <ChevronDown aria-hidden="true" className="ui-select-chevron shrink-0" />
       </Button>
     </PopoverTrigger>
     <PopoverContent align="start" className="entity-combobox-content w-[var(--radix-popover-trigger-width)] min-w-56 p-1">
