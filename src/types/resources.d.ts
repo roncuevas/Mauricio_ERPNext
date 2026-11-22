@@ -1240,33 +1240,27 @@ export default interface Resources {
     "settings": {
       "appearance": {
         "colorMode": "Modo de color",
-        "colorModeDescription": "Cambia entre modo claro y oscuro.",
-        "description": "Personaliza colores, modo de pantalla y densidad desde este navegador.",
-        "eyebrow": "Apariencia",
+        "dark": "Oscuro",
+        "description": "Los cambios se aplican de inmediato en este navegador.",
+        "light": "Claro",
         "palette": "Paleta de colores",
-        "preview": "Vista previa",
-        "previewStatus": "Datos sincronizados",
-        "primary": "Acción principal",
-        "secondary": "Secundaria",
-        "title": "Apariencia de la aplicación"
+        "title": "Apariencia e idioma"
       },
       "connection": {
         "connectedAs": "Conectado como {{user}}",
-        "description": "Estado de la conexión activa. Las credenciales se administran desde la pantalla de conexión.",
-        "eyebrow": "Conexión",
+        "description": "Instancia de ERPNext activa. Las credenciales se administran desde la pantalla de conexión.",
         "instance": "Instancia",
         "profile": "Perfil",
+        "status": "Estado",
         "test": "Probar conexión",
         "testing": "Probando",
-        "title": "Instancia ERPNext",
+        "title": "Conexión",
         "userError": "No se pudo cargar el usuario actual."
       },
       "customerMissing": "El cliente seleccionado ya no está disponible.",
       "description": "Administra tu conexión y personaliza la aplicación.",
       "language": {
-        "description": "Elige el idioma usado por la interfaz. Se guarda en este navegador.",
-        "eyebrow": "Idioma y región",
-        "title": "Idioma de la aplicación"
+        "description": "Elige el idioma usado por la interfaz. Se guarda en este navegador."
       },
       "navigation": {
         "cards": "Cards",
@@ -1274,9 +1268,7 @@ export default interface Resources {
         "collapsedSidebarDescription": "Deja más espacio para el contenido principal.",
         "compactDensity": "Usar densidad compacta",
         "compactDensityDescription": "Reduce espacios en listas y controles.",
-        "description": "Define cómo inicia y se organiza la aplicación en este navegador.",
-        "eyebrow": "Preferencias locales",
-        "groupsNote": "Los grupos abiertos se recuerdan automáticamente al usarlos.",
+        "description": "Cómo inicia y se organiza la aplicación en este navegador. Los grupos abiertos del menú se recuerdan automáticamente.",
         "hierarchy": "Jerarquía",
         "home": "Inicio",
         "landing": "Página inicial",
@@ -1284,19 +1276,18 @@ export default interface Resources {
         "prices": "Precios",
         "productView": "Vista predeterminada de productos",
         "products": "Productos",
-        "restore": "Restaurar preferencias locales",
+        "restore": "Restaurar valores de interfaz",
         "table": "Tabla",
-        "title": "Navegación y operación"
+        "title": "Navegación"
       },
       "pending": {
         "buying": "Lista de compra",
-        "description": "Se guardan en este navegador para esta conexión y definen qué precios revisa Pendientes.",
-        "eyebrow": "Catálogo",
+        "description": "Listas de precios que compara la vista Pendientes en esta conexión. Los cambios se guardan automáticamente.",
         "loadError": "No se pudieron cargar las listas de precios.",
+        "lowMarginDescription": "Los productos con un margen menor a este porcentaje se marcan como margen bajo.",
         "lowMarginThreshold": "Umbral de margen bajo (%)",
-        "savedLocally": "Los cambios se guardan automáticamente en este navegador.",
         "selling": "Lista de venta",
-        "title": "Listas principales de precios"
+        "title": "Pendientes"
       },
       "pos": {
         "autoFocus": "Enfocar búsqueda de productos",
@@ -1305,16 +1296,16 @@ export default interface Resources {
         "customerPlaceholder": "Sin cliente predeterminado",
         "customerSearch": "Buscar cliente…",
         "customersError": "No se pudieron cargar los clientes.",
-        "description": "Se guardan solo en este navegador y para esta conexión. ERPNext sigue controlando perfiles, turnos y ventas.",
-        "eyebrow": "Operación",
+        "description": "Valores iniciales del POS para esta conexión, guardados en este navegador. ERPNext sigue controlando perfiles, turnos y ventas.",
         "profile": "POS Profile predeterminado",
+        "profileDescription": "Si lo dejas vacío se usa el primer perfil activo.",
         "profilePlaceholder": "Usar el primer perfil activo",
         "profileSearch": "Buscar POS Profile…",
         "profilesError": "No se pudieron cargar los POS Profiles.",
         "rememberCustomer": "Recordar cliente",
         "rememberCustomerDescription": "Conservarlo después de cobrar o guardar un carrito.",
         "restore": "Restaurar valores",
-        "title": "Preferencias del POS"
+        "title": "Punto de venta"
       },
       "posProfileMissing": "El POS Profile seleccionado ya no está disponible.",
       "posReset": "Preferencias de POS restauradas.",
@@ -1322,28 +1313,24 @@ export default interface Resources {
       "profilePermission": "ERPNext no permite leer el perfil completo del usuario. Solicita permiso de lectura sobre User para mostrar más datos.",
       "sections": "Secciones de configuración",
       "session": {
-        "description": "Elige cuánto permanece abierta tu sesión y si se actualizan las cachés al iniciar sesión.",
+        "description": "Cuánto dura tu sesión en este navegador y qué se descarga al entrar.",
         "duration": "Expirar sesión después de",
-        "eyebrow": "Sesión y caché",
         "hours": "horas",
         "refreshCaches": "Actualizar todas las cachés al iniciar sesión",
         "refreshCachesDescription": "Descarga los catálogos y datos administrados en segundo plano. Las cachés que requieren una compañía se omiten si no hay un perfil POS configurado.",
-        "title": "Duración y actualización"
+        "title": "Sesión"
       },
       "tabs": {
-        "appearance": "Apariencia",
+        "account": "Cuenta",
         "data": "Datos",
-        "general": "General",
-        "language": "Idioma y región",
-        "navigation": "Navegación",
-        "pos": "POS"
+        "interface": "Interfaz",
+        "operation": "Operación"
       },
       "title": "Configuración",
       "user": {
         "created": "Creado",
         "description": "Datos informativos obtenidos de la instancia activa. No se modifican desde aquí.",
         "email": "Correo",
-        "eyebrow": "Usuario ERPNext",
         "lastLogin": "Último acceso / actividad",
         "loading": "Cargando perfil…",
         "mobile": "Móvil",

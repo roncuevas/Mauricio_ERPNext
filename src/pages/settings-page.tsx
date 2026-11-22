@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { Button, Field, Input, Notice, PageHeader, RefreshButton, Spinner } from '../components/ui'
+import { Check, Database, Palette, Store, UserRound, type LucideIcon } from 'lucide-react'
+import { Button, Input, Notice, PageHeader, RefreshButton, Spinner, ToggleGroup, ToggleGroupItem } from '../components/ui'
 import { Checkbox } from '../components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
@@ -15,18 +16,28 @@ import { normalizeUserProfile, type UserProfileSummary } from '../lib/user-profi
 import type { ConnectionProfile, PosProfile, PriceList } from '../lib/types'
 import { queryKeys } from '../lib/query-keys'
 import { clearPosPreferences, DEFAULT_POS_PREFERENCES, readPosPreferences, writePosPreferences, type PosPreferences } from '../lib/pos-preferences'
-import { DEFAULT_APP_PREFERENCES, readAppPreferences, writeAppPreferences, type AppPreferences, type Density, type LandingRoute } from '../lib/app-preferences'
+import { DEFAULT_APP_PREFERENCES, readAppPreferences, writeAppPreferences, type AppPreferences, type LandingRoute } from '../lib/app-preferences'
 import { useTranslation } from 'react-i18next'
 import { readPendingPreferences, writePendingPreferences, type PendingPreferences } from '../lib/pending-preferences'
 import { downloadMissingProductImages } from '../lib/product-image-sync'
 
-const TAB_VALUES = ['general', 'pos', 'appearance', 'language', 'data', 'navigation'] as const
+const TAB_VALUES = ['account', 'operation', 'interface', 'data'] as const
 type SettingsTab = typeof TAB_VALUES[number]
+const TAB_ICONS: Record<SettingsTab, LucideIcon> = { account: UserRound, operation: Store, interface: Palette, data: Database }
+// Earlier releases linked to these tab ids; keep those links working.
+const LEGACY_TABS: Record<string, SettingsTab> = { general: 'account', pos: 'operation', appearance: 'interface', language: 'interface', navigation: 'interface' }
 type ProductView = 'table' | 'cards' | 'hierarchy'
 const PRODUCT_VIEW_KEY = (profileId: string) => `mauricio-erpnext:products-view:${profileId}`
+const DESKTOP_QUERY = '(min-width: 1024px)'
+
+function resolveTab(value: string | null): SettingsTab {
+  if (!value) return 'account'
+  if (TAB_VALUES.includes(value as SettingsTab)) return value as SettingsTab
+  return LEGACY_TABS[value] ?? 'account'
+}
 
 function formatProfileDate(value?: string) {
-  if (!value) return '—'
+  if (!value) return undefined
   const date = new Date(value.replace(' ', 'T'))
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
@@ -41,15 +52,6 @@ async function loadUserProfile(client: ReturnType<typeof createErpNextClient>): 
   }
 }
 
-function UserDetail({ label, value }: { label: string; value?: string }) {
-  if (!value) return null
-  return <div><dt className="field-label">{label}</dt><dd>{value}</dd></div>
-}
-
-function SettingSection({ eyebrow, title, description, children, className = '' }: { eyebrow: string; title: string; description?: string; children: React.ReactNode; className?: string }) {
-  return <div className={`card settings-section-card ${className}`}><div className="settings-section-heading"><div><p className="settings-eyebrow">{eyebrow}</p><h2>{title}</h2>{description && <p className="muted">{description}</p>}</div></div>{children}</div>
-}
-
 function readProductView(profileId: string): ProductView {
   try {
     const value = localStorage.getItem(PRODUCT_VIEW_KEY(profileId))
@@ -57,12 +59,62 @@ function readProductView(profileId: string): ProductView {
   } catch { return 'table' }
 }
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    const update = () => setMatches(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [query])
+  return matches
+}
+
+function SettingsSection({ title, description, children, footer }: { title: string; description?: string; children: ReactNode; footer?: ReactNode }) {
+  const id = useId()
+  return <section className="card settings-section" aria-labelledby={id}>
+    <header className="settings-section-header"><h2 id={id}>{title}</h2>{description && <p>{description}</p>}</header>
+    <div className="settings-section-body">{children}</div>
+    {footer && <footer className="settings-section-footer">{footer}</footer>}
+  </section>
+}
+
+/** One setting: name and explanation on the left, its control on the right (stacked on narrow screens). */
+function SettingRow({ label, description, htmlFor, children }: { label: string; description?: string; htmlFor?: string; children: ReactNode }) {
+  return <div className="settings-row">
+    <div className="settings-row-copy">{htmlFor ? <label className="settings-row-label" htmlFor={htmlFor}>{label}</label> : <span className="settings-row-label">{label}</span>}{description && <p className="settings-row-description">{description}</p>}</div>
+    <div className="settings-row-control">{children}</div>
+  </div>
+}
+
+function CheckboxRow({ label, description, checked, onCheckedChange }: { label: string; description?: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
+  const id = useId()
+  return <div className="settings-row settings-row-check">
+    <Checkbox id={id} checked={checked} onCheckedChange={(value) => onCheckedChange(value === true)} />
+    <div className="settings-row-copy"><label className="settings-row-label" htmlFor={id}>{label}</label>{description && <p className="settings-row-description">{description}</p>}</div>
+  </div>
+}
+
+function SelectRow({ label, description, value, onValueChange, children }: { label: string; description?: string; value: string; onValueChange: (value: string) => void; children: ReactNode }) {
+  const id = useId()
+  return <SettingRow label={label} description={description} htmlFor={id}>
+    <Select value={value} onValueChange={onValueChange}><SelectTrigger id={id} aria-label={label}><SelectValue /></SelectTrigger><SelectContent>{children}</SelectContent></Select>
+  </SettingRow>
+}
+
+function UserDetail({ label, value }: { label: string; value?: string }) {
+  if (!value) return null
+  return <div><dt>{label}</dt><dd>{value}</dd></div>
+}
+
 export function SettingsPage({ connection, onLock }: { connection: ConnectionProfile; onLock: () => void }) {
   const { t } = useTranslation()
   const client = useMemo(() => createErpNextClient(connection), [connection])
   const [searchParams, setSearchParams] = useSearchParams()
-  const rawTab = searchParams.get('tab')
-  const activeTab: SettingsTab = TAB_VALUES.includes(rawTab as SettingsTab) ? rawTab as SettingsTab : 'general'
+  const activeTab = resolveTab(searchParams.get('tab'))
+  const isDesktop = useMediaQuery(DESKTOP_QUERY)
+  const thresholdId = useId()
   const userQuery = useQuery({ queryKey: queryKeys.settings.userProfile(connection.id), queryFn: () => loadUserProfile(client) })
   const posProfilesQuery = useQuery({ queryKey: queryKeys.pos.profiles(connection.id), queryFn: async () => (await client.listDocuments<PosProfile>('POS Profile', { fields: ['name', 'company', 'warehouse', 'currency', 'disabled'], pageLength: 100, orderBy: 'name asc' })).data.filter((profile) => profile.disabled !== true && profile.disabled !== 1 && String(profile.disabled) !== '1') })
   const pendingPriceListsQuery = useQuery({ queryKey: queryKeys.prices.lists(connection.id), queryFn: async () => (await client.listDocuments<PriceList>('Price List', { fields: ['name', 'selling', 'buying', 'enabled'], filters: [['enabled', '=', 1]], pageLength: 500, orderBy: 'name asc' })).data })
@@ -77,9 +129,9 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   const [pendingPreferences, setPendingPreferences] = useState<PendingPreferences>(() => readPendingPreferences(connection.id))
   const [productView, setProductView] = useState<ProductView>(() => readProductView(connection.id))
   const { theme, setTheme, themes, colorMode, toggleColorMode } = useTheme()
-  const activeTheme = themes.find((entry) => entry.id === theme) ?? themes[0]
   const activeProfile = posProfilesQuery.data?.find((entry) => entry.name === posDraft.profileName) ?? posProfilesQuery.data?.[0]
   const user = userQuery.data?.profile
+  const priceLists = pendingPriceListsQuery.data ?? []
 
   useEffect(() => {
     setProductView(readProductView(connection.id))
@@ -90,6 +142,11 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   function selectTab(value: string) {
     if (!TAB_VALUES.includes(value as SettingsTab)) return
     setSearchParams((current) => { const next = new URLSearchParams(current); next.set('tab', value); return next }, { replace: true })
+  }
+
+  function updatePosDraft(patch: Partial<PosPreferences>) {
+    setPosDraft((current) => ({ ...current, ...patch }))
+    setPosMessage('')
   }
 
   function savePosPreferences() {
@@ -123,88 +180,101 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
     } finally { setImageSync(null) }
   }
 
-  function saveAppPreferences(next: AppPreferences) {
-    setAppPreferences(writeAppPreferences(next))
+  function saveAppPreferences(patch: Partial<AppPreferences>) {
+    setAppPreferences((current) => writeAppPreferences({ ...current, ...patch }))
   }
 
-  function changePendingPriceList(kind: 'buyingPriceList' | 'sellingPriceList', value: string) {
-    const next = writePendingPreferences(connection.id, { ...pendingPreferences, [kind]: value })
-    setPendingPreferences(next)
-  }
-
-  function changeLowMarginThreshold(value: number) {
-    const next = writePendingPreferences(connection.id, { ...pendingPreferences, lowMarginThreshold: value })
-    setPendingPreferences(next)
+  function changePendingPreferences(patch: Partial<PendingPreferences>) {
+    setPendingPreferences((current) => writePendingPreferences(connection.id, { ...current, ...patch }))
   }
 
   function changeProductView(next: ProductView) {
     setProductView(next)
-    localStorage.setItem(PRODUCT_VIEW_KEY(connection.id), next)
+    try { localStorage.setItem(PRODUCT_VIEW_KEY(connection.id), next) } catch { /* storage unavailable: keep the in-memory choice */ }
   }
 
-  return <section>
+  function restoreInterfacePreferences() {
+    saveAppPreferences({ landingRoute: DEFAULT_APP_PREFERENCES.landingRoute, density: DEFAULT_APP_PREFERENCES.density })
+    changeProductView('table')
+  }
+
+  function priceListOptions(selected: string, kind: 'buying' | 'selling') {
+    const options = priceLists.filter((list) => Boolean(list[kind]))
+    return <>{!options.some((list) => list.name === selected) && <SelectItem value={selected}>{selected}</SelectItem>}{options.map((list) => <SelectItem key={list.name} value={list.name}>{list.name}</SelectItem>)}</>
+  }
+
+  return <section className="settings-page">
     <PageHeader title={t('settings.title')} description={t('settings.description')} />
-    <Tabs value={activeTab} onValueChange={selectTab} className="settings-tabs">
-      <TabsList aria-label={t('settings.sections')} className="settings-tabs-list">
-        <TabsTrigger value="general">{t('settings.tabs.general')}</TabsTrigger>
-        <TabsTrigger value="pos">{t('settings.tabs.pos')}</TabsTrigger>
-        <TabsTrigger value="appearance">{t('settings.tabs.appearance')}</TabsTrigger>
-        <TabsTrigger value="language">{t('settings.tabs.language')}</TabsTrigger>
-        <TabsTrigger value="data">{t('settings.tabs.data')}</TabsTrigger>
-        <TabsTrigger value="navigation">{t('settings.tabs.navigation')}</TabsTrigger>
+    <Tabs value={activeTab} onValueChange={selectTab} orientation={isDesktop ? 'vertical' : 'horizontal'} className="settings-layout">
+      <TabsList aria-label={t('settings.sections')} className="settings-nav">
+        {TAB_VALUES.map((tab) => { const Icon = TAB_ICONS[tab]; return <TabsTrigger key={tab} value={tab} className="settings-nav-item"><Icon aria-hidden="true" strokeWidth={1.8} /><span>{t(`settings.tabs.${tab}`)}</span></TabsTrigger> })}
       </TabsList>
 
-      <TabsContent value="general"><div className="settings-grid">
-        <SettingSection eyebrow={t('settings.session.eyebrow')} title={t('settings.session.title')} description={t('settings.session.description')}>
-          <div className="settings-pos-form"><Field label={t('settings.session.duration')}><Select value={String(appPreferences.sessionDurationHours)} onValueChange={(value) => saveAppPreferences({ ...appPreferences, sessionDurationHours: Number(value) as AppPreferences['sessionDurationHours'] })}><SelectTrigger aria-label={t('settings.session.duration')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="4">4 {t('settings.session.hours')}</SelectItem><SelectItem value="8">8 {t('settings.session.hours')}</SelectItem><SelectItem value="12">12 {t('settings.session.hours')}</SelectItem><SelectItem value="24">24 {t('settings.session.hours')}</SelectItem><SelectItem value="48">48 {t('settings.session.hours')}</SelectItem></SelectContent></Select></Field></div>
-          <label className="settings-pos-option"><Checkbox checked={appPreferences.refreshCachesOnLogin} onCheckedChange={(checked) => saveAppPreferences({ ...appPreferences, refreshCachesOnLogin: checked === true })} /><span><strong>{t('settings.session.refreshCaches')}</strong><small>{t('settings.session.refreshCachesDescription')}</small></span></label>
-        </SettingSection>
-        <SettingSection eyebrow={t('settings.pending.eyebrow')} title={t('settings.pending.title')} description={t('settings.pending.description')}>
+      <TabsContent value="account" className="settings-panel">
+        <SettingsSection title={t('settings.connection.title')} description={t('settings.connection.description')} footer={<><Button onClick={() => { void userQuery.refetch() }} disabled={userQuery.isFetching}>{userQuery.isFetching ? <><Spinner /> {t('settings.connection.testing')}</> : t('settings.connection.test')}</Button><Button variant="secondary" onClick={onLock}>{t('navigation.lock')}</Button></>}>
+          <SettingRow label={t('settings.connection.profile')}><span className="settings-row-value">{connection.label}</span></SettingRow>
+          <SettingRow label={t('settings.connection.instance')}><span className="settings-row-value break-all">{connection.baseUrl}</span></SettingRow>
+          <SettingRow label={t('settings.connection.status')}>{userQuery.isError ? <span className="settings-row-value settings-row-value-error">{userQuery.error instanceof Error ? userQuery.error.message : t('settings.connection.userError')}</span> : user ? <span className="settings-row-value">{t('settings.connection.connectedAs', { user: user.email || user.name })}</span> : <span className="settings-row-value settings-row-value-muted"><Spinner /> {t('settings.connection.testing')}</span>}</SettingRow>
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.user.title')} description={t('settings.user.description')} footer={user ? <RefreshButton label={t('settings.user.refresh')} loading={userQuery.isFetching} onClick={() => { void userQuery.refetch() }} /> : undefined}>
+          {userQuery.isPending ? <div className="settings-loading"><Spinner /> {t('settings.user.loading')}</div> : user ? <>
+            <dl className="settings-user-details"><UserDetail label={t('settings.user.name')} value={user.displayName} /><UserDetail label={t('settings.user.email')} value={user.email} /><UserDetail label={t('settings.user.username')} value={user.username || user.name} /><UserDetail label={t('settings.user.type')} value={user.userType} /><UserDetail label={t('common.status')} value={user.enabled === undefined ? undefined : user.enabled ? t('common.active') : t('common.disabled')} /><UserDetail label={t('settings.user.mobile')} value={user.mobile} /><UserDetail label={t('settings.user.phone')} value={user.phone} /><UserDetail label={t('common.language')} value={user.language} /><UserDetail label={t('settings.user.timezone')} value={user.timeZone} /><UserDetail label={t('settings.user.created')} value={formatProfileDate(user.creation)} /><UserDetail label={t('settings.user.lastLogin')} value={formatProfileDate(user.lastLogin)} /></dl>
+            <div className="settings-user-roles"><span className="settings-row-label">{t('settings.user.roles')}</span>{user.roles.length ? <ul className="settings-role-list">{user.roles.map((role) => <li key={role}>{role}</li>)}</ul> : <p className="settings-row-description">{t('settings.user.noRoles')}</p>}</div>
+            {userQuery.data?.warning && <Notice tone="warning">{t('settings.profilePermission')}</Notice>}
+          </> : null}
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.session.title')} description={t('settings.session.description')}>
+          <SelectRow label={t('settings.session.duration')} value={String(appPreferences.sessionDurationHours)} onValueChange={(value) => saveAppPreferences({ sessionDurationHours: Number(value) as AppPreferences['sessionDurationHours'] })}>{[4, 8, 12, 24, 48].map((hours) => <SelectItem key={hours} value={String(hours)}>{hours} {t('settings.session.hours')}</SelectItem>)}</SelectRow>
+          <CheckboxRow label={t('settings.session.refreshCaches')} description={t('settings.session.refreshCachesDescription')} checked={appPreferences.refreshCachesOnLogin} onCheckedChange={(checked) => saveAppPreferences({ refreshCachesOnLogin: checked })} />
+        </SettingsSection>
+      </TabsContent>
+
+      <TabsContent value="operation" className="settings-panel">
+        <SettingsSection title={t('settings.pos.title')} description={t('settings.pos.description')} footer={<>{(posMessage || posError) && <p className={`settings-footer-status${posError ? ' settings-footer-status-error' : ''}`} role={posError ? 'alert' : 'status'}>{posError || posMessage}</p>}<Button type="button" variant="secondary" onClick={resetPosPreferences}>{t('settings.pos.restore')}</Button><Button type="button" onClick={savePosPreferences}>{t('common.save')}</Button></>}>
+          {posProfilesQuery.isError && <Notice>{posProfilesQuery.error instanceof Error ? posProfilesQuery.error.message : t('settings.pos.profilesError')}</Notice>}
+          {customersQuery.isError && <Notice>{customersQuery.error instanceof Error ? customersQuery.error.message : t('settings.pos.customersError')}</Notice>}
+          <SettingRow label={t('settings.pos.profile')} description={t('settings.pos.profileDescription')}><EntityCombobox ariaLabel={t('settings.pos.profile')} value={posDraft.profileName} onValueChange={(value) => updatePosDraft({ profileName: value })} placeholder={t('settings.pos.profilePlaceholder')} searchPlaceholder={t('settings.pos.profileSearch')} allowClear options={(posProfilesQuery.data ?? []).map((profile) => ({ value: profile.name, label: profile.name, searchText: `${profile.company ?? ''} ${profile.warehouse ?? ''}`, meta: profile.company }))} disabled={posProfilesQuery.isPending} loading={posProfilesQuery.isPending} /></SettingRow>
+          <SettingRow label={t('settings.pos.customer')}><EntityCombobox ariaLabel={t('settings.pos.customer')} value={posDraft.defaultCustomer} onValueChange={(value) => updatePosDraft({ defaultCustomer: value })} placeholder={t('settings.pos.customerPlaceholder')} searchPlaceholder={t('settings.pos.customerSearch')} allowClear options={(customersQuery.data ?? []).map((customer) => ({ value: customer.name, label: customer.customer_name || customer.name, searchText: customer.name, meta: customer.customer_name ? customer.name : undefined }))} disabled={customersQuery.isPending} loading={customersQuery.isPending} /></SettingRow>
+          <CheckboxRow label={t('settings.pos.rememberCustomer')} description={t('settings.pos.rememberCustomerDescription')} checked={posDraft.rememberCustomer} onCheckedChange={(checked) => updatePosDraft({ rememberCustomer: checked })} />
+          <CheckboxRow label={t('settings.pos.autoFocus')} description={t('settings.pos.autoFocusDescription')} checked={posDraft.autoFocusProductSearch} onCheckedChange={(checked) => updatePosDraft({ autoFocusProductSearch: checked })} />
+          <CheckboxRow label={t('productImages.show')} description={t('productImages.showDescription')} checked={posDraft.showProductImages} onCheckedChange={(checked) => updatePosDraft({ showProductImages: checked })} />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.pending.title')} description={t('settings.pending.description')}>
           {pendingPriceListsQuery.isError && <Notice tone="error">{pendingPriceListsQuery.error instanceof Error ? pendingPriceListsQuery.error.message : t('settings.pending.loadError')}</Notice>}
-          <div className="settings-pos-form">
-            <Field label={t('settings.pending.buying')}><Select value={pendingPreferences.buyingPriceList} onValueChange={(value) => changePendingPriceList('buyingPriceList', value)}><SelectTrigger aria-label={t('settings.pending.buying')}><SelectValue /></SelectTrigger><SelectContent>{!(pendingPriceListsQuery.data ?? []).some((list) => list.name === pendingPreferences.buyingPriceList) && <SelectItem value={pendingPreferences.buyingPriceList}>{pendingPreferences.buyingPriceList}</SelectItem>}{(pendingPriceListsQuery.data ?? []).filter((list) => Boolean(list.buying)).map((list) => <SelectItem key={list.name} value={list.name}>{list.name}</SelectItem>)}</SelectContent></Select></Field>
-            <Field label={t('settings.pending.selling')}><Select value={pendingPreferences.sellingPriceList} onValueChange={(value) => changePendingPriceList('sellingPriceList', value)}><SelectTrigger aria-label={t('settings.pending.selling')}><SelectValue /></SelectTrigger><SelectContent>{!(pendingPriceListsQuery.data ?? []).some((list) => list.name === pendingPreferences.sellingPriceList) && <SelectItem value={pendingPreferences.sellingPriceList}>{pendingPreferences.sellingPriceList}</SelectItem>}{(pendingPriceListsQuery.data ?? []).filter((list) => Boolean(list.selling)).map((list) => <SelectItem key={list.name} value={list.name}>{list.name}</SelectItem>)}</SelectContent></Select></Field>
-            <Field label={t('settings.pending.lowMarginThreshold')}><Input type="number" min="0" max="100" step="1" value={pendingPreferences.lowMarginThreshold} onChange={(event) => changeLowMarginThreshold(Number(event.target.value))} aria-label={t('settings.pending.lowMarginThreshold')} /></Field>
+          <SelectRow label={t('settings.pending.buying')} value={pendingPreferences.buyingPriceList} onValueChange={(value) => changePendingPreferences({ buyingPriceList: value })}>{priceListOptions(pendingPreferences.buyingPriceList, 'buying')}</SelectRow>
+          <SelectRow label={t('settings.pending.selling')} value={pendingPreferences.sellingPriceList} onValueChange={(value) => changePendingPreferences({ sellingPriceList: value })}>{priceListOptions(pendingPreferences.sellingPriceList, 'selling')}</SelectRow>
+          <SettingRow label={t('settings.pending.lowMarginThreshold')} description={t('settings.pending.lowMarginDescription')} htmlFor={thresholdId}><Input id={thresholdId} className="settings-number-input" type="number" inputMode="numeric" min="0" max="100" step="1" value={pendingPreferences.lowMarginThreshold} onChange={(event) => changePendingPreferences({ lowMarginThreshold: Number(event.target.value) })} /></SettingRow>
+        </SettingsSection>
+      </TabsContent>
+
+      <TabsContent value="interface" className="settings-panel">
+        <SettingsSection title={t('settings.appearance.title')} description={t('settings.appearance.description')}>
+          <SettingRow label={t('settings.appearance.colorMode')}><ToggleGroup type="single" className="segmented-control" aria-label={t('settings.appearance.colorMode')} value={colorMode} onValueChange={(next) => { if (next && next !== colorMode) toggleColorMode() }}><ToggleGroupItem value="light">{t('settings.appearance.light')}</ToggleGroupItem><ToggleGroupItem value="dark">{t('settings.appearance.dark')}</ToggleGroupItem></ToggleGroup></SettingRow>
+          <SettingRow label={t('common.language')} description={t('settings.language.description')}><LanguageSelector /></SettingRow>
+          <CheckboxRow label={t('settings.navigation.compactDensity')} description={t('settings.navigation.compactDensityDescription')} checked={appPreferences.density === 'compact'} onCheckedChange={(checked) => saveAppPreferences({ density: checked ? 'compact' : 'comfortable' })} />
+          <div className="settings-row settings-row-block">
+            <span className="settings-row-label" id="settings-palette-label">{t('settings.appearance.palette')}</span>
+            <RadioGroup className="theme-grid" value={theme} onValueChange={setTheme} aria-labelledby="settings-palette-label">{themes.map((entry) => <label key={entry.id} className={`theme-option${entry.id === theme ? ' theme-option-active' : ''}`} htmlFor={`theme-${entry.id}`}><RadioGroupItem id={`theme-${entry.id}`} value={entry.id} className="sr-only" /><span className="theme-option-swatches" aria-hidden="true"><i style={{ background: entry.colors.primary }} /><i style={{ background: entry.colors.secondary }} /><i style={{ background: entry.colors.accent }} /><i style={{ background: entry.colors.page }} /></span><span className="theme-option-copy"><strong>{entry.name}</strong><small>{entry.description}</small></span><span className="theme-option-check" aria-hidden="true">{entry.id === theme && <Check strokeWidth={3} />}</span></label>)}</RadioGroup>
           </div>
-          <p className="muted">{t('settings.pending.savedLocally')}</p>
-        </SettingSection>
-        <SettingSection eyebrow={t('settings.connection.eyebrow')} title={t('settings.connection.title')} description={t('settings.connection.description')}>
-          <dl className="settings-connection-details"><div><dt className="field-label">{t('settings.connection.profile')}</dt><dd>{connection.label}</dd></div><div><dt className="field-label">{t('settings.connection.instance')}</dt><dd className="break-all">{connection.baseUrl}</dd></div></dl>
-          <div className="settings-actions"><Button onClick={() => { void userQuery.refetch() }} disabled={userQuery.isFetching}>{userQuery.isFetching ? <><Spinner /> {t('settings.connection.testing')}</> : t('settings.connection.test')}</Button><Button variant="secondary" onClick={onLock}>{t('navigation.lock')}</Button></div>
-          {user && <Notice tone="info">{t('settings.connection.connectedAs', { user: user.email || user.name })}</Notice>}{userQuery.isError && <div className="mt-4"><Notice>{userQuery.error instanceof Error ? userQuery.error.message : t('settings.connection.userError')}</Notice></div>}
-        </SettingSection>
-        <SettingSection eyebrow={t('settings.user.eyebrow')} title={t('settings.user.title')} description={t('settings.user.description')}>
-          {userQuery.isPending ? <div className="settings-user-loading"><Spinner /> {t('settings.user.loading')}</div> : user ? <><dl className="settings-user-details"><UserDetail label={t('settings.user.name')} value={user.displayName} /><UserDetail label={t('settings.user.email')} value={user.email} /><UserDetail label={t('settings.user.username')} value={user.username || user.name} /><UserDetail label={t('settings.user.type')} value={user.userType} /><UserDetail label={t('common.status')} value={user.enabled === undefined ? undefined : user.enabled ? t('common.active') : t('common.disabled')} /><UserDetail label={t('settings.user.mobile')} value={user.mobile} /><UserDetail label={t('settings.user.phone')} value={user.phone} /><UserDetail label={t('common.language')} value={user.language} /><UserDetail label={t('settings.user.timezone')} value={user.timeZone} /><UserDetail label={t('settings.user.created')} value={formatProfileDate(user.creation)} /><UserDetail label={t('settings.user.lastLogin')} value={formatProfileDate(user.lastLogin)} /></dl><div className="settings-user-roles"><span className="field-label">{t('settings.user.roles')}</span>{user.roles.length ? <div className="settings-role-list">{user.roles.map((role) => <span key={role}>{role}</span>)}</div> : <p className="muted">{t('settings.user.noRoles')}</p>}</div>{userQuery.data?.warning && <Notice tone="warning">{t('settings.profilePermission')}</Notice>}<RefreshButton className="settings-user-refresh" label={t('settings.user.refresh')} loading={userQuery.isFetching} onClick={() => { void userQuery.refetch() }} /></> : null}
-        </SettingSection>
-      </div></TabsContent>
+        </SettingsSection>
 
-      <TabsContent value="pos"><SettingSection eyebrow={t('settings.pos.eyebrow')} title={t('settings.pos.title')} description={t('settings.pos.description')}>
-        {posProfilesQuery.isError && <Notice>{posProfilesQuery.error instanceof Error ? posProfilesQuery.error.message : t('settings.pos.profilesError')}</Notice>}
-        {customersQuery.isError && <Notice>{customersQuery.error instanceof Error ? customersQuery.error.message : t('settings.pos.customersError')}</Notice>}
-        <div className="settings-pos-form"><Field label={t('settings.pos.profile')}><EntityCombobox ariaLabel={t('settings.pos.profile')} value={posDraft.profileName} onValueChange={(value) => setPosDraft((current) => ({ ...current, profileName: value }))} placeholder={t('settings.pos.profilePlaceholder')} searchPlaceholder={t('settings.pos.profileSearch')} allowClear options={(posProfilesQuery.data ?? []).map((profile) => ({ value: profile.name, label: profile.name, searchText: `${profile.company ?? ''} ${profile.warehouse ?? ''}`, meta: profile.company }))} disabled={posProfilesQuery.isPending} loading={posProfilesQuery.isPending} /></Field><Field label={t('settings.pos.customer')}><EntityCombobox ariaLabel={t('settings.pos.customer')} value={posDraft.defaultCustomer} onValueChange={(value) => setPosDraft((current) => ({ ...current, defaultCustomer: value }))} placeholder={t('settings.pos.customerPlaceholder')} searchPlaceholder={t('settings.pos.customerSearch')} allowClear options={(customersQuery.data ?? []).map((customer) => ({ value: customer.name, label: customer.customer_name || customer.name, searchText: customer.name, meta: customer.customer_name ? customer.name : undefined }))} disabled={customersQuery.isPending} loading={customersQuery.isPending} /></Field></div>
-        <div className="settings-pos-options"><label className="settings-pos-option"><Checkbox checked={posDraft.rememberCustomer} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, rememberCustomer: checked === true }))} /><span><strong>{t('settings.pos.rememberCustomer')}</strong><small>{t('settings.pos.rememberCustomerDescription')}</small></span></label><label className="settings-pos-option"><Checkbox checked={posDraft.autoFocusProductSearch} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, autoFocusProductSearch: checked === true }))} /><span><strong>{t('settings.pos.autoFocus')}</strong><small>{t('settings.pos.autoFocusDescription')}</small></span></label><label className="settings-pos-option"><Checkbox checked={posDraft.showProductImages} onCheckedChange={(checked) => setPosDraft((current) => ({ ...current, showProductImages: checked === true }))} /><span><strong>{t('productImages.show')}</strong><small>{t('productImages.showDescription')}</small></span></label></div>
-        <div className="settings-image-cache"><div><strong>{t('productImages.cacheTitle')}</strong><p className="muted">{t('productImages.cacheDescription')}</p>{imageSync && <p role="status" className="muted">{t('productImages.syncProgress', imageSync)}</p>}</div><Button type="button" variant="secondary" onClick={() => void refreshMissingImages()} disabled={Boolean(imageSync)}>{imageSync ? <><Spinner /> {t('productImages.syncing')}</> : t('productImages.syncAction')}</Button></div>
-        {(imageSyncMessage || imageSyncError) && <div className="mt-4"><Notice tone={imageSyncError ? 'error' : 'info'}>{imageSyncError || imageSyncMessage}</Notice></div>}
-        {(posMessage || posError) && <div className="mt-4"><Notice tone={posError ? 'error' : 'info'}>{posError || posMessage}</Notice></div>}<div className="settings-actions"><Button type="button" onClick={savePosPreferences}>{t('common.save')}</Button><Button type="button" variant="secondary" onClick={resetPosPreferences}>{t('settings.pos.restore')}</Button></div>
-      </SettingSection></TabsContent>
+        <SettingsSection title={t('settings.navigation.title')} description={t('settings.navigation.description')} footer={<Button type="button" variant="secondary" onClick={restoreInterfacePreferences}>{t('settings.navigation.restore')}</Button>}>
+          <SelectRow label={t('settings.navigation.landing')} value={appPreferences.landingRoute} onValueChange={(value) => saveAppPreferences({ landingRoute: value as LandingRoute })}><SelectItem value="/">{t('settings.navigation.home')}</SelectItem><SelectItem value="/pos">{t('settings.navigation.pos')}</SelectItem><SelectItem value="/items">{t('settings.navigation.products')}</SelectItem><SelectItem value="/prices">{t('settings.navigation.prices')}</SelectItem></SelectRow>
+          <SelectRow label={t('settings.navigation.productView')} value={productView} onValueChange={(value) => changeProductView(value as ProductView)}><SelectItem value="table">{t('settings.navigation.table')}</SelectItem><SelectItem value="cards">{t('settings.navigation.cards')}</SelectItem><SelectItem value="hierarchy">{t('settings.navigation.hierarchy')}</SelectItem></SelectRow>
+          <CheckboxRow label={t('settings.navigation.collapsedSidebar')} description={t('settings.navigation.collapsedSidebarDescription')} checked={appPreferences.sidebarCollapsed} onCheckedChange={(checked) => saveAppPreferences({ sidebarCollapsed: checked })} />
+        </SettingsSection>
+      </TabsContent>
 
-      <TabsContent value="appearance"><SettingSection eyebrow={t('settings.appearance.eyebrow')} title={t('settings.appearance.title')} description={t('settings.appearance.description')}>
-        <div className="settings-theme-mode"><div><strong>{t('settings.appearance.colorMode')}</strong><p className="muted">{t('settings.appearance.colorModeDescription')}</p></div><Button type="button" variant="secondary" onClick={toggleColorMode}>{colorMode === 'dark' ? t('navigation.lightMode') : t('navigation.darkMode')}</Button></div>
-        <div className="theme-preview" aria-label={t('settings.appearance.preview')}><div><span className="theme-preview-label">{t('settings.appearance.preview')}</span><strong>{activeTheme.name}</strong></div><div className="theme-preview-actions"><span className="theme-preview-chip">{t('settings.appearance.previewStatus')}</span><Button size="compact">{t('settings.appearance.primary')}</Button><Button size="compact" variant="secondary">{t('settings.appearance.secondary')}</Button></div></div>
-        <RadioGroup className="theme-grid" value={theme} onValueChange={setTheme} aria-label={t('settings.appearance.palette')}><p className="field-label">{t('settings.appearance.palette')}</p>{themes.map((entry) => <label key={entry.id} className={`theme-option${entry.id === theme ? ' theme-option-active' : ''}`} htmlFor={`theme-${entry.id}`}><RadioGroupItem id={`theme-${entry.id}`} value={entry.id} className="sr-only" /><span className="theme-option-swatches" aria-hidden="true"><i style={{ background: entry.colors.primary }} /><i style={{ background: entry.colors.secondary }} /><i style={{ background: entry.colors.accent }} /><i style={{ background: entry.colors.page }} /></span><span className="theme-option-copy"><strong>{entry.name}</strong><small>{entry.description}</small></span><span className="theme-option-check" aria-hidden="true">{entry.id === theme ? '✓' : ''}</span></label>)}</RadioGroup>
-      </SettingSection></TabsContent>
-
-      <TabsContent value="language"><SettingSection eyebrow={t('settings.language.eyebrow')} title={t('settings.language.title')} description={t('settings.language.description')}><LanguageSelector /></SettingSection></TabsContent>
-      <TabsContent value="data"><CacheManagerPanel client={client} profileId={connection.id} activeProfile={activeProfile} /></TabsContent>
-
-      <TabsContent value="navigation"><SettingSection eyebrow={t('settings.navigation.eyebrow')} title={t('settings.navigation.title')} description={t('settings.navigation.description')}>
-        <div className="settings-navigation-grid"><Field label={t('settings.navigation.landing')}><Select value={appPreferences.landingRoute} onValueChange={(value) => saveAppPreferences({ ...appPreferences, landingRoute: value as LandingRoute })}><SelectTrigger aria-label={t('settings.navigation.landing')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="/">{t('settings.navigation.home')}</SelectItem><SelectItem value="/pos">{t('settings.navigation.pos')}</SelectItem><SelectItem value="/items">{t('settings.navigation.products')}</SelectItem><SelectItem value="/prices">{t('settings.navigation.prices')}</SelectItem></SelectContent></Select></Field>
-          <Field label={t('settings.navigation.productView')}><Select value={productView} onValueChange={(value) => changeProductView(value as ProductView)}><SelectTrigger aria-label={t('settings.navigation.productView')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="table">{t('settings.navigation.table')}</SelectItem><SelectItem value="cards">{t('settings.navigation.cards')}</SelectItem><SelectItem value="hierarchy">{t('settings.navigation.hierarchy')}</SelectItem></SelectContent></Select></Field>
-        </div>
-        <div className="settings-pos-options"><label className="settings-pos-option"><Checkbox checked={appPreferences.sidebarCollapsed} onCheckedChange={(checked) => saveAppPreferences({ ...appPreferences, sidebarCollapsed: checked === true })} /><span><strong>{t('settings.navigation.collapsedSidebar')}</strong><small>{t('settings.navigation.collapsedSidebarDescription')}</small></span></label><label className="settings-pos-option"><Checkbox checked={appPreferences.density === 'compact'} onCheckedChange={(checked) => saveAppPreferences({ ...appPreferences, density: checked === true ? 'compact' : 'comfortable' as Density })} /><span><strong>{t('settings.navigation.compactDensity')}</strong><small>{t('settings.navigation.compactDensityDescription')}</small></span></label></div>
-        <Notice tone="info">{t('settings.navigation.groupsNote')}</Notice>
-        <Button type="button" variant="secondary" onClick={() => saveAppPreferences({ ...DEFAULT_APP_PREFERENCES, sidebarCollapsed: appPreferences.sidebarCollapsed })}>{t('settings.navigation.restore')}</Button>
-      </SettingSection></TabsContent>
+      <TabsContent value="data" className="settings-panel">
+        <CacheManagerPanel client={client} profileId={connection.id} activeProfile={activeProfile} />
+        <SettingsSection title={t('productImages.cacheTitle')} description={t('productImages.cacheDescription')} footer={<Button type="button" variant="secondary" onClick={() => void refreshMissingImages()} disabled={Boolean(imageSync)}>{imageSync ? <><Spinner /> {t('productImages.syncing')}</> : t('productImages.syncAction')}</Button>}>
+          {imageSync && <p role="status" className="settings-row-description">{t('productImages.syncProgress', imageSync)}</p>}
+          {(imageSyncMessage || imageSyncError) && <Notice tone={imageSyncError ? 'error' : 'info'}>{imageSyncError || imageSyncMessage}</Notice>}
+        </SettingsSection>
+      </TabsContent>
     </Tabs>
   </section>
 }
