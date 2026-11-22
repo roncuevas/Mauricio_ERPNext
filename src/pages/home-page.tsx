@@ -1,102 +1,126 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CacheManagerPanel } from '../components/cache-manager-panel'
-import { Badge, Button, ButtonLink, Card, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Notice, PageHeader, Separator, Skeleton, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui'
-import { managedCacheIdsForContext, managedCacheOrder, managedCacheQueryKeys, readHomeCacheData, runManagedCacheRefresh } from '../lib/cache-manager'
-import { buildHomeStats } from '../lib/home-stats'
+import { CacheSyncTable } from '../components/cache-manager-panel'
+import { useManagedCacheRefresh } from '../components/use-managed-cache-refresh'
+import { Button, ButtonLink, Card, CardAction, CardDescription, CardHeader, CardTitle, Notice, PageHeader, Skeleton, Spinner } from '../components/ui'
+import { contextCacheIds, managedCacheOrder, readHomeCacheData, type ManagedCacheId, type ManagedCacheOverview } from '../lib/cache-manager'
+import { activePosProfile, buildHomeStats } from '../lib/home-stats'
+import { readPosPreferences } from '../lib/pos-preferences'
 import { localDate } from '../lib/sales-orders'
-import { queryKeys } from '../lib/query-keys'
 import type { createErpNextClient } from '../lib/erpnext'
-import { ArrowRight, Boxes, CircleDollarSign, ShoppingCart } from 'lucide-react'
+import { ArrowRight, CircleAlert, CircleCheck, Clock, Plus, TriangleAlert } from 'lucide-react'
 
 type Client = ReturnType<typeof createErpNextClient>
 
-function number(value: number) { return value.toLocaleString('es-MX') }
-function money(value: number) { return value.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }) }
+const setupCacheIds = ['products', 'prices'] as const satisfies readonly ManagedCacheId[]
 
-function StatCard({ label, value, detail, tone = 'neutral' }: { label: string; value: string; detail: string; tone?: 'neutral' | 'success' | 'warning' }) {
-  return <Card className="home-stat-card"><div className="home-stat-heading"><span>{label}</span><Badge tone={tone}>{detail}</Badge></div><strong>{value}</strong></Card>
+function useFormatters() {
+  const { i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'es-MX'
+  return useMemo(() => ({
+    number: (value: number) => value.toLocaleString(locale),
+    money: (value: number) => value.toLocaleString(locale, { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }),
+    longDate: (value: Date) => value.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }),
+    time: (value?: string) => {
+      if (!value) return ''
+      const parsed = new Date(value.replace(' ', 'T'))
+      return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    },
+  }), [locale])
 }
 
-function AccessCard({ title, description, action, to, icon }: { title: string; description: string; action: string; to: string; icon: ReactNode }) {
-  return <Card className="home-access-card"><div className="home-access-icon" aria-hidden="true">{icon}</div><div className="home-access-copy"><h2>{title}</h2><p>{description}</p></div><ButtonLink to={to}>{action}<ArrowRight className="h-4 w-4" aria-hidden="true" /></ButtonLink></Card>
+function AttentionItem({ tone, children, action }: { tone: 'warning' | 'danger'; children: ReactNode; action: ReactNode }) {
+  const Icon = tone === 'danger' ? CircleAlert : TriangleAlert
+  return <li className="home-attention-item" data-tone={tone}><Icon className="home-attention-icon" aria-hidden="true" /><span>{children}</span>{action}</li>
+}
+
+function SetupChecklist({ entries, busyIds, busy, onDownload }: { entries: ManagedCacheOverview[]; busyIds: ManagedCacheId[]; busy: boolean; onDownload: (id: ManagedCacheId) => void }) {
+  const { t } = useTranslation()
+  const done = (id: ManagedCacheId) => Boolean(entries.find((entry) => entry.id === id)?.updatedAt)
+  const steps = [
+    ...setupCacheIds.map((id) => ({ id, title: t(`home.setup.${id}`), description: t(`cache.descriptions.${id}`), complete: done(id), action: <Button type="button" variant={done(id) ? 'secondary' : 'primary'} size="compact" disabled={busy} onClick={() => onDownload(id)}>{busyIds.includes(id) ? <><Spinner /> {t('cache.refreshing')}</> : done(id) ? t('common.refresh') : t('home.setup.download')}</Button> })),
+    { id: 'shift', title: t('home.setup.shift'), description: t('home.setup.shiftDescription'), complete: false, action: <ButtonLink to="/pos/turnos" variant="secondary" size="compact">{t('home.openShift')}</ButtonLink> },
+  ]
+  return <Card className="home-setup">
+    <CardHeader><CardTitle>{t('home.setup.title')}</CardTitle><CardDescription>{t('home.setup.description')}</CardDescription></CardHeader>
+    <ol className="home-setup-steps">{steps.map((step, index) => <li key={step.id} data-complete={step.complete || undefined}>
+      <span className="home-setup-marker" aria-hidden="true">{step.complete ? <CircleCheck /> : index + 1}</span>
+      <span className="home-setup-copy"><strong>{step.title}</strong><span>{step.description}</span>{step.complete && <span className="sr-only">{t('home.setup.complete')}</span>}</span>
+      {step.action}
+    </li>)}</ol>
+  </Card>
 }
 
 export function HomePage({ client, profileId }: { client: Client; profileId: string }) {
   const { t } = useTranslation()
+  const format = useFormatters()
   const queryClient = useQueryClient()
-  const [fetching, setFetching] = useState<'products' | 'prices' | 'all' | null>(null)
-  const [fetchMessage, setFetchMessage] = useState('')
-  const [fetchError, setFetchError] = useState('')
-  const query = useQuery({ queryKey: ['home-cache-data', profileId], queryFn: () => readHomeCacheData(profileId), staleTime: Infinity })
-  const stats = useMemo(() => buildHomeStats(query.data, localDate()), [query.data])
-  const hasCache = Boolean(query.data?.overview.some((entry) => entry.updatedAt))
-  const refreshSummary = () => { void queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }) }
-  const refreshContext = { client, profileId, date: localDate() }
+  const today = localDate()
+  const query = useQuery({ queryKey: ['home-cache-data', profileId], queryFn: () => readHomeCacheData(profileId), staleTime: 0, refetchOnMount: 'always' })
+  const stats = useMemo(() => buildHomeStats(query.data, today), [query.data, today])
+  const activeProfile = useMemo(() => activePosProfile(query.data, readPosPreferences(profileId).profileName), [query.data, profileId])
+  const entries = useMemo(() => managedCacheOrder.map((id) => query.data?.overview.find((entry) => entry.id === id)).filter((entry): entry is ManagedCacheOverview => Boolean(entry)), [query.data])
+  const sync = useManagedCacheRefresh({ client, profileId, activeProfile, onSettled: () => queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }) })
 
-  async function fetchShortcut(shortcut: 'products' | 'prices' | 'all') {
-    if (fetching) return
-    const ids = shortcut === 'all' ? managedCacheIdsForContext() : [shortcut]
-    const skippedCount = managedCacheOrder.length - ids.length
-    setFetching(shortcut)
-    setFetchError('')
-    setFetchMessage(t('cache.updating'))
-    try {
-      const results = await Promise.allSettled(ids.map(async (id) => {
-        await runManagedCacheRefresh(id, refreshContext, setFetchMessage)
-        await Promise.all(managedCacheQueryKeys(profileId, id).map((queryKey) => queryClient.invalidateQueries({ queryKey })))
-      }))
-      const failed = results.filter((result) => result.status === 'rejected').length
-      const succeeded = ids.length - failed
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.settings.cacheOverview(profileId) }),
-      ])
-      const skippedMessage = skippedCount ? t('cache.skippedContext', { count: skippedCount }) : ''
-      if (failed) {
-        setFetchError(t('cache.failed', { count: failed }))
-        setFetchMessage(succeeded ? t('cache.partialMessage', { count: succeeded }) : '')
-      } else {
-        setFetchMessage(shortcut === 'all' ? t('cache.allUpdated', { count: succeeded }) : t('cache.updateMessage', { label: t(`cache.labels.${shortcut}`) }))
-      }
-      if (skippedMessage) setFetchMessage((current) => [current, skippedMessage].filter(Boolean).join(' '))
-    } catch (error) {
-      setFetchMessage('')
-      setFetchError(error instanceof Error ? error.message : t('cache.failed', { count: 1 }))
-    } finally {
-      setFetching(null)
-    }
-  }
+  const needsSetup = !query.isPending && setupCacheIds.some((id) => !entries.find((entry) => entry.id === id)?.updatedAt)
+  const refreshable = (entry: ManagedCacheOverview) => !contextCacheIds.includes(entry.id) || Boolean(activeProfile?.company)
+  const failed = entries.filter((entry) => entry.status === 'error')
+  const stale = entries.filter((entry) => entry.status === 'stale')
+  const missing = entries.filter((entry) => entry.status === 'missing' && refreshable(entry))
+  const labels = (list: ManagedCacheOverview[]) => list.map((entry) => t(`cache.labels.${entry.id}`)).join(', ')
+  const hasAttention = failed.length + stale.length + missing.length > 0 || stats.negativeStock > 0
 
   return <section className="home-workspace">
-    <PageHeader title={t('home.title')} description={t('home.description')} action={<Button type="button" onClick={refreshSummary}>{t('home.refreshSummary')}</Button>} />
-    <div className="home-access-grid">
-      <AccessCard title={t('home.posAccessTitle')} description={t('home.posAccessDescription')} action={t('home.openPos')} to="/pos" icon={<ShoppingCart />} />
-      <AccessCard title={t('home.pricesAccessTitle')} description={t('home.pricesAccessDescription')} action={t('home.openPrices')} to="/prices" icon={<CircleDollarSign />} />
-    </div>
-    <Card className="home-quick-actions"><div className="home-section-heading"><div><p className="settings-eyebrow">{t('home.shortcutsEyebrow')}</p><h2>{t('home.quickActions')}</h2><p className="muted">{t('home.quickActionsDescription')}</p></div><Boxes className="home-section-icon" aria-hidden="true" /></div><div className="home-quick-links"><ButtonLink to="/pos/ventas/nueva">{t('home.newSale')}</ButtonLink><ButtonLink to="/pos/turnos" variant="secondary">{t('home.openShift')}</ButtonLink><ButtonLink to="/prices" variant="secondary">{t('home.managePrices')}</ButtonLink><Button type="button" variant="secondary" disabled={fetching !== null} onClick={() => void fetchShortcut('products')}>{fetching === 'products' ? <><Spinner /> {t('cache.refreshing')}</> : t('productsPage.refresh')}</Button><Button type="button" variant="secondary" disabled={fetching !== null} onClick={() => void fetchShortcut('prices')}>{fetching === 'prices' ? <><Spinner /> {t('cache.refreshing')}</> : t('pricesPage.refresh')}</Button><Button type="button" variant="secondary" disabled={fetching !== null} onClick={() => void fetchShortcut('all')}>{fetching === 'all' ? <><Spinner /> {t('cache.updating')}</> : t('cache.all')}</Button><Button type="button" variant="secondary" onClick={refreshSummary}>{t('home.updateStats')}</Button></div>{(fetchMessage || fetchError) && <Notice tone={fetchError ? 'warning' : 'info'}><span role="status" aria-live="polite">{fetchError || fetchMessage}</span></Notice>}</Card>
-    {query.isError && <Notice>{query.error instanceof Error ? query.error.message : 'No se pudo leer el estado local.'}</Notice>}
-    {query.isPending ? <div className="home-stat-grid">{Array.from({ length: 8 }, (_, index) => <Skeleton className="home-stat-skeleton" key={index} />)}</div> : <>
-      <div className="home-dashboard-section"><div className="home-dashboard-section-heading"><h2>{t('home.operationalStats')}</h2><span>{t('home.localCache')}</span></div><div className="home-stat-grid">
-        <StatCard label={t('home.products')} value={number(stats.products)} detail={t('home.localCache')} />
-        <StatCard label={t('home.variants')} value={number(stats.variants)} detail={t('home.hierarchy')} />
-        <StatCard label={t('home.prices')} value={number(stats.prices)} detail={t('home.itemPrice')} />
-        <StatCard label={t('home.stock')} value={number(stats.stockBins)} detail={stats.negativeStock ? t('home.negativeStock', { count: number(stats.negativeStock) }) : t('home.realBins')} tone={stats.negativeStock ? 'warning' : 'success'} />
-      </div></div>
-      <div className="home-dashboard-section"><div className="home-dashboard-section-heading"><h2>{t('home.activityStats')}</h2><span>{localDate()}</span></div><div className="home-stat-grid">
-        <StatCard label={t('home.inventoryValue')} value={money(stats.stockValue)} detail={t('home.stockValue')} />
-        <StatCard label={t('home.ordersToday')} value={number(stats.ordersToday)} detail={money(stats.ordersTodayTotal)} />
-        <StatCard label={t('home.quotations')} value={number(stats.quotations)} detail={money(stats.quotationsTotal)} />
-        <StatCard label={t('home.openShifts')} value={number(stats.openShifts)} detail={t('home.posOpening')} tone={stats.openShifts ? 'success' : 'neutral'} />
-      </div></div>
-      <Card className="home-health-card"><div className="home-section-heading"><div><p className="settings-eyebrow">{t('home.localStatus')}</p><h2>{t('home.cacheHealth')}</h2></div><Badge tone={stats.errorCaches ? 'warning' : 'success'}>{stats.errorCaches ? t('home.errors', { count: stats.errorCaches }) : t('home.noRecentErrors')}</Badge></div><Separator /><div className="home-health-grid"><span><strong>{number(stats.freshCaches)}</strong>{t('home.updated')}</span><span><strong>{number(stats.staleCaches)}</strong>{t('home.stale')}</span><span><strong>{number(stats.missingCaches)}</strong>{t('home.missing')}</span><span><strong>{number(stats.errorCaches)}</strong>{t('home.withErrors')}</span></div><p className="muted">{t('home.sourceNote')}</p></Card>
-    </>}
-    <Tabs defaultValue="summary" className="home-tabs">
-      <TabsList aria-label={t('home.summary')}><TabsTrigger value="summary">{t('home.summary')}</TabsTrigger><TabsTrigger value="caches">{t('home.cacheFetch')}</TabsTrigger></TabsList>
-      <TabsContent value="summary"><Card className="home-summary-note"><Empty className="border-0"><EmptyHeader><EmptyTitle>{t('home.summary')}</EmptyTitle><EmptyDescription>{t('home.summaryDescription')}</EmptyDescription></EmptyHeader></Empty></Card></TabsContent>
-      <TabsContent value="caches"><CacheManagerPanel client={client} profileId={profileId} onChanged={refreshSummary} /></TabsContent>
-    </Tabs>
-    {!hasCache && !query.isPending && <Notice tone="info">{t('home.noCaches')}</Notice>}
+    <PageHeader title={t('home.title')} description={format.longDate(new Date())} action={<div className="home-header-actions"><ButtonLink to="/prices" variant="secondary">{t('home.managePrices')}</ButtonLink><ButtonLink to="/pos"><Plus className="h-4 w-4" aria-hidden="true" />{t('home.newSale')}</ButtonLink></div>} />
+
+    {query.isError && <Notice>{query.error instanceof Error ? query.error.message : t('cache.readError')}</Notice>}
+
+    {query.isPending ? <div className="home-loading"><Skeleton className="h-24" /><Skeleton className="h-48" /></div> : needsSetup
+      ? <SetupChecklist entries={entries} busyIds={sync.busyIds} busy={sync.busy} onDownload={(id) => void sync.refreshOne(id)} />
+      : <>
+        <Card className="home-today">
+          <div className="home-today-shift">
+            <Clock aria-hidden="true" />
+            {stats.openShift
+              ? <p><strong>{t('home.today.shiftOpen')}</strong>{[stats.openShift.pos_profile, stats.openShift.period_start_date && t('home.today.since', { time: format.time(stats.openShift.period_start_date) })].filter(Boolean).map((part) => <span key={part}> · {part}</span>)}</p>
+              : <p><strong>{stats.shiftsKnown ? t('home.today.noShift') : t('home.today.shiftUnknown')}</strong></p>}
+            <ButtonLink to="/pos/turnos" variant="secondary" size="compact">{stats.openShift ? t('home.today.viewShift') : t('home.openShift')}</ButtonLink>
+          </div>
+          <dl className="home-today-figures">
+            <div><dt>{t('home.ordersToday')}</dt><dd><strong>{format.number(stats.ordersToday)}</strong><span>{format.money(stats.ordersTodayTotal)}</span></dd></div>
+            <div><dt>{t('home.quotations')}</dt><dd><strong>{format.number(stats.quotations)}</strong><span>{format.money(stats.quotationsTotal)}</span></dd></div>
+          </dl>
+        </Card>
+
+        <div className="home-columns">
+          <Card className="home-attention">
+            <CardHeader><CardTitle>{t('home.attention.title')}</CardTitle></CardHeader>
+            {hasAttention ? <ul className="home-attention-list">
+              {failed.map((entry) => <AttentionItem key={entry.id} tone="danger" action={<Button type="button" variant="secondary" size="compact" disabled={sync.busy} onClick={() => void sync.refreshOne(entry.id, Boolean(entry.issues?.length))}>{t('common.retry')}</Button>}>{t('home.attention.failed', { label: t(`cache.labels.${entry.id}`) })}</AttentionItem>)}
+              {stats.negativeStock > 0 && <AttentionItem tone="warning" action={<ButtonLink to="/stock" variant="secondary" size="compact">{t('home.attention.view')}<ArrowRight className="h-4 w-4" aria-hidden="true" /></ButtonLink>}>{t('home.attention.negativeStock', { count: stats.negativeStock })}</AttentionItem>}
+              {stale.length > 0 && <AttentionItem tone="warning" action={<Button type="button" variant="secondary" size="compact" disabled={sync.busy} onClick={() => void sync.refreshMany(stale.map((entry) => entry.id))}>{t('home.attention.update')}</Button>}>{t('home.attention.stale', { count: stale.length, labels: labels(stale) })}</AttentionItem>}
+              {missing.length > 0 && <AttentionItem tone="warning" action={<Button type="button" variant="secondary" size="compact" disabled={sync.busy} onClick={() => void sync.refreshMany(missing.map((entry) => entry.id))}>{t('home.setup.download')}</Button>}>{t('home.attention.missing', { count: missing.length, labels: labels(missing) })}</AttentionItem>}
+            </ul> : <p className="home-attention-clear"><CircleCheck aria-hidden="true" />{t('home.attention.clear')}</p>}
+          </Card>
+
+          <Card className="home-catalog">
+            <CardHeader><CardTitle>{t('home.operationalStats')}</CardTitle></CardHeader>
+            <dl className="home-catalog-list">
+              <div><dt>{t('home.products')}</dt><dd>{format.number(stats.products)}</dd></div>
+              <div><dt>{t('home.variants')}</dt><dd>{format.number(stats.variants)}</dd></div>
+              <div><dt>{t('home.prices')}</dt><dd>{format.number(stats.prices)}</dd></div>
+              <div><dt>{t('home.stock')}</dt><dd>{format.number(stats.stockBins)}</dd></div>
+              <div><dt>{t('home.inventoryValue')}</dt><dd>{format.money(stats.stockValue)}</dd></div>
+            </dl>
+          </Card>
+        </div>
+      </>}
+
+    {!query.isPending && <Card className="home-sync">
+      <CardHeader><CardTitle>{t('home.sync.title')}</CardTitle><CardDescription>{t('home.sourceNote')}</CardDescription><CardAction><Button type="button" variant="secondary" disabled={sync.busy} onClick={() => void sync.refreshMany()}>{sync.busy ? <><Spinner /> {t('cache.updating')}</> : t('cache.all')}</Button></CardAction></CardHeader>
+      {(sync.message || sync.error) && <Notice tone={sync.error ? 'warning' : 'info'}><span role="status" aria-live="polite">{sync.error || sync.message}</span></Notice>}
+      <CacheSyncTable entries={entries} busyIds={sync.busyIds} onRefresh={(id) => void sync.refreshOne(id)} />
+    </Card>}
   </section>
 }
