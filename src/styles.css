@@ -169,11 +169,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .price-edit-button, .price-add-button, .price-management-entry > .button-secondary, .price-management-summary > .button-secondary { min-height: 1.95rem; border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-subtle)); border-radius: .55rem; background: var(--color-surface); padding: .3rem .6rem; color: var(--color-primary-hover); font-size: .7rem; font-weight: 750; }
   .price-edit-button:hover:not(:disabled), .price-add-button:hover:not(:disabled), .price-management-entry > .button-secondary:hover:not(:disabled), .price-management-summary > .button-secondary:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary); color: white; }
   .button-compact { min-height: var(--control-height-compact); padding: .35rem .65rem; font-size: .75rem; }
-  .button-icon { width: var(--control-height-compact); min-height: 1.95rem; border-radius: .55rem; padding: .25rem; font-size: .7rem; font-weight: 750; }
+  .button-icon { border-radius: .55rem; font-size: .7rem; font-weight: 750; }
   .button-icon.button-secondary { border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-subtle)); color: var(--color-primary-hover); }
   .button-icon.button-secondary:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary); color: white; }
-  .button-icon svg { width: 1rem; height: 1rem; }
-.toolbar-search-button, .toolbar-filter-button { width: var(--control-height); min-width: var(--control-height); min-height: var(--control-height); height: var(--control-height); padding: .25rem; }
+/* Icon buttons: one square size tied to the control height (touch size on mobile, smaller with compact density). */
+.button.button-icon { --icon-button-size: var(--control-height); position: relative; flex: 0 0 auto; width: var(--icon-button-size); min-width: var(--icon-button-size); height: var(--icon-button-size); min-height: var(--icon-button-size); padding: 0; }
+.button.button-icon-compact, [data-density="compact"] .button.button-icon { --icon-button-size: var(--control-height-compact); }
+.button.button-icon svg { width: 1.05rem; height: 1.05rem; flex: 0 0 auto; }
 .toolbar-filter-trigger { min-height: var(--control-height); height: var(--control-height); padding: .25rem .75rem; }
   .button-full-width { width: 100%; }
   .card { @apply rounded-xl border bg-white shadow-sm; border-color: var(--color-border-subtle); }
@@ -478,7 +480,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-sidebar-settings-link, .app-sidebar-language-selector, .app-sidebar-lock { font-family: var(--app-font-family); font-size: .72rem; font-weight: 750; line-height: 1.25; }
 .app-sidebar-settings-icon { display: inline-flex; width: 1.1rem; flex: 0 0 1.1rem; align-items: center; justify-content: center; }
 .app-sidebar-settings-icon .sidebar-icon { width: 1.05rem; height: 1.05rem; }
-.app-sidebar-footer-actions .app-sidebar-theme-toggle { width: 2.65rem; min-width: 2.65rem; min-height: 2.65rem; margin: 0; }
+.app-sidebar-footer-actions .app-sidebar-theme-toggle { margin: 0; }
 .app-sidebar-footer-actions .app-sidebar-language-selector { width: 100%; min-width: 0; min-height: 2.65rem; }
 .app-sidebar-footer-actions > .app-sidebar-lock { grid-column: 1 / -1; }
 .stock-controls { margin-bottom: 1rem; padding: 1rem 1.25rem; }
@@ -546,7 +548,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app-shell-sidebar-collapsed .app-sidebar-brand { flex-direction: column; justify-content: center; gap: .65rem; padding: 1.1rem .5rem .9rem; }
 .app-shell-sidebar-collapsed .app-sidebar-brand-home { flex: 0 0 auto; justify-content: center; }
 .app-shell-sidebar-collapsed .app-sidebar-brand-copy, .app-shell-sidebar-collapsed .app-sidebar-profile, .app-shell-sidebar-collapsed .app-sidebar-lock span:first-child { display: none; }
-.app-shell-sidebar-collapsed .app-sidebar-collapse-toggle { position: static; width: 2rem; min-height: 2rem; margin-inline: auto; }
+.app-shell-sidebar-collapsed .app-sidebar-collapse-toggle { --icon-button-size: var(--control-height-compact); position: static; margin-inline: auto; }
 .app-shell-sidebar-collapsed .app-sidebar-nav { border-top: 1px solid var(--color-border-subtle); padding: .85rem .65rem; }
 .app-shell-sidebar-collapsed .app-sidebar-footer-actions { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; }
 .app-shell-sidebar-collapsed .app-sidebar-footer-actions > .app-sidebar-settings-link,
@@ -724,6 +726,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 639px) {
+  .button.button-icon, .button.button-icon-compact { --icon-button-size: 2.75rem; }
   .settings-nav.segmented-control { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .settings-nav .settings-nav-item { padding-inline: .25rem; }
   .settings-nav .settings-nav-item svg { display: none; }
@@ -770,11 +773,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .prices-search { position: relative; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; min-width: 0; }
 .prices-summary { color: #64748b; font-size: .72rem; line-height: 1.35; }
 .prices-filter-menu { position: relative; display: grid; min-width: 0; gap: .55rem; }
-.prices-filter-menu button.button-secondary { position: relative; }
-.prices-filter-toggle { display: inline-flex; width: fit-content; align-items: center; gap: .45rem; min-height: 2.35rem; padding: .4rem .7rem; font-size: .75rem; font-weight: 700; }
 .prices-filter-count { display: inline-flex; min-width: 1.2rem; height: 1.2rem; align-items: center; justify-content: center; border-radius: 999px; background: #2563eb; color: #fff; font-size: .65rem; }
-.filter-button-count { position: absolute; top: -.35rem; right: -.35rem; display: inline-flex; min-width: 1.1rem; height: 1.1rem; align-items: center; justify-content: center; border-radius: 999px; background: #2563eb; color: #fff; font-size: .6rem; font-weight: 800; }
-.prices-filter-toggle.button-icon { position: relative; width: var(--control-height-compact); padding: .25rem; }
+.filter-button-count { position: absolute; top: -.35rem; right: -.35rem; display: inline-flex; min-width: 1.1rem; height: 1.1rem; align-items: center; justify-content: center; border-radius: 999px; background: var(--color-primary); color: #fff; font-size: .6rem; font-weight: 800; }
 .prices-filter-panel { position: absolute; top: calc(100% + .45rem); right: 0; z-index: 20; display: grid; width: min(44rem, calc(100vw - 2rem)); gap: .8rem; margin: 0; border: 1px solid #dbe4ef; border-radius: .75rem; background: #f8fafc; padding: .85rem; box-shadow: 0 12px 28px rgba(15, 23, 42, .14); }
 .prices-filter-panel-collapsed { display: none; }
 .prices-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: #334155; font-size: .8rem; }
@@ -856,8 +856,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .price-management-entry > div:nth-child(2) { color: #64748b; font-size: .7rem; }
 .price-management-entry:has(.price-kind-selling) > div:nth-child(2) > span:last-child { display: none; }
 .variants-search { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; grid-auto-flow: column; gap: .5rem; margin-bottom: 1rem; }
-.variants-toggle-button { display: inline-flex; width: var(--control-height); min-width: var(--control-height); min-height: var(--control-height); height: var(--control-height); align-items: center; justify-content: center; padding: .25rem; font-size: 0; }
-.variants-toggle-icon { display: block; width: 1rem; height: 1rem; flex: 0 0 1rem; }
 .variants-status { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-bottom: 1rem; color: #64748b; font-size: .72rem; line-height: 1.35; }
 .variants-tree { background: #fff; }
 .variant-tree-node { border-bottom: 1px solid #e2e8f0; }
@@ -920,7 +918,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .menu-button, .menu-lock-button { min-height: 2.65rem; border-radius: .55rem; padding: .45rem .65rem; font-size: .76rem; font-weight: 800; }
   .menu-button { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
   .menu-button-icon { width: 1rem; font-size: 1.05rem; line-height: 1; text-align: center; }
-  .mobile-theme-toggle { display: inline-flex; width: 2.65rem; min-width: 2.65rem; min-height: 2.65rem; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: #64748b; font-size: 1rem; }
+  .button.mobile-theme-toggle { display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: #64748b; font-size: 1rem; }
   .mobile-theme-toggle:hover { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
   .menu-lock-button { display: inline-flex; width: 2.65rem; min-width: 2.65rem; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: #64748b; }
   .menu-lock-button svg { width: 1.1rem; height: 1.1rem; }
@@ -956,7 +954,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .workspace-navigation-tab-list { width: max-content; min-width: max-content; max-width: none; }
   .desktop-actions { display: none; }
   .page-header-mobile-primary { display: block; width: 100%; }
-  .page-header-mobile-primary > .button { width: 100%; }
+  .page-header-mobile-primary > .button:not(.button-icon) { width: 100%; }
   .workspace-navigation-hint { align-self: flex-end; }
   .mobile-actions { display: block; width: 100%; border: 1px solid #cbd5e1; border-radius: .625rem; background: white; }
   .mobile-actions summary { min-height: 2.75rem; cursor: pointer; list-style: none; padding: .7rem .875rem; font-size: .875rem; font-weight: 700; color: #334155; }
@@ -965,7 +963,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .mobile-actions[open] summary { border-bottom: 1px solid #e2e8f0; }
   .mobile-actions-content { display: flex; flex-wrap: wrap; gap: .5rem; padding: .625rem; }
   .mobile-actions-content > * { flex: 1 1 10rem; }
-  .mobile-actions-content .button { width: 100%; }
+  .mobile-actions-content .button:not(.button-icon) { width: 100%; }
   .card { border-radius: .75rem; }
   .control, .button { min-height: 2.75rem; }
   .responsive-table { min-width: 0 !important; }
@@ -1002,7 +1000,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .segmented-control { justify-content: space-between; width: 100%; }
   .segmented-control-label { padding-left: .4rem; }
   .segmented-control button { min-height: 2.75rem; flex: 1; }
-  .variants-toggle-button { width: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; height: 2.75rem; }
   .variant-node-actions .button, .price-edit-button, .price-add-button { min-height: 2.75rem; }
 
   .product-status { padding: .22rem .45rem; font-size: .6rem; }
@@ -1014,7 +1011,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .prices-search .button:not(.button-icon) { min-width: 5.5rem; }
   .prices-summary { padding: 0 .15rem; }
   .prices-filter-menu { gap: .45rem; }
-  .prices-filter-toggle.button-icon { width: var(--control-height-compact); justify-content: center; min-height: var(--control-height-compact); padding: .25rem; }
   .prices-filter-panel { top: calc(100% + .35rem); width: min(30rem, calc(100vw - 1rem)); gap: .65rem; border-radius: .65rem; padding: .65rem; }
   .prices-filter-heading { align-items: flex-start; flex-direction: column; gap: .5rem; font-size: .75rem; }
   .prices-filter-heading .button { width: 100%; min-height: 2.25rem; font-size: .65rem; }
@@ -1203,12 +1199,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pos-catalog-filter { display: flex; min-width: 0; align-items: center; gap: .5rem; }
 .pos-catalog-filter > span { display: none; color: var(--color-muted); font-size: .75rem; font-weight: 650; }
 .pos-catalog-filter-trigger { position: relative; display: inline-flex; width: auto; min-width: 2.5rem; height: 2.5rem; min-height: 2.5rem; align-items: center; justify-content: center; gap: .4rem; padding: .45rem .7rem; }
-.pos-catalog-filter-trigger > svg:first-child, .pos-view-button > svg { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
+.pos-catalog-filter-trigger > svg:first-child { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
 .pos-catalog-filter-trigger .ui-select-chevron, .pos-icon-action-label { display: none; }
 .pos-filter-value { font-size: .875rem; font-weight: 600; white-space: nowrap; }
 .pos-filter-dot { position: absolute; top: .3rem; right: .3rem; width: .42rem; height: .42rem; border: 1px solid var(--color-surface); border-radius: 50%; background: var(--color-primary); }
 .pos-display-controls { display: flex; align-items: center; justify-content: flex-end; gap: .35rem; }
-.pos-view-button { width: 2.5rem; min-height: 2.5rem; height: 2.5rem; padding: .45rem; }
 .pos-product-grid.is-list { grid-template-columns: 1fr; }
 .pos-product-grid.is-list .pos-product-card { min-height: 0; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: auto auto; align-items: center; }
 .pos-product-grid.is-list .pos-product-card-main { grid-column: 1; grid-row: 1 / span 2; }
@@ -1229,7 +1224,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .pos-catalog-controls { width: 100%; flex: 1 1 100%; align-items: center; flex-direction: row; justify-content: space-between; }
   .pos-catalog-filter { width: auto; justify-content: flex-start; }
   .pos-catalog-filter-trigger { flex: 0 1 auto; }
-  .pos-view-button { width: 2.5rem; min-width: 2.5rem; padding: .45rem; }
   .pos-product-grid.is-list .pos-product-card { grid-template-columns: minmax(0, 1fr) auto; }
   .pos-product-grid.is-list .pos-product-links { grid-column: 1; grid-row: 3; }
   .pos-product-grid.is-list .pos-product-stepper { grid-column: 2; grid-row: 1 / span 2; width: 6.5rem; }

@@ -36,22 +36,27 @@ export function ButtonLink({ variant = 'primary', size = 'default', fullWidth = 
   return <Link className={cn(buttonVariants({ variant, size, fullWidth, className }))} {...props} />
 }
 
-export function IconButton({ label, icon, loading = false, variant = 'secondary', ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; icon: ReactNode; loading?: boolean; variant?: NonNullable<ButtonProps['variant']> }) {
-  return <Button {...props} variant={variant} size="icon" loading={loading} aria-label={label} title={props.title ?? label}>{loading ? null : icon}</Button>
+type IconButtonProps = Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; icon: ReactNode; loading?: boolean; variant?: NonNullable<ButtonProps['variant']>; size?: 'default' | 'compact' }
+
+/** Square icon-only button. Every icon action uses it so size, centering and touch target stay identical. */
+export function IconButton({ label, icon, loading = false, variant = 'secondary', size = 'default', className, ...props }: IconButtonProps) {
+  return <Button {...props} className={cn(size === 'compact' && 'button-icon-compact', className)} variant={variant} size="icon" loading={loading} aria-label={label} title={props.title ?? label}>{loading ? null : icon}</Button>
 }
 
-export function RefreshButton({ label, loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label: string; loading?: boolean }) {
+type PresetIconButtonProps = Omit<IconButtonProps, 'label' | 'icon'>
+
+export function RefreshButton({ label, loading = false, ...props }: PresetIconButtonProps & { label: string }) {
   return <IconButton {...props} type="button" label={label} loading={loading} icon={<RotateCw aria-hidden="true" />} />
 }
 
-export function SearchButton({ label, loading = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant' | 'loading'> & { label?: string; loading?: boolean }) {
+export function SearchButton({ label, loading = false, ...props }: PresetIconButtonProps & { label?: string }) {
   const { t } = useTranslation()
   label ??= t('common.search')
-  return <IconButton {...props} className={cn('toolbar-search-button', props.className)} type="submit" label={label} loading={loading} title={`${label} (Enter)`} icon={<Search aria-hidden="true" />} />
+  return <IconButton {...props} type="submit" label={label} loading={loading} title={`${label} (Enter)`} icon={<Search aria-hidden="true" />} />
 }
 
-export function FilterButton({ label, activeCount = 0, expanded = false, ...props }: Omit<ButtonProps, 'children' | 'size' | 'variant'> & { label?: string; activeCount?: number; expanded?: boolean }) {
+export function FilterButton({ label, activeCount = 0, expanded = false, ...props }: PresetIconButtonProps & { label?: string; activeCount?: number; expanded?: boolean }) {
   const { t } = useTranslation()
   label ??= t('common.filters')
-  return <IconButton {...props} className={cn('toolbar-filter-button', props.className)} type="button" label={label} aria-expanded={expanded} icon={<><ListFilter aria-hidden="true" />{activeCount > 0 && <span className="filter-button-count">{activeCount}</span>}</>} />
+  return <IconButton {...props} type="button" label={label} aria-expanded={expanded} icon={<><ListFilter aria-hidden="true" />{activeCount > 0 && <span className="filter-button-count">{activeCount}</span>}</>} />
 }
