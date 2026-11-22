@@ -1,4 +1,17 @@
 @import "tailwindcss";
+/* shadcn/ui: dark variant follows the app's color mode; semantic tokens map onto the app theme variables. */
+@custom-variant dark (&:where([data-color-mode="dark"], [data-color-mode="dark"] *));
+@theme inline {
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-heading);
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: #ffffff;
+  --color-muted-foreground: var(--color-muted);
+  --color-border: var(--color-border);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-primary);
+  --color-destructive: var(--color-danger);
+}
 
 .pending-status-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; margin-bottom: 1rem; padding: .875rem 1rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-muted); font-size: .875rem; }
 .pending-status-bar > div { display: grid; gap: .2rem; }
