@@ -1,15 +1,13 @@
 import type { Company, StockBin, StockCache, VariantItem, Warehouse } from './types'
 import type { ErpNextClient } from './erpnext'
 import { listAllDocuments } from './pagination'
-import { searchScore } from './search'
+import { rankProductSearch } from './search'
 
 const PAGE_SIZE = 25
 
 export function stockSearch(bins: StockBin[], items: VariantItem[], search: string) {
-  const term = search.trim().toLocaleLowerCase()
-  if (!term) return bins
   const itemMap = new Map(items.map((item) => [item.name, item]))
-  return bins.filter((bin) => `${bin.item_code} ${itemMap.get(bin.item_code)?.item_name ?? ''}`.toLocaleLowerCase().includes(term))
+  return rankProductSearch(bins, search, (bin) => itemMap.get(bin.item_code) ?? { name: bin.item_code })
 }
 
 export function visibleStockBins(bins: StockBin[], _items: VariantItem[] = [], _warehouses: Warehouse[] = []) {
@@ -24,12 +22,7 @@ export function paginateStock<T>(rows: T[], page: number, pageSize = PAGE_SIZE) 
 }
 
 export function searchReconciliationItems(items: VariantItem[], search: string) {
-  return items.map((item, index) => ({ item, index, match: searchScore(search, [
-    { value: item.item_name, weight: 5 },
-    { value: item.name, weight: 5 },
-    { value: item.brand, weight: 3 },
-    { value: item.item_group, weight: 2 },
-  ]) })).filter((entry) => entry.match).sort((left, right) => (right.match?.score ?? 0) - (left.match?.score ?? 0) || left.index - right.index).map((entry) => entry.item)
+  return rankProductSearch(items, search)
 }
 
 export type StockMovementKind = 'Material Receipt' | 'Material Issue' | 'Material Transfer'

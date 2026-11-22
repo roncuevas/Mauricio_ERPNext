@@ -6,7 +6,7 @@ import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { buildPriceIndex, defaultUom, priceForUomFromIndex, uomOptionLabel, type PriceIndex } from '../lib/pos-catalog'
 import { buildVariantTree } from '../lib/variant-cache'
-import { searchScore } from '../lib/search'
+import { productSearchScore } from '../lib/search'
 import type { ItemPrice, ItemUom, VariantItem } from '../lib/types'
 
 type ProductTreeProps = {
@@ -24,8 +24,7 @@ const PAGE_SIZE = 50
 
 function matchesItem(item: VariantItem, query: string) {
   if (!query) return true
-  const values = [item.name, item.item_code, item.item_name, item.brand, item.item_group, item.stock_uom, item.sales_uom, ...(((item as { barcodes?: string[] }).barcodes) ?? [])]
-  return searchScore(query, values.map((value) => ({ value, weight: 1 }))) !== null
+  return productSearchScore(item, query) !== null
 }
 
 function formatRate(rate: number, currency: string) {

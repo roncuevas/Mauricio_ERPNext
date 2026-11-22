@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { formatMoney } from '../lib/pos'
 import { uomOptionLabel } from '../lib/pos-catalog'
+import { rankProductSearch } from '../lib/search'
 import type { CachedItem, ItemPrice, ItemUom, PosCartLine } from '../lib/types'
 
 function itemUoms(item: CachedItem): ItemUom[] {
@@ -38,9 +39,7 @@ export function PosVariantSheet({ template, variants, prices, priceList, currenc
   const [resolvedPrice, setResolvedPrice] = useState<number | null | undefined>(undefined)
   const effectivePrice = price ?? resolvedPrice ?? null
   const filteredVariants = useMemo(() => {
-    const term = variantSearch.trim().toLocaleLowerCase()
-    if (!term) return variants
-    return variants.filter((item) => `${item.item_name} ${item.name} ${variantDescription(item)} ${item.brand ?? ''}`.toLocaleLowerCase().includes(term))
+    return rankProductSearch(variants, variantSearch)
   }, [variantSearch, variants])
 
   useEffect(() => {
