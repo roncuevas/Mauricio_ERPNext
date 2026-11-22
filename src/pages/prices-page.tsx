@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, ButtonLink, Card, CardContent, Field, Input, Label, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog'
 import { createErpNextClient } from '../lib/erpnext'
 import { listAllDocuments } from '../lib/pagination'
-import { patchItemPriceCatalog, writeItemPriceCatalog } from '../lib/price-cache'
+import { patchItemPriceCatalog } from '../lib/price-cache'
 import { buildVariantTree } from '../lib/variant-cache'
 import { variantSearchScore } from '../components/variant-tree'
 import { averageComparableOppositeTypePrice, calculateGrossMargin, findComparablePurchases, findDuplicateItemPrice, suggestComparableItemPrice } from '../lib/pricing'
@@ -19,6 +19,7 @@ import { queryKeys } from '../lib/query-keys'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { PriceBulkToolbar } from '../components/price-bulk-toolbar'
 import { VirtualizedCollection } from '../components/virtualized-collection'
+import { useCatalogCacheRefresh } from '../components/use-managed-cache-refresh'
 
 type Client = ReturnType<typeof createErpNextClient>
 const defaultStockUomOption = '__default_stock_uom__'
@@ -297,7 +298,8 @@ export function PricesPage({ client, profileId }: { client: Client; profileId: s
       uoms: Array.from(new Set(prices.map((price) => price.uom || '—'))).sort(),
     }
   }, [priceListsQuery.data, pricesQuery.data?.prices, variantsQuery.data?.items])
-  const refresh = useMutation({ mutationFn: async () => { const prices = await listAllDocuments<ItemPrice>(client, 'Item Price', { fields: ['name', 'item_code', 'price_list', 'price_list_rate', 'buying', 'selling', 'uom', 'currency', 'customer', 'supplier', 'batch_no', 'packing_unit', 'valid_from', 'valid_upto'], orderBy: 'item_code asc, price_list asc' }, (count) => setSyncMessage(t('pricesPage.downloading', { count }))); const next: ItemPriceCatalogCache = { profileId, updatedAt: new Date().toISOString(), prices }; return writeItemPriceCatalog(next) }, onSuccess: (next) => { queryClient.setQueryData(queryKeys.catalog.price(profileId), next); setSyncMessage(t('pricesPage.updatedCount', { count: next.prices.length })) }, onError: () => setSyncMessage('') })
+  const refreshMutation = useCatalogCacheRefresh({ client, profileId, onProgress: setSyncMessage })
+  const refresh = { isPending: refreshMutation.isPending, isError: refreshMutation.isError, error: refreshMutation.error, mutate: () => refreshMutation.mutate(['prices'], { onSuccess: () => setSyncMessage(t('pricesPage.updatedCount', { count: queryClient.getQueryData<ItemPriceCatalogCache>(queryKeys.catalog.price(profileId))?.prices.length ?? 0 })), onError: () => setSyncMessage('') }) }
   const searchResult = useMemo(() => collectVisibleNames(tree.roots, tree.children, pricesByItem, search, filters), [tree.children, tree.roots, pricesByItem, search, filters])
   const visibleNames = searchResult.visibleNames
   const effectiveExpanded = useMemo(() => {

@@ -47,3 +47,20 @@ export function useManagedCacheRefresh({ client, profileId, activeProfile, onSet
 
   return { busyIds, busy: busyIds.length > 0, message, error, refreshOne, refreshMany }
 }
+
+// Page-level refresh buttons share the cache manager's loaders so every screen
+// downloads the same fields, applies the same fallbacks and updates the same caches.
+export function useCatalogCacheRefresh({ client, profileId, onProgress }: { client: Client; profileId: string; onProgress?: (message: string) => void }) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: ManagedCacheId[]) => {
+      const context: ManagedRefreshContext = { client, profileId, date: localDate() }
+      for (const id of ids) await runManagedCacheRefresh(id, context, onProgress)
+      return ids
+    },
+    onSettled: async (_result, _error, ids) => {
+      await Promise.all(ids.flatMap((id) => managedCacheQueryKeys(profileId, id)).map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.cacheOverview(profileId) })
+    },
+  })
+}
