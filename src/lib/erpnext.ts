@@ -5,17 +5,23 @@ export class ErpNextError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message) }
 }
 
+export class ErpNextImageUploadError extends Error {
+  constructor(public fileUrl: string, cause: unknown) {
+    super(i18n.t('pendingPage.imageUploadedNotAssigned'), { cause })
+  }
+}
+
 export function createErpNextClient(connection: ConnectionProfile) {
   const baseUrl = connection.baseUrl.replace(/\/+$/, '')
 
-  async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 20_000): Promise<T> {
     const controller = new AbortController()
-    const timeout = window.setTimeout(() => controller.abort(), 20_000)
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
     try {
       const response = await fetch(`${baseUrl}${path}`, {
         ...init,
         signal: controller.signal,
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `token ${connection.apiKey}:${connection.apiSecret}`, ...init.headers },
+        headers: { Accept: 'application/json', ...(typeof FormData !== 'undefined' && init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), Authorization: `token ${connection.apiKey}:${connection.apiSecret}`, ...init.headers },
       })
       const raw = await response.text()
       let body: { data?: T; message?: string; exc_type?: string; exception?: string; _server_messages?: string } = {}
@@ -57,9 +63,60 @@ export function createErpNextClient(connection: ConnectionProfile) {
     } finally { window.clearTimeout(timeout) }
   }
 
+  function configuredImageUrl(url: string) {
+    const origin = new URL(baseUrl).origin
+    try {
+      const target = new URL(url, `${baseUrl}/`)
+      return target.origin === origin && !target.username && !target.password && ['http:', 'https:'].includes(target.protocol) && /^\/(?:private\/)?files\/.+/i.test(target.pathname) ? target : null
+    } catch { return null }
+  }
+
+  async function uploadFileReference(itemName: string, fileUrl: string) {
+    const formData = new FormData()
+    formData.append('file_url', fileUrl)
+    formData.append('doctype', 'Item')
+    formData.append('docname', itemName)
+    formData.append('fieldname', 'image')
+    formData.append('is_private', '0')
+    return request<{ file_url?: string }>('/api/method/upload_file', { method: 'POST', body: formData }, 90_000)
+  }
+
+  async function setItemImage(itemName: string, imageUrl: string) {
+    const configuredUrl = configuredImageUrl(imageUrl)
+    let target: URL
+    try { target = new URL(imageUrl, `${baseUrl}/`) } catch { throw new Error(i18n.t('pendingPage.imageLinkInvalid')) }
+    if (target.username || target.password || !['http:', 'https:'].includes(target.protocol) || (target.protocol !== 'https:' && new URL(baseUrl).protocol === 'https:')) throw new Error(i18n.t('pendingPage.imageLinkInvalid'))
+    if (target.origin === new URL(baseUrl).origin && !configuredUrl) throw new Error(i18n.t('pendingPage.imageLinkInvalid'))
+    const fileUrl = configuredUrl?.pathname ?? (await uploadFileReference(itemName, target.href)).file_url ?? target.href
+    const saved = await request<{ image?: string }>(`/api/resource/Item/${encodeURIComponent(itemName)}`, { method: 'PUT', body: JSON.stringify({ image: fileUrl }) })
+    if (saved.image !== fileUrl) throw new Error(i18n.t('pendingPage.imageSaveUnconfirmed'))
+    return saved.image
+  }
+
+  async function uploadItemImage(itemName: string, file: File) {
+    if (!file.type.startsWith('image/') || file.size === 0) throw new Error(i18n.t('pendingPage.imageFileInvalid'))
+    const formData = new FormData()
+    formData.append('file', file, file.name)
+    formData.append('doctype', 'Item')
+    formData.append('docname', itemName)
+    formData.append('fieldname', 'image')
+    formData.append('is_private', '0')
+    const uploaded = await request<{ file_url?: string }>('/api/method/upload_file', { method: 'POST', body: formData }, 90_000)
+    if (!uploaded.file_url) throw new Error(i18n.t('pendingPage.imageUploadIncomplete'))
+    try { return await setItemImage(itemName, uploaded.file_url) } catch (error) { throw new ErpNextImageUploadError(uploaded.file_url, error) }
+  }
+
   return {
     profileId: connection.id,
     async getImage(url: string) { return requestImage(url) },
+    isExternalImageUrl(url: string) {
+      try {
+        const target = new URL(url, `${baseUrl}/`)
+        return ['http:', 'https:'].includes(target.protocol) && target.origin !== new URL(baseUrl).origin && !target.username && !target.password
+      } catch { return false }
+    },
+    async setItemImage(itemName: string, imageUrl: string) { return setItemImage(itemName, imageUrl) },
+    async uploadItemImage(itemName: string, file: File) { return uploadItemImage(itemName, file) },
     async getCurrentUser() { return request<string>('/api/method/frappe.auth.get_logged_user') },
     async getUserProfile(user: string) { return request<ErpNextUserProfile>(`/api/resource/User/${encodeURIComponent(user)}`) },
     async callMethod<T>(method: string, args: Record<string, unknown> = {}) { return request<T>(`/api/method/${method}`, { method: 'POST', body: JSON.stringify(args) }) },

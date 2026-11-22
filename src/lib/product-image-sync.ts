@@ -24,7 +24,7 @@ export async function downloadMissingProductImages(client: Client, profileId: st
   }
 
   const cached = new Map((await listProductImages(profileId)).map((record) => [record.itemName, record.url]))
-  const pending = records.filter((record) => record.image && cached.get(record.name) !== record.image)
+  const pending = records.filter((record) => record.image && !client.isExternalImageUrl(record.image) && cached.get(record.name) !== record.image)
   let cursor = 0
   let downloaded = 0
   let failed = 0

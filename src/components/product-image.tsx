@@ -12,17 +12,21 @@ export function ProductImage({ client, profileId, item, className = '' }: { clie
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => { if (source) return () => URL.revokeObjectURL(source) }, [source])
+  useEffect(() => { if (source.startsWith('blob:')) return () => URL.revokeObjectURL(source) }, [source])
 
   useEffect(() => {
     let active = true
     setSource('')
+    if (item.image && client.isExternalImageUrl(item.image)) {
+      setSource(item.image)
+      return () => { active = false }
+    }
     void readProductImage(profileId, item.name).then((cached) => {
       if (!active || !cached || (item.image && cached.url !== item.image)) return
       setSource(URL.createObjectURL(cached.blob))
     }).catch(() => undefined)
     return () => { active = false }
-  }, [item.image, item.name, profileId])
+  }, [client, item.image, item.name, profileId])
 
   async function loadImage() {
     if (busy) return
@@ -31,6 +35,10 @@ export function ProductImage({ client, profileId, item, className = '' }: { clie
     try {
       const imageUrl = item.image || (await client.getDocument<{ image?: string }>('Item', item.name)).image
       if (!imageUrl) throw new Error(t('productImages.missing'))
+      if (client.isExternalImageUrl(imageUrl)) {
+        setSource(imageUrl)
+        return
+      }
       const blob = await client.getImage(imageUrl)
       await writeProductImage({ profileId, itemName: item.name, url: imageUrl, blob })
     setSource(URL.createObjectURL(blob))
@@ -39,7 +47,7 @@ export function ProductImage({ client, profileId, item, className = '' }: { clie
     } finally { setBusy(false) }
   }
 
-  if (source) return <img className={`product-image ${className}`} src={source} alt={item.item_name || item.name} loading="lazy" onError={() => { setSource(''); setError(t('productImages.loadError')) }} />
+  if (source) return <img className={`product-image ${className}`} src={source} alt={item.item_name || item.name} loading="lazy" referrerPolicy="no-referrer" onError={() => { setSource(''); setError(t('productImages.loadError')) }} />
   return <div className={`product-image-placeholder ${className}`}>
     <button type="button" onClick={(event) => { event.stopPropagation(); void loadImage() }} disabled={busy} aria-label={busy ? t('productImages.loading') : t('productImages.loadFor', { name: item.name })} title={error || t('productImages.loadHint')}>
       {busy ? <RefreshCw className="size-5 animate-spin" aria-hidden="true" /> : <ImageIcon className="size-5" aria-hidden="true" />}

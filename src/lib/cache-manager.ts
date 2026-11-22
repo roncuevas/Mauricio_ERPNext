@@ -220,7 +220,9 @@ async function loadVariants(client: ErpNextClient, profileId: string, onProgress
   }
   const searchDetails = await readItemSearchDetails(client, items, (message) => onProgress?.(message))
   const attributeDetails = await readItemVariantAttributes(client, items, (message) => onProgress?.(message))
-  const enriched = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }), attributes: attributeDetails[item.name] ?? [] }))
+  const tagsByItem = await readItemTags(client, onProgress)
+  const previous = new Map((await readVariantCatalog(profileId))?.items.map((item) => [item.name, item.tags ?? []]) ?? [])
+  const enriched = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }), attributes: attributeDetails[item.name] ?? [], tags: tagsByItem?.[item.name] ?? previous.get(item.name) ?? [] }))
   let rows: Array<{ parent: string; uom: string; conversion_factor: number }> = []
   try {
     let uomStart = 0

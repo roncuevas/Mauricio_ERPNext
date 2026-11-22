@@ -1,5 +1,5 @@
 import { ErpNextError, type ErpNextClient } from './erpnext'
-import { readItemSearchDetails, readItemUomsThroughItems, readItemVariantAttributes } from './catalog-sync'
+import { readItemSearchDetails, readItemTags, readItemUomsThroughItems, readItemVariantAttributes } from './catalog-sync'
 import { listAllDocuments } from './pagination'
 import { readItemPriceCatalog, writeItemPriceCatalog } from './price-cache'
 import { mergeItemUoms, readVariantCatalog, writeVariantCatalog } from './variant-cache'
@@ -28,7 +28,9 @@ export async function syncProductCardDetails(client: ErpNextClient, profileId: s
   }, (count) => setMessage(`Descargando productos y UOM para la vista Cards: ${count}`))
   const searchDetails = await readItemSearchDetails(client, items, setMessage)
   const attributesByItem = await readItemVariantAttributes(client, items, setMessage)
-  const enrichedItems = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }), attributes: attributesByItem[item.name] ?? [] }))
+  const tagsByItem = await readItemTags(client, (message) => setMessage(message))
+  const previousTags = new Map((variantCache?.items ?? []).map((item) => [item.name, item.tags ?? []]))
+  const enrichedItems = items.map((item) => ({ ...item, ...(searchDetails[item.name] ?? { barcodes: [] }), attributes: attributesByItem[item.name] ?? [], tags: tagsByItem?.[item.name] ?? previousTags.get(item.name) ?? [] }))
   let uomRows: Array<{ parent: string; uom: string; conversion_factor: number }>
   try {
     uomRows = await listAllDocuments<{ parent: string; uom: string; conversion_factor: number }>(client, 'UOM Conversion Detail', {

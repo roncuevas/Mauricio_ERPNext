@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { getVariantAttributeCoverage, hasMultipleUoms } from '../lib/variant-cache'
-import { searchScore } from '../lib/search'
+import { productSearchScore } from '../lib/search'
 import type { VariantItem } from '../lib/types'
 import { ProductImage } from './product-image'
 import type { createErpNextClient } from '../lib/erpnext'
@@ -16,14 +16,7 @@ export function variantMatches(item: VariantItem, search: string) {
 }
 
 export function variantSearchScore(item: VariantItem, search: string) {
-  return searchScore(search, [
-    { value: item.item_name, weight: 5 },
-    { value: item.name, weight: 5 },
-    { value: item.brand, weight: 3 },
-    { value: item.item_group, weight: 2 },
-    { value: item.stock_uom, weight: 1 },
-    { value: item.attributes, weight: 1 },
-  ])
+  return productSearchScore(item, search)
 }
 
 export function variantNodeIsVisible(item: VariantItem, childrenByParent: Map<string, VariantItem[]>, uomOnly: boolean, search: string): boolean {

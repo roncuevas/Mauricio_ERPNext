@@ -33,6 +33,23 @@ export type SearchMatch = {
   matchedFields: number[]
 }
 
+export type ProductSearchable = {
+  name?: unknown
+  item_name?: unknown
+  item_code?: unknown
+  brand?: unknown
+  item_group?: unknown
+  tags?: unknown
+  barcodes?: unknown
+  barcode?: unknown
+  sku?: unknown
+  stock_uom?: unknown
+  sales_uom?: unknown
+  variant_of?: unknown
+  attributes?: unknown
+  uoms?: unknown
+}
+
 function tokensOf(value: unknown) {
   return valuesOf(value).flatMap((entry) => normalize(entry).split(/[^a-z0-9]+/).filter(Boolean))
 }
@@ -78,6 +95,32 @@ export function searchScore(query: string, fields: SearchField[]): SearchMatch |
     if (scoreToken(queryTokens[0], field) > 0 && matchedFields.has(index)) matchedFields.add(index)
   })
   return { score, matchedFields: Array.from(matchedFields) }
+}
+
+export function productSearchScore(item: ProductSearchable, query: string) {
+  return searchScore(query, [
+    { value: item.item_name, weight: 5 },
+    { value: item.name, weight: 5 },
+    { value: item.item_code, weight: 5 },
+    { value: item.brand, weight: 3 },
+    { value: item.item_group, weight: 2 },
+    { value: item.tags, weight: 4 },
+    { value: item.barcodes, weight: 4 },
+    { value: item.barcode, weight: 4 },
+    { value: item.sku, weight: 4 },
+    { value: item.stock_uom, weight: 1 },
+    { value: item.sales_uom, weight: 1 },
+    { value: item.variant_of, weight: 3 },
+    { value: item.attributes, weight: 2 },
+    { value: item.uoms, weight: 1 },
+  ])
+}
+
+export function rankProductSearch<T>(items: T[], query: string, getProduct: (item: T) => ProductSearchable = (item) => item as ProductSearchable) {
+  return items.map((item, index) => ({ item, index, match: productSearchScore(getProduct(item), query) }))
+    .filter((entry) => entry.match)
+    .sort((left, right) => (right.match?.score ?? 0) - (left.match?.score ?? 0) || left.index - right.index)
+    .map((entry) => entry.item)
 }
 
 export function fuzzyMatch(query: string, values: unknown[]) {

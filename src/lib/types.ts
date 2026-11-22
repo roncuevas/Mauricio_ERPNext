@@ -141,6 +141,10 @@ export type DocTypeCatalogCache = {
 export type VariantItem = {
   name: string
   image?: string
+  tags?: string[]
+  barcodes?: string[]
+  barcode?: unknown
+  sku?: unknown
   item_code?: string
   item_name?: string
   brand?: string
