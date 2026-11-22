@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { ChevronDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, EntityCombobox, Field, Input, Notice, Spinner } from './ui'
 import { Checkbox } from './ui/checkbox'
@@ -74,7 +75,7 @@ export function MetadataDocEditor({ client, profileId = client.profileId, doctyp
   const [initialized, setInitialized] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [mode, setMode] = useState<'basic' | 'advanced'>('basic')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const itemGroupOptions = useMemo(() => {
     const groups = itemGroupsQuery.data ?? []
     const byName = new Map(groups.map((group) => [group.name, group]))
@@ -110,10 +111,15 @@ export function MetadataDocEditor({ client, profileId = client.profileId, doctyp
       const data = Object.fromEntries(editableFields.filter((field) => !isLocked(field) && !layoutFields.has(field.fieldtype ?? '')).map((field) => [field.fieldname, parseValue(field, form[field.fieldname] ?? '', t)]))
       const saved = name ? await client.updateDocument<Record<string, unknown>>(doctype, name, data) : await client.createDocument<Record<string, unknown>>(doctype, data)
       await onSaved?.(name ? { ...saved, name } : saved); onClose()
-    } catch (reason) { setError(reason instanceof Error ? reason.message : t('metadataEditor.saveError')); if (basicFieldNames) setMode('advanced') } finally { setBusy(false) }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : t('metadataEditor.saveError')); if (basicFieldNames) setAdvancedOpen(true) } finally { setBusy(false) }
   }
 
-  const editableFields = fields.filter((field) => field.fieldname && (!basicFieldNames || name || mode === 'advanced' || basicFieldNames.includes(field.fieldname) || field.reqd))
+  const editableFields = fields.filter((field) => field.fieldname)
+  const basicFieldSet = new Set(basicFieldNames ?? [])
+  const basicFields = basicFieldNames ? editableFields.filter((field) => basicFieldSet.has(field.fieldname) || field.reqd) : editableFields
+  const basicFieldNamesSet = new Set(basicFields.map((field) => field.fieldname))
+  const advancedFields = basicFieldNames ? editableFields.filter((field) => !basicFieldNamesSet.has(field.fieldname)) : []
+  const renderField = (field: DocTypeField) => <MetadataField key={field.fieldname} field={field} value={form[field.fieldname] ?? ''} disabled={isLocked(field)} labelOverride={basicFieldSet.has(field.fieldname) ? basicLabels[field.fieldname] : undefined} requiredOverride={basicFieldSet.has(field.fieldname) && field.fieldname === 'item_group'} itemGroups={itemGroupOptions} itemGroupsLoading={itemGroupsQuery.isPending} itemGroupsError={itemGroupsQuery.isError} onRetryItemGroups={() => void itemGroupsQuery.refetch()} onChange={(value) => setForm({ ...form, [field.fieldname]: value })} />
 
-  return <div className="card mb-5 p-5"><div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="text-lg font-bold">{name ? `${doctype}: ${name}` : t('metadataEditor.newDocument', { doctype })}</h2>{!(basicFieldNames && !name) && <p className="muted">{t('metadataEditor.description')}</p>}</div><Button variant="secondary" onClick={onClose}>{t('metadataEditor.close')}</Button></div>{basicFieldNames && !name && <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><p className="muted">{t(mode === 'basic' ? 'metadataEditor.basicDescription' : 'metadataEditor.advancedDescription')}</p><div className="flex gap-2" role="group" aria-label={t('metadataEditor.formMode')}><Button type="button" variant={mode === 'basic' ? 'primary' : 'secondary'} aria-pressed={mode === 'basic'} onClick={() => setMode('basic')}>{t('metadataEditor.basicMode')}</Button><Button type="button" variant={mode === 'advanced' ? 'primary' : 'secondary'} aria-pressed={mode === 'advanced'} onClick={() => setMode('advanced')}>{t('metadataEditor.advancedMode')}</Button></div></div>}{error && <div className="mb-4"><Notice>{error}</Notice></div>}{query.isError && <div className="mb-4"><Notice>{query.error.message}</Notice></div>}{query.isPending && !initialized ? <Spinner /> : <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>{editableFields.map((field) => <MetadataField key={field.fieldname} field={field} value={form[field.fieldname] ?? ''} disabled={isLocked(field)} labelOverride={basicFieldNames?.includes(field.fieldname) ? basicLabels[field.fieldname] : undefined} requiredOverride={basicFieldNames?.includes(field.fieldname) && field.fieldname === 'item_group'} itemGroups={itemGroupOptions} itemGroupsLoading={itemGroupsQuery.isPending} itemGroupsError={itemGroupsQuery.isError} onRetryItemGroups={() => void itemGroupsQuery.refetch()} onChange={(value) => setForm({ ...form, [field.fieldname]: value })} />)}<div className="sm:col-span-2"><Button type="submit" disabled={busy}>{busy ? <Spinner /> : t('metadataEditor.save')}</Button></div></form>}</div>
+  return <div className="card mb-5 p-5"><div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="text-lg font-bold">{name ? `${doctype}: ${name}` : t('metadataEditor.newDocument', { doctype })}</h2>{!(basicFieldNames && !name) && <p className="muted">{t('metadataEditor.description')}</p>}</div><Button variant="secondary" onClick={onClose}>{t('metadataEditor.close')}</Button></div>{basicFieldNames && <p className="muted mb-4">{t('metadataEditor.basicDescription')}</p>}{error && <div className="mb-4"><Notice>{error}</Notice></div>}{query.isError && <div className="mb-4"><Notice>{query.error.message}</Notice></div>}{query.isPending && !initialized ? <Spinner /> : <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>{basicFields.map(renderField)}{basicFieldNames && advancedFields.length > 0 && <details className="group sm:col-span-2 border-t border-slate-200 pt-4" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}><summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"><span>{t('metadataEditor.advancedMode')}</span><ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" /></summary><p className="muted mt-2">{t('metadataEditor.advancedDescription')}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{advancedFields.map(renderField)}</div></details>}<div className="sm:col-span-2"><Button type="submit" disabled={busy}>{busy ? <Spinner /> : t('metadataEditor.save')}</Button></div></form>}</div>
 }
