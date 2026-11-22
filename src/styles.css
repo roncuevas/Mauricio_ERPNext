@@ -601,9 +601,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-catalog-list > div:first-child { border-top: 0; padding-top: 0; }
 .home-catalog-list dt { color: var(--color-muted); }
 .home-catalog-list dd { margin: 0; color: var(--color-heading); font-weight: 600; font-variant-numeric: tabular-nums; }
-.home-sync > [data-slot="card-header"] { grid-template-columns: minmax(0, 1fr) auto; }
 .home-sync [data-slot="card-description"] { max-width: 60ch; }
-.home-sync [data-slot="card-action"] { grid-row: 1 / span 2; grid-column: 2; align-self: start; }
 .cache-sync-scroll { min-width: 0; overflow-x: auto; }
 .card .cache-sync-table { min-width: 0; }
 .cache-sync-table [data-slot="table-cell"] { padding-block: .55rem; }
