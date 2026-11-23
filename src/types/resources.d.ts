@@ -808,26 +808,22 @@ export default interface Resources {
       "variant": {
         "addPrice": "Agregar precio",
         "addToCart": "Agregar al carrito",
-        "available": "Variantes disponibles",
         "checkingPrice": "Consultando precio…",
-        "chosen": "Variante elegida",
         "close": "Cerrar selección de variante",
         "configuration": "Configuración de variante",
-        "configure": "Configurar venta",
         "description": "Elige una variante, presentación y precio antes de agregarla al carrito.",
         "empty": "Esta plantilla no tiene variantes activas disponibles.",
+        "heading_one": "{{count}} variante",
+        "heading_other": "{{count}} variantes",
+        "inCart": "En carrito",
         "loadError": "No se pudieron cargar las variantes.",
         "loading": "Cargando variantes",
         "noMatches": "No hay variantes que coincidan.",
         "noPriceForUom": "Sin precio para esta UOM",
-        "optionsHint_one": "{{count}} opción · usa búsqueda o teclado",
-        "optionsHint_other": "{{count}} opciones · usa búsqueda o teclado",
-        "results": "Resultados",
-        "saleUom": "UOM de venta",
+        "saleUom": "Unidad de venta",
         "searchLabel": "Buscar variante",
         "searchPlaceholder": "Buscar por nombre, SKU, atributo o marca…",
-        "selectUom": "Selecciona UOM",
-        "selected": "Seleccionada"
+        "selectUom": "Selecciona UOM"
       }
     },
     "posExtra": {

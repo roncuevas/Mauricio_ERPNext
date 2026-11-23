@@ -32,6 +32,28 @@ export function uomOptionLabel(item: CachedItem, uom: ItemUom) {
   return `${uom.uom} · ${uom.conversion_factor} ${item.stock_uom || defaultUomName}`
 }
 
+const nameSeparators = /^[\s\-–—·:,/|]+/
+const compact = (value: string) => value.toLocaleLowerCase().replace(/\s+/g, '')
+
+/**
+ * Describes a variant by what sets it apart from its template: the template name is removed from the
+ * variant name, attributes already visible in that label are dropped, and the brand only appears when
+ * it differs from the template's.
+ */
+export function variantDisplay(template: CachedItem, item: CachedItem) {
+  const fullName = item.item_name || item.name
+  const baseName = template.item_name || template.name
+  const suffix = baseName && fullName.toLocaleLowerCase().startsWith(baseName.toLocaleLowerCase()) ? fullName.slice(baseName.length).replace(nameSeparators, '').trim() : ''
+  const attributeValues = (item.attributes ?? []).map((attribute) => String(attribute.attribute_value ?? '').trim()).filter(Boolean)
+  const label = suffix || attributeValues.join(' · ') || fullName
+  const details = (item.attributes ?? []).filter((attribute) => {
+    const value = compact(String(attribute.attribute_value ?? ''))
+    return value && !compact(label).includes(value)
+  }).map((attribute) => `${attribute.attribute}: ${attribute.attribute_value}`)
+  if (item.brand && item.brand !== template.brand) details.push(item.brand)
+  return { label, details }
+}
+
 export function priceForUom(item: CachedItem, uom: string, prices: ItemPrice[], priceList?: string) {
   const matches = prices.filter((price) => [item.name, item.item_code].includes(price.item_code) && price.selling && (!priceList || price.price_list === priceList))
   return priceForUomFromMatches(item, uom, matches)

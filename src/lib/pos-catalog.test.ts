@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, sellablePrice, stockLevel, uomOptionLabel, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, sellablePrice, stockLevel, uomOptionLabel, variantDisplay, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -22,6 +22,15 @@ describe('POS catalog helpers', () => {
     expect(priceForUomFromIndex(item, 'Bulto', index)).toBe(500)
     expect(index.has('ITEM-1')).toBe(true)
     expect(index.get('ITEM-1')).toHaveLength(1)
+  })
+
+  it('describes a variant by what differs from its template', () => {
+    const template = { name: 'NUPEC', item_name: 'Nupec - Croquetas Adulto', brand: 'NUPEC' }
+    const variant = { name: 'NUPEC-5', item_name: 'Nupec - Croquetas Adulto 5kg', brand: 'NUPEC', attributes: [{ attribute: 'Peso (kg)', attribute_value: '5' }] }
+    expect(variantDisplay(template, variant)).toEqual({ label: '5kg', details: [] })
+    expect(variantDisplay(template, { ...variant, item_name: 'Otro nombre', attributes: [{ attribute: 'Peso (kg)', attribute_value: '5' }, { attribute: 'Sabor', attribute_value: 'Pollo' }] })).toEqual({ label: '5 · Pollo', details: [] })
+    expect(variantDisplay(template, { ...variant, brand: 'Otra', attributes: [...variant.attributes, { attribute: 'Sabor', attribute_value: 'Pollo' }] })).toEqual({ label: '5kg', details: ['Sabor: Pollo', 'Otra'] })
+    expect(variantDisplay(template, { name: 'X-1', item_name: 'Sin relación' })).toEqual({ label: 'Sin relación', details: [] })
   })
 
   it('labels the default UOM and conversion UOMs with the base unit', () => {
