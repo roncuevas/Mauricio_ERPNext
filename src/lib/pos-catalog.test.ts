@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPriceIndex, defaultUom, findItemsByBarcode, priceForUom, priceForUomFromIndex, sellablePrice, stockLevel, uomOptionLabel, variantDisplay, variantPriceRange } from './pos-catalog'
+import { buildPriceIndex, defaultUom, findItemsByBarcode, isAvailableForSale, posPriceForUom, priceForUom, priceForUomFromIndex, sellablePrice, stockLevel, uomOptionLabel, variantDisplay, variantPriceRange } from './pos-catalog'
 
 describe('POS catalog helpers', () => {
   const item = { name: 'ITEM-1', item_name: 'Producto', stock_uom: 'Kg', sales_uom: 'Bulto', uoms: [{ uom: 'Kg', conversion_factor: 1 }, { uom: 'Bulto', conversion_factor: 20 }] }
@@ -22,6 +22,21 @@ describe('POS catalog helpers', () => {
     expect(priceForUomFromIndex(item, 'Bulto', index)).toBe(500)
     expect(index.has('ITEM-1')).toBe(true)
     expect(index.get('ITEM-1')).toHaveLength(1)
+  })
+
+  it('converts the stock-UOM price when a UOM has no Item Price, like ERPNext POS get_items', () => {
+    const stockPrice = [{ name: 'P1', item_code: 'ITEM-1', selling: 1, price_list_rate: 30, uom: 'Kg' }]
+    expect(posPriceForUom(item, { uom: 'Bulto', conversion_factor: 20 }, stockPrice)).toBe(600)
+    expect(posPriceForUom(item, { uom: 'Bulto', conversion_factor: 20 }, [...stockPrice, { name: 'P2', item_code: 'ITEM-1', selling: 1, price_list_rate: 550, uom: 'Bulto' }])).toBe(550)
+    expect(posPriceForUom(item, { uom: 'Bulto', conversion_factor: 20 }, [])).toBeNull()
+  })
+
+  it('hides only stock items without stock when hide_unavailable_items is on', () => {
+    const out = { name: 'A', stock_known: true, is_stock_item: 1, available_qty: 0 }
+    expect(isAvailableForSale(out, true)).toBe(false)
+    expect(isAvailableForSale(out, false)).toBe(true)
+    expect(isAvailableForSale({ ...out, is_stock_item: 0 }, true)).toBe(true)
+    expect(isAvailableForSale({ ...out, stock_known: false }, true)).toBe(true)
   })
 
   it('describes a variant by what differs from its template', () => {

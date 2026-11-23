@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 import { formatMoney } from '../lib/pos'
-import { defaultUom, priceForUom, sellablePrice, uomOptionLabel, variantDisplay } from '../lib/pos-catalog'
+import { isAvailableForSale, posPriceForUom, stockLevel, uomOptionLabel, variantDisplay } from '../lib/pos-catalog'
 import { rankProductSearch } from '../lib/search'
 import type { CachedItem, ItemPrice, ItemUom, PosCartLine } from '../lib/types'
 
@@ -21,8 +21,9 @@ function itemUoms(item: CachedItem): ItemUom[] {
   return values.filter((uom, index, all) => uom.uom && all.findIndex((candidate) => candidate.uom === uom.uom) === index)
 }
 
-export function PosVariantSheet({ template, variants, prices, priceList, currency, cartLines, open, loading, error, onClose, onAdd, onMissingPrice, resolvePrice }: { template: CachedItem | null; variants: CachedItem[]; prices: ItemPrice[]; priceList?: string; currency: string; cartLines: PosCartLine[]; open: boolean; loading?: boolean; error?: string; onClose: () => void; onAdd: (item: CachedItem, uom: ItemUom, rate: number) => void; onMissingPrice?: (item: CachedItem, uom: ItemUom) => void; resolvePrice?: (item: CachedItem, uom: ItemUom) => Promise<number | null> }) {
+export function PosVariantSheet({ template, variants: allVariants, hideUnavailable = false, prices, priceList, currency, cartLines, open, loading, error, onClose, onAdd, onMissingPrice, resolvePrice }: { template: CachedItem | null; variants: CachedItem[]; hideUnavailable?: boolean; prices: ItemPrice[]; priceList?: string; currency: string; cartLines: PosCartLine[]; open: boolean; loading?: boolean; error?: string; onClose: () => void; onAdd: (item: CachedItem, uom: ItemUom, rate: number) => void; onMissingPrice?: (item: CachedItem, uom: ItemUom) => void; resolvePrice?: (item: CachedItem, uom: ItemUom) => Promise<number | null> }) {
   const { t } = useTranslation()
+  const variants = useMemo(() => allVariants.filter((item) => isAvailableForSale(item, hideUnavailable)), [allVariants, hideUnavailable])
   const [selectedName, setSelectedName] = useState('')
   const [selectedUom, setSelectedUom] = useState('')
   const [variantSearch, setVariantSearch] = useState('')
@@ -36,7 +37,7 @@ export function PosVariantSheet({ template, variants, prices, priceList, currenc
   const cartItemCodes = useMemo(() => new Set(cartLines.filter((line) => line.qty > 0).map((line) => line.itemCode)), [cartLines])
   const uoms = useMemo(() => selected ? itemUoms(selected) : [], [selected])
   const selectedUomRow = uoms.find((uom) => uom.uom === selectedUom) ?? uoms[0]
-  const price = selected && selectedUomRow ? sellablePrice(priceForUom(selected, selectedUomRow.uom, prices, priceList)) : null
+  const price = selected && selectedUomRow ? posPriceForUom(selected, selectedUomRow, prices, priceList) : null
   const [resolvedPrice, setResolvedPrice] = useState<number | null | undefined>(undefined)
   const effectivePrice = price ?? resolvedPrice ?? null
 
@@ -70,13 +71,15 @@ export function PosVariantSheet({ template, variants, prices, priceList, currenc
           {variants.length > SEARCH_THRESHOLD && <label className="pos-variant-search"><Search aria-hidden="true" /><Input type="search" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder={t('pos.variant.searchPlaceholder')} aria-label={t('pos.variant.searchLabel')} /></label>}
           {filteredVariants.length ? <RadioGroupPrimitive.Root value={selected?.name ?? ''} onValueChange={setSelectedName} aria-labelledby="pos-variant-picker-title" className="pos-variant-list">{filteredVariants.map((item) => {
             const { label, details } = variantDisplay(template, item)
-            const itemDefaultUom = defaultUom(item).uom
-            const rowPrice = sellablePrice(priceForUom(item, itemDefaultUom, prices, priceList))
+            const rowUoms = itemUoms(item)
+            const rowUom = rowUoms.find((uom) => uom.uom === item.sales_uom) ?? rowUoms[0]
+            const rowPrice = rowUom ? posPriceForUom(item, rowUom, prices, priceList) : null
+            const level = stockLevel(item)
             return <RadioGroupPrimitive.Item key={item.name} value={item.name} className="pos-variant-option" title={item.item_name || item.name}>
               <span className="pos-variant-check" aria-hidden="true"><RadioGroupPrimitive.Indicator><Check /></RadioGroupPrimitive.Indicator></span>
-              <span className="pos-variant-option-main"><strong>{label}</strong>{details.length > 0 && <small>{details.join(' · ')}</small>}</span>
+              <span className="pos-variant-option-main"><strong>{label}</strong>{details.length > 0 && <small>{details.join(' · ')}</small>}{level !== 'unknown' && <small className="pos-product-stock" data-level={level}>{level === 'out' ? t('pos.product.outOfStock', { qty: Number(item.available_qty ?? 0) }) : t('pos.product.inStock', { qty: Number(item.available_qty ?? 0) })}</small>}</span>
               {cartItemCodes.has(item.name) && <span className="pos-variant-in-cart">{t('pos.variant.inCart')}</span>}
-              <span className="pos-variant-option-price">{rowPrice === null ? '—' : formatMoney(rowPrice, currency)}{rowPrice !== null && itemUoms(item).length > 1 && <small> / {itemDefaultUom}</small>}</span>
+              <span className="pos-variant-option-price">{rowPrice === null ? '—' : formatMoney(rowPrice, currency)}{rowPrice !== null && rowUoms.length > 1 && <small> / {rowUom?.uom}</small>}</span>
             </RadioGroupPrimitive.Item>
           })}</RadioGroupPrimitive.Root> : <p className="muted">{t('pos.variant.noMatches')}</p>}
         </section>

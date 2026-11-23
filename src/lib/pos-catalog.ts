@@ -76,6 +76,22 @@ export function sellablePrice(price: number) {
   return Number.isFinite(price) && price > 0 ? price : null
 }
 
+/**
+ * Mirrors ERPNext v16 POS `get_items`: use the Item Price for the requested UOM, otherwise convert the
+ * stock-UOM price with the UOM's conversion factor.
+ */
+export function posPriceForUom(item: CachedItem, uom: ItemUom, prices: ItemPrice[], priceList?: string) {
+  const exact = sellablePrice(priceForUom(item, uom.uom, prices, priceList))
+  if (exact !== null || !item.stock_uom || uom.uom === item.stock_uom) return exact
+  const stockPrice = sellablePrice(priceForUom(item, item.stock_uom, prices, priceList))
+  return stockPrice === null ? null : stockPrice * Number(uom.conversion_factor || 1)
+}
+
+/** ERPNext's hide_unavailable_items keeps non-stock items and drops stock items without stock in the profile warehouse. */
+export function isAvailableForSale(item: CachedItem, hideUnavailable: boolean) {
+  return !hideUnavailable || !item.stock_known || item.is_stock_item === 0 || item.is_stock_item === false || Number(item.available_qty ?? 0) > 0
+}
+
 export function defaultPrice(item: CachedItem, prices: ItemPrice[], priceList?: string) {
   return priceForUom(item, defaultUom(item).uom, prices, priceList)
 }
