@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Card, Field, IconButton, Input, Notice, Spinner } from './ui'
+import { Button, Card, IconButton, Input, Notice, RadioGroup, RadioGroupItem, Spinner, buttonVariants } from './ui'
+import { Field, FieldContent, FieldDescription, FieldLabel, FieldTitle } from './ui/field'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
 import { verifyConnection } from '../lib/erpnext'
 import { PasswordInput } from './password-input'
@@ -16,22 +18,20 @@ import { ThemeModeToggle } from './layout'
 /** Where ERPNext issues the API Key and Secret, behind a disclosure so the form stays short for people who have them. */
 function ApiKeyHelp({ baseUrl }: { baseUrl: string }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const panelId = useId()
   let deskUrl = ''
   try { deskUrl = `${normalizeBaseUrl(baseUrl)}/app` } catch { /* The link appears once the URL is valid. */ }
-  return <div className="connection-help">
-    <button type="button" className="connection-link" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}>{t('connection.apiHelp.toggle')}</button>
-    {open && <div id={panelId} className="connection-help-panel">
+  return <Collapsible className="connection-help">
+    <CollapsibleTrigger asChild><Button type="button" variant="link">{t('connection.apiHelp.toggle')}</Button></CollapsibleTrigger>
+    <CollapsibleContent className="connection-help-panel">
       <ol>
         <li>{t('connection.apiHelp.step1')}</li>
         <li>{t('connection.apiHelp.step2')}</li>
         <li>{t('connection.apiHelp.step3')}</li>
       </ol>
       <p>{t('connection.apiHelp.note')}</p>
-      {deskUrl && <a className="connection-link" href={deskUrl} target="_blank" rel="noopener noreferrer">{t('connection.apiHelp.open')}</a>}
-    </div>}
-  </div>
+      {deskUrl && <a className={buttonVariants({ variant: 'link' })} href={deskUrl} target="_blank" rel="noopener noreferrer">{t('connection.apiHelp.open')}</a>}
+    </CollapsibleContent>
+  </Collapsible>
 }
 
 const MIN_PASSWORD = 8
@@ -40,9 +40,9 @@ const MIN_PASSWORD = 8
 function PasswordHint({ id, length }: { id: string; length: number }) {
   const { t } = useTranslation()
   const ready = length >= MIN_PASSWORD
-  return <div id={id} className="connection-password-hint">
-    <p>{t('connection.password.purpose')}</p>
-    <p className={ready ? 'is-ready' : undefined} aria-live="polite">{ready ? <><Check aria-hidden="true" /> {t('connection.password.ready')}</> : length ? t('connection.password.remaining', { count: MIN_PASSWORD - length }) : t('connection.password.minimum', { count: MIN_PASSWORD })}</p>
+  return <div id={id}>
+    <FieldDescription>{t('connection.password.purpose')}</FieldDescription>
+    <FieldDescription className={ready ? 'is-ready' : undefined} aria-live="polite">{ready ? <><Check aria-hidden="true" /> {t('connection.password.ready')}</> : length ? t('connection.password.remaining', { count: MIN_PASSWORD - length }) : t('connection.password.minimum', { count: MIN_PASSWORD })}</FieldDescription>
   </div>
 }
 
@@ -114,7 +114,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
       else startNew()
     }
     // The dialog's trigger is gone, so focus would fall to the page; keep it on the form instead.
-    window.setTimeout(() => formRef.current?.querySelector('input')?.focus())
+    focusPassword()
   }
 
   function chooseProfile(profile: StoredProfile, nextMode: 'unlock' | 'share' = 'unlock') {
@@ -126,6 +126,8 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
     updateForm({ passphrase: '' })
   }
 
+  function focusPassword() { window.setTimeout(() => formRef.current?.querySelector('input')?.focus()) }
+
   function startNew(importing = false) {
     setMode('new')
     setSelected(null)
@@ -135,7 +137,8 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
   }
 
   const savedProfile = mode !== 'new' ? selected : null
-  const passwordHintId = useId()
+  const fieldId = useId()
+  const id = (name: string) => `${fieldId}-${name}`
   const heading = mode === 'unlock' ? t('connection.unlock') : mode === 'share' ? t('connection.share') : t('connection.connect')
   const updateForm = (patch: Partial<ConnectionFormState>) => setForm((current) => ({ ...current, ...patch }))
 
@@ -149,27 +152,27 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
         <Card className="connection-card p-6 sm:p-8">
           <div className="connection-card-heading"><h1>{heading}</h1><p>{t('connection.security')}</p></div>
           {shared && <div className="connection-notice"><Notice tone="warning">{t('connection.sharedLinkWarning')}</Notice></div>}
-          {savedProfile && <div className="connection-profiles">
-            {profiles.length > 1 && <p className="field-label">{t('connection.profiles')}</p>}
-            {profiles.map((profile) => {
-              const active = profile.id === savedProfile.id
-              return <div key={profile.id} className={`connection-profile-card flex items-center gap-2 ${active ? 'is-selected' : ''}`}>
-                <button type="button" className="connection-profile-details min-w-0 flex-1 text-left" aria-pressed={active} onClick={() => chooseProfile(profile)}><strong className="block text-sm">{profile.label}</strong><span className="block text-xs">{profile.baseUrl}</span></button>
-                <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<Share2 aria-hidden="true" strokeWidth={1.8} />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<Trash2 aria-hidden="true" strokeWidth={1.8} />} onClick={() => void deleteProfile(profile)} /></div>
-              </div>
-            })}
-          </div>}
-          {mode === 'new' && showImport && <div className="connection-import-panel"><Field label={t('connection.linkLabel')}><Input type="url" value={importLink} onChange={(e) => setImportLink(e.target.value)} placeholder={t('connection.linkPlaceholder')} autoFocus /></Field><Button type="button" onClick={importFromLink}>{t('connection.importButton')}</Button></div>}
+          {savedProfile && <RadioGroup className="connection-profiles" value={savedProfile.id} onValueChange={(value) => { const profile = profiles.find((entry) => entry.id === value); if (profile) chooseProfile(profile) }} aria-label={t('connection.profiles')}>
+            {profiles.length > 1 && <p className="field-label" aria-hidden="true">{t('connection.profiles')}</p>}
+            {profiles.map((profile) => <div key={profile.id} className="connection-profile-card flex items-center gap-2">
+              <FieldLabel className="connection-profile-option" htmlFor={id(`profile-${profile.id}`)} onClick={focusPassword}>
+                <RadioGroupItem id={id(`profile-${profile.id}`)} value={profile.id} />
+                <FieldContent><FieldTitle>{profile.label}</FieldTitle><FieldDescription title={profile.baseUrl}>{profile.baseUrl}</FieldDescription></FieldContent>
+              </FieldLabel>
+              <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<Share2 aria-hidden="true" strokeWidth={1.8} />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<Trash2 aria-hidden="true" strokeWidth={1.8} />} onClick={() => void deleteProfile(profile)} /></div>
+            </div>)}
+          </RadioGroup>}
+          {mode === 'new' && showImport && <div className="connection-import-panel"><Field><FieldLabel htmlFor={id('import')}>{t('connection.linkLabel')}</FieldLabel><Input id={id('import')} type="url" value={importLink} onChange={(e) => setImportLink(e.target.value)} placeholder={t('connection.linkPlaceholder')} autoFocus /></Field><Button type="button" onClick={importFromLink}>{t('connection.importButton')}</Button></div>}
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
           <form ref={formRef} className="connection-form" onSubmit={submit}>
-            {savedProfile ? <><Field label={t('connection.localPassword')}><PasswordInput key={`${savedProfile.id}-${mode}`} autoFocus autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><PasswordInput value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><ApiKeyHelp baseUrl={form.baseUrl} /><div className="connection-password"><Field label={t('connection.newLocalPassword')}><PasswordInput value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required autoComplete="new-password" aria-describedby={passwordHintId} /></Field><PasswordHint id={passwordHintId} length={form.passphrase.length} /></div><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
+            {savedProfile ? <><Field><FieldLabel htmlFor={id('password')}>{t('connection.localPassword')}</FieldLabel><PasswordInput id={id('password')} key={mode} autoFocus autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field><FieldLabel htmlFor={id('label')}>{t('connection.profileName')}</FieldLabel><Input id={id('label')} value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field><FieldLabel htmlFor={id('url')}>{t('connection.url')}</FieldLabel><Input id={id('url')} type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field><FieldLabel htmlFor={id('api-key')}>{t('connection.apiKey')}</FieldLabel><Input id={id('api-key')} value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field><FieldLabel htmlFor={id('api-secret')}>{t('connection.apiSecret')}</FieldLabel><PasswordInput id={id('api-secret')} value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><ApiKeyHelp baseUrl={form.baseUrl} /><Field><FieldLabel htmlFor={id('new-password')}>{t('connection.newLocalPassword')}</FieldLabel><PasswordInput id={id('new-password')} value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required autoComplete="new-password" aria-describedby={id('password-hint')} /><PasswordHint id={id('password-hint')} length={form.passphrase.length} /></Field><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
           </form>
           <div className="connection-alt-actions">
-            {mode === 'share' && savedProfile && <button type="button" className="connection-link" onClick={() => chooseProfile(savedProfile)}>{t('common.cancel')}</button>}
-            {savedProfile && <button type="button" className="connection-link" onClick={() => startNew()}>{t('connection.new')}</button>}
-            {!savedProfile && profiles.length > 0 && <button type="button" className="connection-link" onClick={() => chooseProfile(profiles.find((profile) => profile.id === readLastProfileId()) ?? profiles[0])}>{t('connection.useSaved')}</button>}
-            <button type="button" className="connection-link" aria-expanded={mode === 'new' ? showImport : false} onClick={() => mode === 'new' ? setShowImport((value) => !value) : startNew(true)}>{mode === 'new' && showImport ? t('connection.cancelImport') : t('connection.importLink')}</button>
+            {mode === 'share' && savedProfile && <Button type="button" variant="link" onClick={() => chooseProfile(savedProfile)}>{t('common.cancel')}</Button>}
+            {savedProfile && <Button type="button" variant="link" onClick={() => startNew()}>{t('connection.new')}</Button>}
+            {!savedProfile && profiles.length > 0 && <Button type="button" variant="link" onClick={() => chooseProfile(profiles.find((profile) => profile.id === readLastProfileId()) ?? profiles[0])}>{t('connection.useSaved')}</Button>}
+            <Button type="button" variant="link" aria-expanded={mode === 'new' ? showImport : false} onClick={() => mode === 'new' ? setShowImport((value) => !value) : startNew(true)}>{mode === 'new' && showImport ? t('connection.cancelImport') : t('connection.importLink')}</Button>
           </div>
         </Card>
         <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
