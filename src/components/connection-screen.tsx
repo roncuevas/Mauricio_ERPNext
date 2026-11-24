@@ -5,21 +5,13 @@ import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
 import { verifyConnection } from '../lib/erpnext'
 import { PasswordInput } from './password-input'
 import { useConfirmDialog } from './confirm-dialog'
-import { Check } from 'lucide-react'
+import { Check, Share2, Trash2 } from 'lucide-react'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
 import { readLastProfileId, removeProfile, writeLastProfileId, writeProfiles } from '../lib/storage'
 import type { ConnectionProfile, StoredProfile } from '../lib/types'
 import { LanguageSelector } from './language-selector'
 import { ThemePaletteSelector } from './theme-palette-selector'
 import { ThemeModeToggle } from './layout'
-
-function ShareIcon() {
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false"><circle cx="18" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.8" /><circle cx="6" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.8" /><circle cx="18" cy="19" r="2.5" stroke="currentColor" strokeWidth="1.8" /><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" /></svg>
-}
-
-function TrashIcon() {
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false"><path d="M4.5 7.5h15M9 4.5h6l.75 3H8.25l.75-3ZM7 7.5l.75 12h8.5l.75-12M10 11v5M14 11v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>
-}
 
 /** Where ERPNext issues the API Key and Secret, behind a disclosure so the form stays short for people who have them. */
 function ApiKeyHelp({ baseUrl }: { baseUrl: string }) {
@@ -163,7 +155,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
               const active = profile.id === savedProfile.id
               return <div key={profile.id} className={`connection-profile-card flex items-center gap-2 ${active ? 'is-selected' : ''}`}>
                 <button type="button" className="connection-profile-details min-w-0 flex-1 text-left" aria-pressed={active} onClick={() => chooseProfile(profile)}><strong className="block text-sm">{profile.label}</strong><span className="block text-xs">{profile.baseUrl}</span></button>
-                <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<ShareIcon />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<TrashIcon />} onClick={() => void deleteProfile(profile)} /></div>
+                <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<Share2 aria-hidden="true" strokeWidth={1.8} />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<Trash2 aria-hidden="true" strokeWidth={1.8} />} onClick={() => void deleteProfile(profile)} /></div>
               </div>
             })}
           </div>}
