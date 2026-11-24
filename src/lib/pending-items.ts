@@ -4,13 +4,19 @@ export type PendingPriceKind = 'buying' | 'selling'
 export type PendingItem = {
   item: VariantItem
   kind: 'item' | 'template' | 'variant'
+  /** Prices with no general Item Price for the item or its template. */
   missingPrices: PendingPriceKind[]
+  /** Prices the variant lacks but ERPNext resolves from its template in orders and invoices (the POS does not). */
+  inheritedPrices: PendingPriceKind[]
 }
 
-export type LowMarginPrice = { item: VariantItem; selling: ItemPrice; purchase: ItemPrice; marginPercentage: number }
+/** `purchaseCost` is the purchase price converted to the selling price's UOM. */
+export type LowMarginPrice = { item: VariantItem; selling: ItemPrice; purchase: ItemPrice; purchaseCost: number; marginPercentage: number }
 export type PendingStockItem = { item: VariantItem; actualQty: number; projectedQty: number; safetyStock: number; status: 'out' | 'low' }
 export type IncompleteCatalogField = 'item_group' | 'stock_uom' | 'brand'
-export type IncompleteCatalogItem = { item: VariantItem; missingFields: IncompleteCatalogField[] }
+/** `missingFields` are required; `optionalFields` (brand) are a low-priority note. */
+export type IncompleteCatalogItem = { item: VariantItem; missingFields: IncompleteCatalogField[]; optionalFields: IncompleteCatalogField[] }
+export type MissingImageItem = { item: VariantItem; kind: 'item' | 'template' | 'variant' }
 
 function todayLocal() {
   const date = new Date()
@@ -25,12 +31,23 @@ function isFlagSet(value: number | boolean | undefined) {
   return value === true || value === 1 || String(value) === '1'
 }
 
-export function findStockShortages(items: VariantItem[], bins: StockBin[], warehouses: Warehouse[]): PendingStockItem[] {
+/** Treats a missing flag (caches built before the field was loaded) as set, matching ERPNext's defaults. */
+function flagOrDefault(value: number | boolean | undefined) {
+  return value === undefined || value === null || isFlagSet(value)
+}
+
+/** Without a customer, supplier or batch, ERPNext only applies Item Prices that name none of them. */
+export function isGeneralPrice(price: ItemPrice) {
+  return !price.customer?.trim() && !price.supplier?.trim() && !price.batch_no?.trim()
+}
+
+export function findStockShortages(items: VariantItem[], bins: StockBin[], warehouses: Warehouse[], warehouse?: string): PendingStockItem[] {
   const children = new Set(items.flatMap((item) => item.variant_of ? [item.variant_of] : []))
   const activeLeafWarehouses = new Set(warehouses.filter((warehouse) => notDisabled(warehouse.disabled) && !isFlagSet(warehouse.is_group)).map((warehouse) => warehouse.name))
   const quantities = new Map<string, { actualQty: number; projectedQty: number }>()
   for (const bin of bins) {
     if (warehouses.length && !activeLeafWarehouses.has(bin.warehouse)) continue
+    if (warehouse && bin.warehouse !== warehouse) continue
     const current = quantities.get(bin.item_code) ?? { actualQty: 0, projectedQty: 0 }
     current.actualQty += Number(bin.actual_qty ?? 0)
     current.projectedQty += Number(bin.projected_qty ?? bin.actual_qty ?? 0)
@@ -52,9 +69,18 @@ export function findIncompleteCatalogItems(items: VariantItem[]): IncompleteCata
     const missingFields: IncompleteCatalogField[] = []
     if (!item.item_group?.trim()) missingFields.push('item_group')
     if (!item.stock_uom?.trim()) missingFields.push('stock_uom')
-    if (!item.brand?.trim()) missingFields.push('brand')
-    return missingFields.length ? [{ item, missingFields }] : []
+    const optionalFields: IncompleteCatalogField[] = item.brand?.trim() ? [] : ['brand']
+    return missingFields.length || optionalFields.length ? [{ item, missingFields, optionalFields }] : []
   }).sort((left, right) => right.missingFields.length - left.missingFields.length || (left.item.item_name || left.item.name).localeCompare(right.item.item_name || right.item.name, 'es'))
+}
+
+export function findMissingImages(items: VariantItem[]): MissingImageItem[] {
+  const templates = new Set(items.filter((item) => isFlagSet(item.has_variants)).map((item) => item.name))
+  items.forEach((item) => { if (item.variant_of) templates.add(item.variant_of) })
+  return items.filter((item) => notDisabled(item.disabled) && !item.image?.trim()).map((item) => ({
+    item,
+    kind: item.variant_of ? 'variant' as const : templates.has(item.name) ? 'template' as const : 'item' as const,
+  }))
 }
 
 function activePrice(price: ItemPrice, today: string) {
@@ -64,45 +90,73 @@ function activePrice(price: ItemPrice, today: string) {
 export function findPendingItems(items: VariantItem[], prices: ItemPrice[], lists: { buying: string; selling: string }, today = todayLocal()): PendingItem[] {
   const children = new Map<string, number>()
   items.forEach((item) => { if (item.variant_of) children.set(item.variant_of, (children.get(item.variant_of) ?? 0) + 1) })
+  const pricesByItem = new Map<string, ItemPrice[]>()
+  prices.forEach((price) => {
+    if (!price.item_code || !isGeneralPrice(price) || !activePrice(price, today)) return
+    pricesByItem.set(price.item_code, [...(pricesByItem.get(price.item_code) ?? []), price])
+  })
+  const hasPrice = (itemCode: string, kind: PendingPriceKind) => (pricesByItem.get(itemCode) ?? []).some((price) => isFlagSet(price[kind]) && price.price_list === lists[kind])
   const pending: PendingItem[] = []
   for (const item of items) {
     if (!notDisabled(item.disabled)) continue
     const hasVariants = isFlagSet(item.has_variants) || (children.get(item.name) ?? 0) > 0
-    const isVariant = Boolean(item.variant_of)
-    const isTemplate = hasVariants
-    const kind = isVariant ? 'variant' : isTemplate ? 'template' : 'item'
+    const kind = item.variant_of ? 'variant' : hasVariants ? 'template' : 'item'
     if (kind === 'template') {
-      if ((children.get(item.name) ?? 0) === 0) pending.push({ item, kind, missingPrices: [] })
+      if ((children.get(item.name) ?? 0) === 0) pending.push({ item, kind, missingPrices: [], inheritedPrices: [] })
       continue
     }
 
-    const matchingPrices = prices.filter((price) => price.item_code === item.name && activePrice(price, today))
+    const required: PendingPriceKind[] = [...(flagOrDefault(item.is_purchase_item) ? ['buying' as const] : []), ...(flagOrDefault(item.is_sales_item) ? ['selling' as const] : [])]
     const missingPrices: PendingPriceKind[] = []
-    if (!matchingPrices.some((price) => isFlagSet(price.buying) && price.price_list === lists.buying)) missingPrices.push('buying')
-    if (!matchingPrices.some((price) => isFlagSet(price.selling) && price.price_list === lists.selling)) missingPrices.push('selling')
-    if (missingPrices.length) pending.push({ item, kind, missingPrices })
+    const inheritedPrices: PendingPriceKind[] = []
+    for (const priceKind of required) {
+      if (hasPrice(item.name, priceKind)) continue
+      if (item.variant_of && hasPrice(item.variant_of, priceKind)) inheritedPrices.push(priceKind)
+      else missingPrices.push(priceKind)
+    }
+    if (missingPrices.length || inheritedPrices.length) pending.push({ item, kind, missingPrices, inheritedPrices })
   }
-  return pending
+  // Inherited-only rows are lower priority: ERPNext still prices them outside the POS.
+  return pending.sort((left, right) => Number(!left.missingPrices.length) - Number(!right.missingPrices.length))
 }
 
-/** Returns every active sale price whose margin against the highest compatible Standard Buying cost is at or below the threshold. */
-export function findLowMarginPrices(items: VariantItem[], prices: ItemPrice[], threshold: number, today = todayLocal()): LowMarginPrice[] {
+/** Units of the stock UOM in one `uom`; `undefined` when the item has no conversion for it. */
+function stockFactor(item: VariantItem, uom: string | undefined) {
+  if (!uom || uom === item.stock_uom) return 1
+  const factor = Number(item.uoms?.find((candidate) => candidate.uom === uom)?.conversion_factor)
+  return Number.isFinite(factor) && factor > 0 ? factor : undefined
+}
+
+/**
+ * Returns every active general sale price whose margin against the highest comparable cost in the buying
+ * list is at or below the threshold. Prices in different UOMs are compared per stock unit.
+ */
+export function findLowMarginPrices(items: VariantItem[], prices: ItemPrice[], options: { threshold: number; buyingPriceList: string }, today = todayLocal()): LowMarginPrice[] {
   const itemByName = new Map(items.map((item) => [item.name, item]))
-  const active = prices.filter((price) => activePrice(price, today) && Number.isFinite(Number(price.price_list_rate)))
-  const buying = active.filter((price) => isFlagSet(price.buying) && price.price_list === 'Standard Buying')
+  const active = prices.filter((price) => activePrice(price, today) && isGeneralPrice(price) && Number.isFinite(Number(price.price_list_rate)))
+  const buying = active.filter((price) => isFlagSet(price.buying) && price.price_list === options.buyingPriceList)
   const lowMargin: LowMarginPrice[] = []
   for (const selling of active.filter((price) => isFlagSet(price.selling))) {
     const item = itemByName.get(selling.item_code ?? '')
     if (!item || !notDisabled(item.disabled)) continue
-    const candidates = buying.filter((purchase) => purchase.item_code === selling.item_code
-      && (purchase.uom || '') === (selling.uom || '')
-      && (purchase.currency || 'MXN') === (selling.currency || 'MXN'))
-    if (!candidates.length) continue
-    const purchase = candidates.reduce((highest, candidate) => Number(candidate.price_list_rate) > Number(highest.price_list_rate) ? candidate : highest)
     const saleRate = Number(selling.price_list_rate)
     if (saleRate <= 0) continue
-    const marginPercentage = ((saleRate - Number(purchase.price_list_rate)) / saleRate) * 100
-    if (marginPercentage <= threshold) lowMargin.push({ item, selling, purchase, marginPercentage })
+    const unitCost = (purchase: ItemPrice) => {
+      if ((purchase.uom || '') === (selling.uom || '')) return Number(purchase.price_list_rate)
+      const purchaseFactor = stockFactor(item, purchase.uom)
+      const saleFactor = stockFactor(item, selling.uom)
+      return purchaseFactor && saleFactor ? Number(purchase.price_list_rate) / purchaseFactor * saleFactor : undefined
+    }
+    let purchase: ItemPrice | undefined
+    let cost = -Infinity
+    for (const candidate of buying) {
+      if (candidate.item_code !== selling.item_code || (candidate.currency || 'MXN') !== (selling.currency || 'MXN')) continue
+      const candidateCost = unitCost(candidate)
+      if (candidateCost !== undefined && candidateCost > cost) { purchase = candidate; cost = candidateCost }
+    }
+    if (!purchase) continue
+    const marginPercentage = ((saleRate - cost) / saleRate) * 100
+    if (marginPercentage <= options.threshold) lowMargin.push({ item, selling, purchase, purchaseCost: cost, marginPercentage })
   }
   return lowMargin.sort((left, right) => left.marginPercentage - right.marginPercentage || (left.item.item_name || left.item.name).localeCompare(right.item.item_name || right.item.name))
 }

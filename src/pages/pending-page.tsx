@@ -84,7 +84,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
     onError: (error) => setStockRefreshMessage(error instanceof Error ? error.message : t('pendingPage.stockRefreshError')),
   })
   const pending = useMemo(() => findPendingItems(variants.data?.items ?? [], prices.data?.prices ?? [], { buying: preferences.buyingPriceList, selling: preferences.sellingPriceList }), [preferences.buyingPriceList, preferences.sellingPriceList, prices.data?.prices, variants.data?.items])
-  const lowMargins = useMemo(() => findLowMarginPrices(variants.data?.items ?? [], prices.data?.prices ?? [], preferences.lowMarginThreshold), [preferences.lowMarginThreshold, prices.data?.prices, variants.data?.items])
+  const lowMargins = useMemo(() => findLowMarginPrices(variants.data?.items ?? [], prices.data?.prices ?? [], { threshold: preferences.lowMarginThreshold, buyingPriceList: preferences.buyingPriceList }), [preferences.buyingPriceList, preferences.lowMarginThreshold, prices.data?.prices, variants.data?.items])
   const itemTagsByName = useMemo(() => new Map((itemCatalog.data?.items ?? []).map((item) => [item.name, item.tags ?? []])), [itemCatalog.data?.items])
   const searchableItem = (item: VariantItem) => ({ ...item, tags: item.tags ?? itemTagsByName.get(item.name) })
   const filteredPending = rankProductSearch(pending, search, ({ item }) => searchableItem(item))

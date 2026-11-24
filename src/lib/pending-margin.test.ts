@@ -3,6 +3,7 @@ import { findLowMarginPrices } from './pending-items'
 import type { ItemPrice, VariantItem } from './types'
 
 const item: VariantItem = { name: 'FOOD-1', item_name: 'Food' }
+const options = { threshold: 10, buyingPriceList: 'Standard Buying' }
 const price = (name: string, fields: Partial<ItemPrice>): ItemPrice => ({ name, item_code: item.name, price_list_rate: 100, ...fields })
 
 describe('findLowMarginPrices', () => {
@@ -15,7 +16,7 @@ describe('findLowMarginPrices', () => {
       price('sale-b', { selling: 1, price_list: 'Wholesale', price_list_rate: 80 }),
     ]
 
-    expect(findLowMarginPrices([item], prices, 10, '2026-11-10')).toEqual([
+    expect(findLowMarginPrices([item], prices, options, '2026-11-10')).toEqual([
       expect.objectContaining({ selling: expect.objectContaining({ name: 'sale-b' }), purchase: expect.objectContaining({ name: 'buy-high' }), marginPercentage: -12.5 }),
       expect.objectContaining({ selling: expect.objectContaining({ name: 'sale-a' }), purchase: expect.objectContaining({ name: 'buy-high' }), marginPercentage: 10 }),
     ])
@@ -31,12 +32,34 @@ describe('findLowMarginPrices', () => {
       price('sale-future', { selling: 1, price_list: 'Retail', uom: 'Unit', currency: 'MXN', price_list_rate: 100, valid_from: '2026-11-11' }),
     ]
 
-    expect(findLowMarginPrices([item], prices, 10, '2026-11-10').map(({ selling }) => selling.name)).toEqual(['sale-unit'])
+    expect(findLowMarginPrices([item], prices, options, '2026-11-10').map(({ selling }) => selling.name)).toEqual(['sale-unit'])
   })
 
   it('skips missing or zero sales and disabled items', () => {
     const disabled = { ...item, disabled: 1 }
     const prices = [price('buy', { buying: 1, price_list: 'Standard Buying', price_list_rate: 100 }), price('zero', { selling: 1, price_list: 'Retail', price_list_rate: 0 })]
-    expect(findLowMarginPrices([item, disabled], prices, 10, '2026-11-10')).toEqual([])
+    expect(findLowMarginPrices([item, disabled], prices, options, '2026-11-10')).toEqual([])
+  })
+
+  it('uses the configured buying list and ignores party prices', () => {
+    const prices = [
+      price('buy-std', { buying: 1, price_list: 'Standard Buying', price_list_rate: 99 }),
+      price('buy-own', { buying: 1, price_list: 'Proveedores', price_list_rate: 95 }),
+      price('buy-party', { buying: 1, price_list: 'Proveedores', supplier: 'SUP-1', price_list_rate: 99 }),
+      price('sale', { selling: 1, price_list: 'Retail', price_list_rate: 100 }),
+      price('sale-party', { selling: 1, price_list: 'Retail', customer: 'CUST-1', price_list_rate: 50 }),
+    ]
+    expect(findLowMarginPrices([item], prices, { threshold: 10, buyingPriceList: 'Proveedores' }, '2026-11-10')).toEqual([
+      expect.objectContaining({ selling: expect.objectContaining({ name: 'sale' }), purchase: expect.objectContaining({ name: 'buy-own' }), purchaseCost: 95 }),
+    ])
+  })
+
+  it('compares prices in different UOMs per stock unit', () => {
+    const boxed: VariantItem = { ...item, stock_uom: 'Nos', uoms: [{ uom: 'Nos', conversion_factor: 1 }, { uom: 'Caja', conversion_factor: 10 }] }
+    const prices = [price('buy-nos', { buying: 1, price_list: 'Standard Buying', uom: 'Nos', price_list_rate: 9.5 }), price('sale-box', { selling: 1, price_list: 'Retail', uom: 'Caja', price_list_rate: 100 })]
+    const [row] = findLowMarginPrices([boxed], prices, options, '2026-11-10')
+    expect(row.purchaseCost).toBe(95)
+    expect(row.marginPercentage).toBeCloseTo(5)
   })
 })
+

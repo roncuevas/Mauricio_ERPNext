@@ -161,6 +161,8 @@ export type VariantItem = {
   has_variants?: number | boolean
   disabled?: number | boolean
   is_stock_item?: number | boolean
+  is_sales_item?: number | boolean
+  is_purchase_item?: number | boolean
   has_serial_no?: number | boolean
   has_batch_no?: number | boolean
   uoms?: ItemUom[]
