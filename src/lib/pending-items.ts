@@ -16,7 +16,10 @@ export type PendingStockItem = { item: VariantItem; actualQty: number; projected
 export type IncompleteCatalogField = 'item_group' | 'stock_uom' | 'brand'
 /** `missingFields` are required; `optionalFields` (brand) are a low-priority note. */
 export type IncompleteCatalogItem = { item: VariantItem; missingFields: IncompleteCatalogField[]; optionalFields: IncompleteCatalogField[] }
-export type MissingImageItem = { item: VariantItem; kind: 'item' | 'template' | 'variant' }
+/** A product with no image, or a template family where the template or any active variant lacks one. */
+export type MissingImageGroup =
+  | { kind: 'item'; item: VariantItem }
+  | { kind: 'family'; template: VariantItem; variants: VariantItem[]; missingVariants: VariantItem[]; variantsWithImage: VariantItem[]; templateMissing: boolean }
 
 function todayLocal() {
   const date = new Date()
@@ -74,13 +77,52 @@ export function findIncompleteCatalogItems(items: VariantItem[]): IncompleteCata
   }).sort((left, right) => right.missingFields.length - left.missingFields.length || (left.item.item_name || left.item.name).localeCompare(right.item.item_name || right.item.name, 'es'))
 }
 
-export function findMissingImages(items: VariantItem[]): MissingImageItem[] {
-  const templates = new Set(items.filter((item) => isFlagSet(item.has_variants)).map((item) => item.name))
-  items.forEach((item) => { if (item.variant_of) templates.add(item.variant_of) })
-  return items.filter((item) => notDisabled(item.disabled) && !item.image?.trim()).map((item) => ({
-    item,
-    kind: item.variant_of ? 'variant' as const : templates.has(item.name) ? 'template' as const : 'item' as const,
-  }))
+const hasImage = (item: VariantItem) => Boolean(item.image?.trim())
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
+export function findMissingImageGroups(items: VariantItem[]): MissingImageGroup[] {
+  const active = items.filter((item) => notDisabled(item.disabled))
+  const byName = new Map(active.map((item) => [item.name, item]))
+  const variantsByTemplate = new Map<string, VariantItem[]>()
+  for (const item of active) {
+    if (!item.variant_of || !byName.has(item.variant_of)) continue
+    variantsByTemplate.set(item.variant_of, [...(variantsByTemplate.get(item.variant_of) ?? []), item])
+  }
+  const groups: MissingImageGroup[] = []
+  for (const item of active) {
+    if (item.variant_of && byName.has(item.variant_of)) continue
+    const variants = (variantsByTemplate.get(item.name) ?? []).sort((a, b) => collator.compare(a.item_name || a.name, b.item_name || b.name))
+    if (!variants.length) {
+      if (!hasImage(item)) groups.push({ kind: 'item', item })
+      continue
+    }
+    const missingVariants = variants.filter((variant) => !hasImage(variant))
+    const templateMissing = !hasImage(item)
+    if (templateMissing || missingVariants.length) groups.push({ kind: 'family', template: item, variants, missingVariants, variantsWithImage: variants.filter(hasImage), templateMissing })
+  }
+  return groups
+}
+
+export type MissingImageView = 'tree' | 'list' | 'templates' | 'variants'
+export const MISSING_IMAGE_VIEWS: MissingImageView[] = ['tree', 'list', 'templates', 'variants']
+type MissingImageFamily = Extract<MissingImageGroup, { kind: 'family' }>
+/** One item without an image, for the flat views; `family` is set for templates and variants. */
+export type MissingImageRow = { item: VariantItem; role: 'item' | 'template' | 'variant'; family?: MissingImageFamily }
+
+/** Flattens the groups into the items that lack an image, keeping only templates or variants when asked. */
+export function missingImageRows(groups: MissingImageGroup[], view: Exclude<MissingImageView, 'tree'> = 'list'): MissingImageRow[] {
+  const rows: MissingImageRow[] = []
+  for (const group of groups) {
+    if (group.kind === 'item') { if (view === 'list') rows.push({ item: group.item, role: 'item' }); continue }
+    if (group.templateMissing && view !== 'variants') rows.push({ item: group.template, role: 'template', family: group })
+    if (view !== 'templates') rows.push(...group.missingVariants.map((item) => ({ item, role: 'variant' as const, family: group })))
+  }
+  return rows
+}
+
+
+export function countMissingImages(groups: MissingImageGroup[]) {
+  return groups.reduce((total, group) => total + (group.kind === 'item' ? 1 : group.missingVariants.length + Number(group.templateMissing)), 0)
 }
 
 function activePrice(price: ItemPrice, today: string) {

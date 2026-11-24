@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findIncompleteCatalogItems, findMissingImages, findPendingItems, findStockShortages } from './pending-items'
+import { findIncompleteCatalogItems, findMissingImageGroups, countMissingImages, missingImageRows, findPendingItems, findStockShortages } from './pending-items'
 import type { ItemPrice, StockBin, VariantItem } from './types'
 
 const item = (name: string, fields: Partial<VariantItem> = {}): VariantItem => ({ name, ...fields })
@@ -60,7 +60,34 @@ describe('findPendingItems', () => {
 
 describe('other pending checks', () => {
   it('skips disabled items without an image', () => {
-    expect(findMissingImages([item('shown'), item('hidden', { disabled: 1 }), item('with-image', { image: '/a.png' })]).map(({ item: row }) => row.name)).toEqual(['shown'])
+    const groups = findMissingImageGroups([item('shown'), item('hidden', { disabled: 1 }), item('with-image', { image: '/a.png' })])
+    expect(groups).toEqual([{ kind: 'item', item: expect.objectContaining({ name: 'shown' }) }])
+  })
+
+  it('groups variants under their template and keeps complete families out', () => {
+    const groups = findMissingImageGroups([
+      item('shirt', { has_variants: 1, image: '/shirt.png' }), item('shirt-10', { variant_of: 'shirt' }), item('shirt-2', { variant_of: 'shirt', image: '/s2.png' }), item('shirt-off', { variant_of: 'shirt', disabled: 1 }),
+      item('cap', { has_variants: 1 }), item('cap-red', { variant_of: 'cap', image: '/red.png' }),
+      item('done', { has_variants: 1, image: '/d.png' }), item('done-1', { variant_of: 'done', image: '/d1.png' }),
+      item('orphan', { variant_of: 'missing-template' }),
+    ])
+    expect(groups.map((group) => group.kind === 'item' ? group.item.name : group.template.name)).toEqual(['shirt', 'cap', 'orphan'])
+    const [shirt, cap] = groups
+    expect(shirt).toMatchObject({ kind: 'family', templateMissing: false })
+    if (shirt.kind !== 'family' || cap.kind !== 'family') throw new Error('expected families')
+    expect(shirt.variants.map((variant) => variant.name)).toEqual(['shirt-2', 'shirt-10'])
+    expect(shirt.missingVariants.map((variant) => variant.name)).toEqual(['shirt-10'])
+    expect(cap).toMatchObject({ templateMissing: true, missingVariants: [] })
+    expect(cap.variantsWithImage.map((variant) => variant.name)).toEqual(['cap-red'])
+    expect(countMissingImages(groups)).toBe(3)
+  })
+
+  it('flattens missing images by view', () => {
+    const groups = findMissingImageGroups([item('cap', { has_variants: 1 }), item('cap-red', { variant_of: 'cap' }), item('cap-blue', { variant_of: 'cap', image: '/b.png' }), item('bowl')])
+    const names = (view: 'list' | 'templates' | 'variants') => missingImageRows(groups, view).map((row) => `${row.role}:${row.item.name}`)
+    expect(names('list')).toEqual(['template:cap', 'variant:cap-red', 'item:bowl'])
+    expect(names('templates')).toEqual(['template:cap'])
+    expect(names('variants')).toEqual(['variant:cap-red'])
   })
 
   it('keeps brand as an optional field', () => {

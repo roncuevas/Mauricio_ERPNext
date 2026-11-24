@@ -19,10 +19,12 @@ export async function readVariantCatalogOrItems(profileId: string) {
 
 export const writeVariantCatalog = store.write
 
-export async function patchVariantCatalog(profileId: string, item: VariantItem) {
+export async function patchVariantCatalog(profileId: string, updates: VariantItem | VariantItem[]) {
   const cache = await readVariantCatalog(profileId)
   if (!cache) return null
-  return writeVariantCatalog({ ...cache, locallyModified: true, items: [...cache.items.filter((candidate) => candidate.name !== item.name), item] })
+  const list = Array.isArray(updates) ? updates : [updates]
+  const names = new Set(list.map((item) => item.name))
+  return writeVariantCatalog({ ...cache, locallyModified: true, items: [...cache.items.filter((candidate) => !names.has(candidate.name)), ...list] })
 }
 
 export function mergeItemUoms(items: VariantItem[], rows: Array<{ parent: string; uom: string; conversion_factor: number }>) {

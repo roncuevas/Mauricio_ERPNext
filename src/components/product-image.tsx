@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Image as ImageIcon, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { createErpNextClient } from '../lib/erpnext'
-import { readProductImage, writeProductImage } from '../lib/product-image-cache'
+import { readProductImage } from '../lib/product-image-cache'
+import { loadProductImage } from '../lib/product-image-sync'
 
 type Client = ReturnType<typeof createErpNextClient>
 
-export function ProductImage({ client, profileId, item, className = '' }: { client: Client; profileId: string; item: { name: string; item_name?: string; image?: string }; className?: string }) {
+/** `onPreview` makes a shown image a button that opens it larger. */
+export function ProductImage({ client, profileId, item, className = '', onPreview }: { client: Client; profileId: string; item: { name: string; item_name?: string; image?: string }; className?: string; onPreview?: (source: string) => void }) {
   const { t } = useTranslation()
   const [source, setSource] = useState('')
   const [busy, setBusy] = useState(false)
@@ -33,21 +35,19 @@ export function ProductImage({ client, profileId, item, className = '' }: { clie
     setBusy(true)
     setError('')
     try {
-      const imageUrl = item.image || (await client.getDocument<{ image?: string }>('Item', item.name)).image
-      if (!imageUrl) throw new Error(t('productImages.missing'))
-      if (client.isExternalImageUrl(imageUrl)) {
-        setSource(imageUrl)
-        return
-      }
-      const blob = await client.getImage(imageUrl)
-      await writeProductImage({ profileId, itemName: item.name, url: imageUrl, blob })
-    setSource(URL.createObjectURL(blob))
+      const loaded = await loadProductImage(client, profileId, item)
+      if (!loaded) throw new Error(t('productImages.missing'))
+      setSource(loaded.blob ? URL.createObjectURL(loaded.blob) : loaded.url)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('productImages.loadError'))
     } finally { setBusy(false) }
   }
 
-  if (source) return <img className={`product-image ${className}`} src={source} alt={item.item_name || item.name} loading="lazy" referrerPolicy="no-referrer" onError={() => { setSource(''); setError(t('productImages.loadError')) }} />
+  if (source) {
+    const image = <img className={`product-image ${onPreview ? '' : className}`} src={source} alt={item.item_name || item.name} loading="lazy" referrerPolicy="no-referrer" onError={() => { setSource(''); setError(t('productImages.loadError')) }} />
+    if (!onPreview) return image
+    return <button type="button" className={`product-image-preview ${className}`} onClick={(event) => { event.stopPropagation(); onPreview(source) }} aria-label={t('productImages.viewFor', { name: item.item_name || item.name })}>{image}</button>
+  }
   return <div className={`product-image-placeholder ${className}`}>
     <button type="button" onClick={(event) => { event.stopPropagation(); void loadImage() }} disabled={busy} aria-label={busy ? t('productImages.loading') : t('productImages.loadFor', { name: item.name })} title={error || t('productImages.loadHint')}>
       {busy ? <RefreshCw className="size-5 animate-spin" aria-hidden="true" /> : <ImageIcon className="size-5" aria-hidden="true" />}

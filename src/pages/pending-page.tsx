@@ -2,18 +2,19 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, CircleAlert, ExternalLink, ImageOff, ImagePlus, RefreshCw } from 'lucide-react'
+import { ChevronDown, CircleAlert, ExternalLink, ImageOff, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription, Badge, Button, ButtonLink, Input, PageHeader, SearchButton, Spinner } from '../components/ui'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { StockDocumentNotice } from '../components/stock-document'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu'
 import { PendingImageEditor } from '../components/pending-image-editor'
+import { PendingImages } from '../components/pending-images'
 import { CatalogErrorNotice } from '../components/catalog-guidance'
 import { createErpNextClient } from '../lib/erpnext'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { queryKeys } from '../lib/query-keys'
-import { findIncompleteCatalogItems, findLowMarginPrices, findMissingImages, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
+import { findIncompleteCatalogItems, countMissingImages, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
 import { readPendingPreferences } from '../lib/pending-preferences'
 import { runManagedCacheRefresh } from '../lib/cache-manager'
 import { VirtualizedCollection } from '../components/virtualized-collection'
@@ -48,7 +49,6 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const [imageItem, setImageItem] = useState<VariantItem | null>(null)
   const [refreshMessage, setRefreshMessage] = useState('')
   const [imageSaveMessage, setImageSaveMessage] = useState('')
-  const [templateImageItem, setTemplateImageItem] = useState<string | null>(null)
   const [stockRefreshMessage, setStockRefreshMessage] = useState('')
   const preferences = readPendingPreferences(profileId)
   const variants = useQuery(catalogQueryOptions.variant(profileId))
@@ -139,9 +139,15 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const filteredStockShortages = rankProductSearch(stockShortages, search, ({ item }) => searchableItem(item))
   const incompleteItems = useMemo(() => findIncompleteCatalogItems(items ?? []), [items])
   const filteredIncompleteItems = rankProductSearch(incompleteItems, search, ({ item }) => searchableItem(item))
-  const missingImageItems = useMemo(() => findMissingImages(items ?? []), [items])
-  const filteredMissingImages = rankProductSearch(missingImageItems, search, ({ item }) => searchableItem(item))
-  const itemsByName = useMemo(() => new Map((items ?? []).map((item) => [item.name, item])), [items])
+  const imageGroups = useMemo(() => findMissingImageGroups(items ?? []), [items])
+  // A family matches when its template or any variant matches.
+  const filteredImageGroups = search ? imageGroups.filter((group) => rankProductSearch(group.kind === 'item' ? [group.item] : [group.template, ...group.variants], search, searchableItem).length > 0) : imageGroups
+  const imageViewParam = searchParams.get('imageView') as MissingImageView | null
+  const imageView: MissingImageView = imageViewParam && MISSING_IMAGE_VIEWS.includes(imageViewParam) ? imageViewParam : 'tree'
+  // Flat views match each item by itself, so a variant search does not bring in its siblings.
+  const imageRows = useMemo(() => imageView === 'tree' ? [] : missingImageRows(imageGroups, imageView), [imageGroups, imageView])
+  const filteredImageRows = rankProductSearch(imageRows, search, ({ item }) => searchableItem(item))
+  const imageViewCounts = useMemo(() => ({ tree: countMissingImages(imageGroups), list: countMissingImages(imageGroups), templates: missingImageRows(imageGroups, 'templates').length, variants: missingImageRows(imageGroups, 'variants').length }), [imageGroups])
   const imagesReady = variants.data?.imageFieldLoaded === true
   const notReady = variants.isPending || prices.isPending
   const dateLabel = (date?: string) => date ? new Date(date).toLocaleString(i18n.language) : t('pendingPage.notUpdated')
@@ -154,41 +160,27 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
     prices: priceRows.filter(isUrgentPrice).length,
     templates: templateRows.length,
     margin: lowMargins.length,
-    images: imagesReady ? missingImageItems.length : null,
+    images: imagesReady ? countMissingImages(imageGroups) : null,
     stock: stock.data ? stockShortages.length : null,
     data: incompleteItems.filter(isUrgentData).length,
   }
-  const visible = { prices: filteredPrices, templates: filteredTemplates, margin: filteredMargins, images: imagesReady ? filteredMissingImages : [], stock: filteredStockShortages, data: filteredIncompleteItems }[activeTab]
-  const activeCount = activeTab === 'prices' ? filteredPrices.filter(isUrgentPrice).length : activeTab === 'data' ? filteredIncompleteItems.filter(isUrgentData).length : visible.length
-  const lowPriorityCount = visible.length - activeCount
+  const visible = { prices: filteredPrices, templates: filteredTemplates, margin: filteredMargins, images: imagesReady ? (imageView === 'tree' ? filteredImageGroups : filteredImageRows) : [], stock: filteredStockShortages, data: filteredIncompleteItems }[activeTab]
+  const activeCount = activeTab === 'prices' ? filteredPrices.filter(isUrgentPrice).length : activeTab === 'data' ? filteredIncompleteItems.filter(isUrgentData).length : activeTab === 'images' ? (imageView === 'tree' ? countMissingImages(filteredImageGroups) : filteredImageRows.length) : visible.length
+  const lowPriorityCount = activeTab === 'images' ? 0 : visible.length - activeCount
 
-  async function updateImageCache(item: VariantItem, imageUrl: string) {
-    const updatedItem = { ...item, image: imageUrl }
-    const writes = await Promise.allSettled([patchItemCatalog(profileId, updatedItem), patchVariantCatalog(profileId, updatedItem)])
-    queryClient.setQueryData<ItemCatalogCache | null>(queryKeys.catalog.item(profileId), (cache) => cache ? { ...cache, locallyModified: true, items: cache.items.map((candidate) => candidate.name === item.name ? { ...candidate, image: imageUrl } : candidate) } : cache)
-    queryClient.setQueryData<VariantCatalogCache | null>(queryKeys.catalog.variant(profileId), (cache) => cache ? { ...cache, locallyModified: true, items: cache.items.map((candidate) => candidate.name === item.name ? { ...candidate, image: imageUrl } : candidate) } : cache)
+  async function updateImageCache(updated: VariantItem[], imageUrl: string) {
+    const names = new Set(updated.map((item) => item.name))
+    const withImage = updated.map((item) => ({ ...item, image: imageUrl }))
+    const writes = await Promise.allSettled([patchItemCatalog(profileId, withImage), patchVariantCatalog(profileId, withImage)])
+    queryClient.setQueryData<ItemCatalogCache | null>(queryKeys.catalog.item(profileId), (cache) => cache ? { ...cache, locallyModified: true, items: cache.items.map((candidate) => names.has(candidate.name) ? { ...candidate, image: imageUrl } : candidate) } : cache)
+    queryClient.setQueryData<VariantCatalogCache | null>(queryKeys.catalog.variant(profileId), (cache) => cache ? { ...cache, locallyModified: true, items: cache.items.map((candidate) => names.has(candidate.name) ? { ...candidate, image: imageUrl } : candidate) } : cache)
     return writes.some((result) => result.status === 'rejected')
   }
 
   async function saveItemImage(imageUrl: string) {
     if (!imageItem) return
-    const cacheFailed = await updateImageCache(imageItem, imageUrl)
+    const cacheFailed = await updateImageCache([imageItem], imageUrl)
     setImageSaveMessage(cacheFailed ? t('pendingPage.imageSavedCacheWarning') : t('pendingPage.imageSaved'))
-  }
-
-  async function assignTemplateImage(item: VariantItem, template: VariantItem) {
-    if (!template.image || templateImageItem) return
-    setTemplateImageItem(item.name)
-    setImageSaveMessage('')
-    try {
-      const savedImage = await client.setItemImage(item.name, template.image)
-      const cacheFailed = await updateImageCache(item, savedImage)
-      setImageSaveMessage(cacheFailed ? t('pendingPage.imageSavedCacheWarning') : t('pendingPage.imageSaved'))
-    } catch (error) {
-      setImageSaveMessage(error instanceof Error ? error.message : t('pendingPage.imageSaveError'))
-    } finally {
-      setTemplateImageItem(null)
-    }
   }
 
   const priceListFor = (kind: PendingPriceKind) => kind === 'buying' ? preferences.buyingPriceList : preferences.sellingPriceList
@@ -222,6 +214,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
           <div className="pending-toolbar-actions">
             {activeTab === 'stock' && stock.data && leafWarehouses.length > 1 && <Select value={stockWarehouse || ALL_WAREHOUSES} onValueChange={(value) => updateParams({ warehouse: value === ALL_WAREHOUSES ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.warehouse')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value={ALL_WAREHOUSES}>{t('pendingPage.allWarehouses')}</SelectItem>{leafWarehouses.map((candidate) => <SelectItem key={candidate.name} value={candidate.name}>{candidate.warehouse_name || candidate.name}</SelectItem>)}</SelectContent></Select>}
             {activeTab === 'stock' && <Button type="button" variant="secondary" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}><RefreshCw className={`mr-2 size-4${stockRefresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button>}
+            {activeTab === 'images' && imagesReady && <Select value={imageView} onValueChange={(value) => updateParams({ imageView: value === 'tree' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.imageView.label')}><SelectValue /></SelectTrigger><SelectContent>{MISSING_IMAGE_VIEWS.map((view) => <SelectItem key={view} value={view}>{t(`pendingPage.imageView.${view}`, { count: imageViewCounts[view] })}</SelectItem>)}</SelectContent></Select>}
             {activeTab === 'prices' && <Select value={priceFilter || 'all'} onValueChange={(value) => updateParams({ price: value === 'all' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.priceFilter.label')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('pendingPage.priceFilter.all')}</SelectItem><SelectItem value="buying">{t('pendingPage.priceFilter.buying', { count: missingPriceCounts.buying })}</SelectItem><SelectItem value="selling">{t('pendingPage.priceFilter.selling', { count: missingPriceCounts.selling })}</SelectItem></SelectContent></Select>}
             <PendingSearchForm key={activeTab} initialValue={search} onSearch={(value) => updateParams({ q: value })} />
           </div>
@@ -234,13 +227,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
         }) : empty('prices', t('pendingPage.viewCatalog'))}</TabsContent>
         <TabsContent value="templates">{filteredTemplates.length ? list(filteredTemplates, (row) => row.item.name, ({ item }) => <PendingRow item={item} tags={<Badge tone="warning">{t('pendingPage.noVariants')}</Badge>}><ButtonLink variant="secondary" size="compact" to={`/variants/new?template=${encodeURIComponent(item.name)}`}>{t('pendingPage.addVariant')}</ButtonLink></PendingRow>) : empty('templates')}</TabsContent>
         <TabsContent value="margin">{filteredMargins.length ? list(filteredMargins, (row) => row.selling.name, ({ item, selling, purchase, purchaseCost, marginPercentage }) => <PendingRow item={item} meta={`${selling.price_list || t('pendingPage.unknownPriceList')} · ${selling.uom || item.stock_uom || '—'}`} tags={<><Badge tone={marginPercentage < 0 ? 'danger' : 'warning'}>{t('pendingPage.marginValue', { value: marginPercentage.toFixed(1) })}</Badge><span className="pending-figure">{t('pendingPage.sellingPrice')} {formatPrice(selling)}</span><span className="pending-figure">{t('pendingPage.cost')} {formatPrice(purchase, purchaseCost)}</span></>}><ButtonLink variant="secondary" size="compact" to={priceManagementUrl(item.name, selling, 'selling', selling.price_list || preferences.sellingPriceList, returnTo)}>{t('pendingPage.editSalePrice')}</ButtonLink></PendingRow>) : empty('margin')}</TabsContent>
-        <TabsContent value="images">{!imagesReady ? <div className="pending-empty-state"><ImageOff aria-hidden="true" /><div><h2>{t('pendingPage.imagesNeedRefresh')}</h2><p>{t('pendingPage.imagesNeedRefreshDescription')}</p></div><Button type="button" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? t('pendingPage.refreshing') : t('pendingPage.refresh')}</Button></div> : filteredMissingImages.length ? list(filteredMissingImages, (row) => row.item.name, ({ item, kind }) => {
-          const template = item.variant_of ? itemsByName.get(item.variant_of) : undefined
-          return <PendingRow item={item} tags={kind === 'template' ? <Badge tone="neutral">{t('pendingPage.kind.template')}</Badge> : null}>
-            {template?.image?.trim() && <Button type="button" variant="secondary" size="compact" onClick={() => { void assignTemplateImage(item, template) }} loading={templateImageItem === item.name} disabled={templateImageItem !== null}>{t('pendingPage.assignTemplateImage')}</Button>}
-            <Button type="button" variant="secondary" size="compact" onClick={() => { setImageSaveMessage(''); setImageItem(item) }}><ImagePlus className="size-4" aria-hidden="true" />{t('pendingPage.assignImage')}</Button>
-          </PendingRow>
-        }) : empty('images')}</TabsContent>
+        <TabsContent value="images">{!imagesReady ? <div className="pending-empty-state"><ImageOff aria-hidden="true" /><div><h2>{t('pendingPage.imagesNeedRefresh')}</h2><p>{t('pendingPage.imagesNeedRefreshDescription')}</p></div><Button type="button" onClick={() => refresh.mutate()} disabled={refresh.isPending}>{refresh.isPending ? t('pendingPage.refreshing') : t('pendingPage.refresh')}</Button></div> : <PendingImages client={client} profileId={profileId} view={imageView} groups={filteredImageGroups} rows={filteredImageRows} search={search} empty={empty('images')} onAssignImage={(item) => { setImageSaveMessage(''); setImageItem(item) }} onImagesSaved={updateImageCache} onMessage={setImageSaveMessage} />}</TabsContent>
         <TabsContent value="stock">{stockRefreshMessage && <p className="pending-refresh-message" role="status">{stockRefreshMessage}</p>}{stockRefresh.error && <CatalogErrorNotice error={stockRefresh.error} />}{!stock.data ? <div className="pending-empty-state"><CircleAlert aria-hidden="true" /><div><h2>{t('pendingPage.stockCacheMissing')}</h2><p>{t('pendingPage.stockCacheMissingDescription')}</p></div><Button type="button" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}>{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button></div> : filteredStockShortages.length ? list(filteredStockShortages, (row) => row.item.name, ({ item, actualQty, projectedQty, safetyStock, status }) => <PendingRow item={item} meta={item.stock_uom} tags={<><Badge tone={status === 'out' ? 'danger' : 'warning'}>{t(`pendingPage.stockStatus.${status}`)}</Badge><span className="pending-figure">{t('pendingPage.actualStock')} {formatQuantity(actualQty)}</span><span className="pending-figure">{t('pendingPage.projectedStock')} {formatQuantity(projectedQty)}</span>{status === 'low' && <span className="pending-figure">{t('pendingPage.safetyStock')} {formatQuantity(safetyStock)}</span>}</>}><StockResolveMenu name={item.item_name || item.name} links={{
           reconcile: `/stock/reconciliation?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { itemWarehouse: stockWarehouse } : {}), returnTo })}`,
           receive: `/stock/receipt?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { warehouse: stockWarehouse } : {}), returnTo })}`,

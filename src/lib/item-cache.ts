@@ -11,10 +11,12 @@ export const readItemCatalog = store.read
 
 export const writeItemCatalog = store.write
 
-export async function patchItemCatalog(profileId: string, item: ItemCatalogCache['items'][number]) {
+export async function patchItemCatalog(profileId: string, updates: ItemCatalogCache['items'][number] | ItemCatalogCache['items']) {
   const cache = await readItemCatalog(profileId)
   if (!cache) return null
-  return writeItemCatalog({ ...cache, locallyModified: true, items: [...cache.items.filter((candidate) => candidate.name !== item.name), item] })
+  const list = Array.isArray(updates) ? updates : [updates]
+  const names = new Set(list.map((item) => item.name))
+  return writeItemCatalog({ ...cache, locallyModified: true, items: [...cache.items.filter((candidate) => !names.has(candidate.name)), ...list] })
 }
 
 export function filterItems(items: ItemCatalogCache['items'], search: string) {

@@ -1,5 +1,5 @@
 import { ErpNextError, type createErpNextClient } from './erpnext'
-import { listProductImages, writeProductImage } from './product-image-cache'
+import { listProductImages, readProductImage, writeProductImage } from './product-image-cache'
 
 type Client = ReturnType<typeof createErpNextClient>
 
@@ -10,6 +10,25 @@ function imageLocation(value: string) {
   } catch {
     return value.split(/[?#]/, 1)[0]
   }
+}
+
+/** Image source for an item: its external URL, or a blob from ERPNext stored in the image cache. Downloads only when asked. */
+export async function loadProductImage(client: Client, profileId: string, item: { name: string; image?: string }) {
+  const imageUrl = item.image || (await client.getDocument<{ image?: string }>('Item', item.name)).image
+  if (!imageUrl) return null
+  if (client.isExternalImageUrl(imageUrl)) return { url: imageUrl, blob: null }
+  const cached = await readProductImage(profileId, item.name)
+  if (cached?.url === imageUrl) return { url: imageUrl, blob: cached.blob }
+  const blob = await client.getImage(imageUrl)
+  await writeProductImage({ profileId, itemName: item.name, url: imageUrl, blob })
+  return { url: imageUrl, blob }
+}
+
+/** Copy a cached image to items that now share its URL, so they show it without another download. */
+export async function shareCachedProductImage(profileId: string, sourceItem: string, url: string, targets: string[]) {
+  const cached = await readProductImage(profileId, sourceItem)
+  if (!cached || cached.url !== url) return
+  await Promise.all(targets.map((itemName) => writeProductImage({ profileId, itemName, url, blob: cached.blob })))
 }
 
 export async function downloadMissingProductImages(client: Client, profileId: string, onProgress: (completed: number, total: number) => void) {
