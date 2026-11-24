@@ -1,4 +1,5 @@
 import type { ConnectionProfile, StoredProfile } from './types'
+import i18n from './i18n'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -28,7 +29,7 @@ async function deriveKey(passphrase: string, salt: Uint8Array) {
 }
 
 export async function encryptProfile(profile: ConnectionProfile, passphrase: string): Promise<StoredProfile> {
-  if (passphrase.length < 8) throw new Error('La contraseña local debe tener al menos 8 caracteres.')
+  if (passphrase.length < 8) throw new Error(i18n.t('connection.errors.passwordShort', { count: 8 }))
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const key = await deriveKey(passphrase, salt)
@@ -42,14 +43,14 @@ export async function decryptProfile(stored: StoredProfile, passphrase: string):
     const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: toArrayBuffer(decode(stored.iv)) }, key, toArrayBuffer(decode(stored.ciphertext)))
     return JSON.parse(decoder.decode(plaintext)) as ConnectionProfile
   } catch {
-    throw new Error('No se pudo desbloquear la conexión. Revisa la contraseña.')
+    throw new Error(i18n.t('connection.errors.wrongPassword'))
   }
 }
 
 export function normalizeBaseUrl(value: string) {
   const url = value.trim().replace(/\/+$/, '')
   if (!/^https:\/\//i.test(url) && !/^http:\/\/localhost(?::\d+)?$/i.test(url)) {
-    throw new Error('La URL debe usar HTTPS. Solo localhost puede usar HTTP.')
+    throw new Error(i18n.t('connection.errors.httpsRequired'))
   }
   return url
 }

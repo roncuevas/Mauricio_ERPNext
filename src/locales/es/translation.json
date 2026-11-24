@@ -80,6 +80,8 @@
     "lockConfirmAction": "Sí, bloquear"
   },
   "connection": {
+    "delete": {"title": "¿Eliminar este perfil?", "description": "Se borrará “{{label}}” de este navegador. Tu ERPNext no cambia; para volver a usarlo tendrás que conectar de nuevo con la API Key y el API Secret.", "action": "Eliminar perfil"},
+    "errors": {"passwordShort_one": "La contraseña local debe tener al menos {{count}} carácter.", "passwordShort_other": "La contraseña local debe tener al menos {{count}} caracteres.", "wrongPassword": "No se pudo desbloquear la conexión. Revisa la contraseña.", "httpsRequired": "La URL debe usar HTTPS. Solo localhost puede usar HTTP."},
     "password": {"show": "Mostrar contraseña", "hide": "Ocultar contraseña", "purpose": "Crea una contraseña nueva solo para este navegador; no es la de ERPNext. La pedirá cada vez que entres.", "minimum_one": "Mínimo {{count}} carácter.", "minimum_other": "Mínimo {{count}} caracteres.", "remaining_one": "Falta {{count}} carácter.", "remaining_other": "Faltan {{count}} caracteres.", "ready": "Longitud correcta."},
     "newLocalPassword": "Nueva contraseña local",
     "apiHelp": {"toggle": "¿Dónde obtengo la API Key y el API Secret?", "step1": "Entra a tu ERPNext y abre el menú de tu avatar, arriba a la derecha › Mi configuración (My Settings).", "step2": "En la pestaña Configuración (Settings), busca Acceso API (API Access) y toca Generar claves (Generate Keys).", "step3": "Copia el API Secret en ese momento: ERPNext solo lo muestra una vez. La API Key queda visible en ese mismo apartado.", "note": "Si vuelves a generar claves, las anteriores dejan de funcionar. Tu usuario necesita permisos sobre productos, precios e inventario.", "open": "Abrir mi ERPNext en otra pestaña"},
@@ -114,8 +116,7 @@
     "invalidLink": "Pega un enlace de credenciales válido.",
     "clipboardError": "No se pudo copiar automáticamente. Revisa los permisos del portapapeles e inténtalo de nuevo.",
     "sharedLinkWarning": "Este enlace contiene credenciales en el fragmento local del navegador. Confirma la contraseña para cifrarlas; después el enlace se limpia.",
-    "sharedLinkImported": "Link importado. Solo falta la contraseña local para cifrar y conectar.",
-    "deleteConfirm": "¿Eliminar el perfil local “{{label}}”?"
+    "sharedLinkImported": "Link importado. Solo falta la contraseña local para cifrar y conectar."
   },
   "home": {
     "title": "Inicio",

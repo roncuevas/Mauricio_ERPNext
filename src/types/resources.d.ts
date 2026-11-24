@@ -216,9 +216,19 @@ export default interface Resources {
       "clipboardError": "No se pudo copiar automáticamente. Revisa los permisos del portapapeles e inténtalo de nuevo.",
       "connect": "Conecta tu instancia",
       "copyShare": "Desencriptar y copiar enlace",
-      "deleteConfirm": "¿Eliminar el perfil local “{{label}}”?",
+      "delete": {
+        "action": "Eliminar perfil",
+        "description": "Se borrará “{{label}}” de este navegador. Tu ERPNext no cambia; para volver a usarlo tendrás que conectar de nuevo con la API Key y el API Secret.",
+        "title": "¿Eliminar este perfil?"
+      },
       "deleteProfile": "Eliminar perfil",
       "encryptConnect": "Cifrar y conectar",
+      "errors": {
+        "httpsRequired": "La URL debe usar HTTPS. Solo localhost puede usar HTTP.",
+        "passwordShort_one": "La contraseña local debe tener al menos {{count}} carácter.",
+        "passwordShort_other": "La contraseña local debe tener al menos {{count}} caracteres.",
+        "wrongPassword": "No se pudo desbloquear la conexión. Revisa la contraseña."
+      },
       "importButton": "Importar link",
       "importLink": "Importar desde link",
       "invalidLink": "Pega un enlace de credenciales válido.",

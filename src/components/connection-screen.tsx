@@ -1,9 +1,10 @@
-import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Field, IconButton, Input, Notice, Spinner } from './ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
 import { verifyConnection } from '../lib/erpnext'
 import { PasswordInput } from './password-input'
+import { useConfirmDialog } from './confirm-dialog'
 import { Check } from 'lucide-react'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
 import { readLastProfileId, removeProfile, writeLastProfileId, writeProfiles } from '../lib/storage'
@@ -57,6 +58,8 @@ type ConnectionFormState = { label: string; baseUrl: string; apiKey: string; api
 
 export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { profiles: StoredProfile[]; onUnlock: (p: ConnectionProfile) => Promise<void>; onProfilesChange: (p: StoredProfile[]) => void }) {
   const { t } = useTranslation()
+  const { confirm, dialog: confirmDialog } = useConfirmDialog()
+  const formRef = useRef<HTMLFormElement>(null)
   const shared = useMemo(() => readSharedConnection(window.location.search, window.location.hash), [])
   // A returning user lands on the password of the profile used last; a shared link or no profiles opens the new form.
   const [initialProfile] = useState(() => shared ? null : profiles.find((profile) => profile.id === readLastProfileId()) ?? profiles[0] ?? null)
@@ -109,8 +112,8 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
     setShareNotice(t('connection.sharedLinkImported'))
   }
 
-  function deleteProfile(profile: StoredProfile) {
-    if (!confirm(`¿Eliminar el perfil local “${profile.label}”?`)) return
+  async function deleteProfile(profile: StoredProfile) {
+    if (!(await confirm({ title: t('connection.delete.title'), description: t('connection.delete.description', { label: profile.label }), confirmLabel: t('connection.delete.action'), tone: 'danger' }))) return
     removeProfile(profile.id)
     const next = profiles.filter((p) => p.id !== profile.id)
     onProfilesChange(next)
@@ -118,6 +121,8 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
       if (next[0]) chooseProfile(next[0])
       else startNew()
     }
+    // The dialog's trigger is gone, so focus would fall to the page; keep it on the form instead.
+    window.setTimeout(() => formRef.current?.querySelector('input')?.focus())
   }
 
   function chooseProfile(profile: StoredProfile, nextMode: 'unlock' | 'share' = 'unlock') {
@@ -158,14 +163,14 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
               const active = profile.id === savedProfile.id
               return <div key={profile.id} className={`connection-profile-card flex items-center gap-2 ${active ? 'is-selected' : ''}`}>
                 <button type="button" className="connection-profile-details min-w-0 flex-1 text-left" aria-pressed={active} onClick={() => chooseProfile(profile)}><strong className="block text-sm">{profile.label}</strong><span className="block text-xs">{profile.baseUrl}</span></button>
-                <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<ShareIcon />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<TrashIcon />} onClick={() => deleteProfile(profile)} /></div>
+                <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<ShareIcon />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<TrashIcon />} onClick={() => void deleteProfile(profile)} /></div>
               </div>
             })}
           </div>}
           {mode === 'new' && showImport && <div className="connection-import-panel"><Field label={t('connection.linkLabel')}><Input type="url" value={importLink} onChange={(e) => setImportLink(e.target.value)} placeholder={t('connection.linkPlaceholder')} autoFocus /></Field><Button type="button" onClick={importFromLink}>{t('connection.importButton')}</Button></div>}
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
-          <form className="connection-form" onSubmit={submit}>
+          <form ref={formRef} className="connection-form" onSubmit={submit}>
             {savedProfile ? <><Field label={t('connection.localPassword')}><PasswordInput key={`${savedProfile.id}-${mode}`} autoFocus autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><PasswordInput value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><ApiKeyHelp baseUrl={form.baseUrl} /><div className="connection-password"><Field label={t('connection.newLocalPassword')}><PasswordInput value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required autoComplete="new-password" aria-describedby={passwordHintId} /></Field><PasswordHint id={passwordHintId} length={form.passphrase.length} /></div><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
           </form>
           <div className="connection-alt-actions">
@@ -181,6 +186,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           <ThemeModeToggle className="connection-theme-toggle" />
         </div>
       </div>
+      {confirmDialog}
     </main>
   )
 }
