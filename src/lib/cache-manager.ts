@@ -75,6 +75,9 @@ const managementConfig = {
   additionalStoreNames: ['pos-context', 'shifts', 'quotations'],
 }
 
+/** Where the managed snapshots live, for measuring and clearing a profile's data. */
+export const managedSnapshotLocations = { priceLists: 'price-lists', posContext: 'pos-context', shifts: 'shifts', quotations: 'quotations' } as const
+export const managedSnapshotDatabase = managementConfig.databaseName
 const priceListStore = createCacheStore<CacheSnapshot<PriceListCacheData>>({ ...managementConfig, storeName: 'price-lists' })
 const posContextStore = createCacheStore<CacheSnapshot<PosContextCacheData>>({ ...managementConfig, storeName: 'pos-context' })
 const shiftStore = createCacheStore<CacheSnapshot<ShiftCacheData>>({ ...managementConfig, storeName: 'shifts' })
@@ -143,7 +146,7 @@ function countSnapshot(snapshot: unknown) {
 
 type SyncMetadata = { lastAttemptAt?: string; lastSuccessAt?: string; lastError?: string; issues?: CacheIssue[] }
 
-function metadataKey(profileId: string) { return `mauricio-erpnext:cache-sync:${profileId}` }
+export function metadataKey(profileId: string) { return `mauricio-erpnext:cache-sync:${profileId}` }
 
 function readSyncMetadata(profileId: string): Partial<Record<ManagedCacheId, SyncMetadata>> {
   try {

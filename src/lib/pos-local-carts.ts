@@ -1,7 +1,9 @@
 import { createCacheStore } from './indexed-db'
 import type { LocalPosCart, LocalPosCartsCache, PosCartLine } from './types'
 
-const store = createCacheStore<LocalPosCartsCache>({ databaseName: 'mauricio-erpnext-pos-local', storeName: 'carts' })
+/** Where saved POS carts live, keyed by `localCartsScope`. */
+export const posCartsLocation = { databaseName: 'mauricio-erpnext-pos-local', storeName: 'carts' }
+const store = createCacheStore<LocalPosCartsCache>(posCartsLocation)
 
 export function localCartsScope(profileId: string, posProfileName: string) {
   return `${profileId}::${posProfileName}`

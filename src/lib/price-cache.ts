@@ -1,7 +1,9 @@
 import type { ItemPrice, ItemPriceCatalogCache } from './types'
 import { createCacheStore } from './indexed-db'
 
-const config = { databaseName: 'mauricio-erpnext-prices', storeName: 'item-price-catalogs' }
+/** Where this cache lives, for measuring and clearing a profile's data. */
+export const priceCacheLocation = { databaseName: 'mauricio-erpnext-prices', storeName: 'item-price-catalogs' }
+const config = priceCacheLocation
 const store = createCacheStore<ItemPriceCatalogCache>(config)
 
 export const readItemPriceCatalog = store.read

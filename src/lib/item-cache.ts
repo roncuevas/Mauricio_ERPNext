@@ -4,7 +4,9 @@ import { productSearchScore } from './search'
 
 const databaseName = 'mauricio-erpnext'
 const storeName = 'item-catalogs'
-const config = { databaseName, storeName }
+/** Where this cache lives, for measuring and clearing a profile's data. */
+export const itemCacheLocation = { databaseName, storeName }
+const config = itemCacheLocation
 const store = createCacheStore<ItemCatalogCache>(config)
 
 export const readItemCatalog = store.read

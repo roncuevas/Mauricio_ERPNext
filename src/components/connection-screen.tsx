@@ -4,6 +4,7 @@ import { Button, Card, IconButton, Input, Notice, RadioGroup, RadioGroupItem, Sp
 import { Field, FieldContent, FieldDescription, FieldLabel, FieldTitle } from './ui/field'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
+import { clearProfileData } from '../lib/profile-data'
 import { verifyConnection } from '../lib/erpnext'
 import { PasswordInput } from './password-input'
 import { useConfirmDialog } from './confirm-dialog'
@@ -120,6 +121,8 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
   async function deleteProfile(profile: StoredProfile) {
     if (!(await confirm({ title: t('connection.delete.title'), description: t('connection.delete.description', { label: profile.label }), confirmLabel: t('connection.delete.action'), tone: 'danger' }))) return
     removeProfile(profile.id)
+    // Its downloaded catalogs, images, carts and preferences go with it; nothing else could ever read them again.
+    void clearProfileData(profile.id, { everything: true }).catch(() => undefined)
     const next = profiles.filter((p) => p.id !== profile.id)
     onProfilesChange(next)
     if (selected?.id === profile.id) {

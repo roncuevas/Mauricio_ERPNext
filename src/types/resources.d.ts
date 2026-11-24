@@ -218,7 +218,7 @@ export default interface Resources {
       "copyShare": "Desencriptar y copiar enlace",
       "delete": {
         "action": "Eliminar perfil",
-        "description": "Se borrará “{{label}}” de este navegador. Tu ERPNext no cambia; para volver a usarlo tendrás que conectar de nuevo con la API Key y el API Secret.",
+        "description": "Se borrarán “{{label}}” y sus datos descargados de este navegador. Tu ERPNext no cambia; para volver a usarlo tendrás que conectar de nuevo con la API Key y el API Secret.",
         "title": "¿Eliminar este perfil?"
       },
       "deleteProfile": "Eliminar perfil",
@@ -1147,6 +1147,33 @@ export default interface Resources {
       "title": "Productos",
       "updated": "Actualizado: {{value}}",
       "viewHierarchy": "Ver jerarquía"
+    },
+    "profileStorage": {
+      "carts": "Carritos del POS guardados",
+      "clear": "Borrar caché",
+      "clearActive": "Es el perfil abierto: sus pantallas quedarán vacías hasta que vuelvas a descargar los datos.",
+      "clearDescription": "Se borrarán {{size}} de catálogos, inventario e imágenes descargados en este navegador. ERPNext no cambia, y los carritos del POS y tus preferencias se conservan.",
+      "clearError": "No se pudo borrar la caché.",
+      "clearTitle": "¿Borrar la caché de “{{label}}”?",
+      "clearing": "Borrando…",
+      "current": "Este perfil",
+      "description": "Lo que este navegador guarda de cada conexión (tamaño aproximado). Borrar la caché no cambia nada en ERPNext; puedes volver a descargarla cuando quieras.",
+      "detail": "Ver detalle",
+      "empty": "Sin caché",
+      "images_one": "Imágenes de productos ({{count}})",
+      "images_other": "Imágenes de productos ({{count}})",
+      "kept": "se conserva",
+      "measure": "Volver a medir",
+      "measuring": "Midiendo datos guardados…",
+      "nothing": "Nada guardado",
+      "orphans": "Perfiles eliminados",
+      "orphansDescription": "Se borrarán {{size}}, incluidos sus carritos del POS y preferencias. Ningún perfil guardado usa estos datos.",
+      "orphansHint_one": "Datos que dejó 1 perfil que ya no existe en este navegador.",
+      "orphansHint_other": "Datos que dejaron {{count}} perfiles que ya no existen en este navegador.",
+      "orphansTitle": "¿Borrar los datos de perfiles eliminados?",
+      "preferences": "Preferencias y ventas en curso",
+      "title": "Almacenamiento por perfil",
+      "total": "Total en este navegador"
     },
     "quotationsPage": {
       "account": "Cuenta",

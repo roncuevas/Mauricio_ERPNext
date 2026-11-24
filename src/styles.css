@@ -877,6 +877,27 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .settings-user-roles ul { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
 .settings-user-roles p { color: var(--color-muted); font-size: .8125rem; }
 .cache-item { border-radius: 0; padding-inline: 0; }
+.profile-storage-item { align-items: flex-start; }
+.profile-storage-item [data-slot="item-actions"] { align-items: center; gap: .85rem; }
+.profile-storage-size { min-width: 4.5rem; color: var(--color-heading); font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.profile-storage-size[data-empty] { color: var(--color-muted); font-weight: 500; }
+.profile-storage-detail { margin-top: .15rem; }
+.button.button-link.profile-storage-toggle { gap: .25rem; padding: 0; font-size: .78rem; }
+.profile-storage-toggle svg { width: .9rem; height: .9rem; transition: transform .15s ease; }
+.profile-storage-toggle[data-state="open"] svg { transform: rotate(180deg); }
+.profile-storage-breakdown { display: grid; max-width: 26rem; margin: .35rem 0 0; }
+.profile-storage-breakdown > div { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; border-top: 1px solid var(--color-border-subtle); font-size: .8rem; }
+.profile-storage-breakdown dt { color: var(--color-ink); }
+.profile-storage-breakdown dt > span { margin-left: .4rem; color: var(--color-muted); font-size: .72rem; }
+.profile-storage-breakdown dd { margin: 0; color: var(--color-heading); font-weight: 600; font-variant-numeric: tabular-nums; }
+.profile-storage-breakdown > [data-kept] dd { color: var(--color-muted); }
+.profile-storage-total { display: flex; justify-content: space-between; gap: 1rem; margin: .5rem 0 0; padding-top: .75rem; border-top: 1px solid var(--color-border); font-size: .875rem; }
+.profile-storage-total > span { color: var(--color-muted); font-weight: 600; }
+.profile-storage-total > strong { color: var(--color-heading); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .profile-storage-size { min-width: 0; text-align: left; }
+  .profile-storage-item [data-slot="item-actions"] { width: 100%; justify-content: space-between; }
+}
 .cache-item + .cache-item { border-top: 1px solid var(--color-border-subtle); }
 .cache-item > [data-slot="item-content"]:first-child { min-width: min(100%, 16rem); }
 .cache-item [data-slot="item-title"] h3 { color: var(--color-heading); font-size: .875rem; font-weight: 600; }

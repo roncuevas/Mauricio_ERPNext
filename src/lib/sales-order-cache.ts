@@ -6,6 +6,9 @@ const cacheStoreConfig = {
   version: 3,
   additionalStoreNames: ['customers', 'sales-orders'],
 }
+/** Where these caches live, for measuring and clearing a profile's data. */
+export const customerCacheLocation = { databaseName: cacheStoreConfig.databaseName, storeName: 'customers' }
+export const salesOrderCacheLocation = { databaseName: cacheStoreConfig.databaseName, storeName: 'sales-orders' }
 const customerStore = createCacheStore<CustomerCatalogCache>({ ...cacheStoreConfig, storeName: 'customers' })
 const orderStore = createCacheStore<SalesOrderCatalogCache>({ ...cacheStoreConfig, storeName: 'sales-orders' })
 export const readCustomerCatalog = customerStore.read

@@ -2,6 +2,8 @@ type ProductImageRecord = { id: string; profileId: string; itemName: string; url
 
 const databaseName = 'mauricio-erpnext-product-images'
 const storeName = 'images'
+/** Where downloaded product images live, one record per profile and item, indexed by `profileId`. */
+export const productImageLocation = { databaseName, storeName }
 let databasePromise: Promise<IDBDatabase> | null = null
 
 function openDatabase() {

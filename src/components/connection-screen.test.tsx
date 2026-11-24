@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,7 +31,7 @@ async function render(profiles: StoredProfile[]) {
   document.body.append(container)
   root = createRoot(container)
   await act(async () => {
-    root.render(createElement(ThemeProvider, null, createElement(ConnectionScreen, { profiles, onUnlock, onProfilesChange })))
+    root.render(createElement(QueryClientProvider, { client: new QueryClient() }, createElement(ThemeProvider, null, createElement(ConnectionScreen, { profiles, onUnlock, onProfilesChange }))))
   })
 }
 

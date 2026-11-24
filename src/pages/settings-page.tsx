@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { CacheManagerPanel } from '../components/cache-manager-panel'
+import { ProfileStorageCard } from '../components/profile-storage'
 import { EntityCombobox } from '../components/entity-combobox'
 import { LanguageSelector } from '../components/language-selector'
 import { useTheme } from '../components/theme-provider'
@@ -317,6 +318,7 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
             {(imageSyncMessage || imageSyncError) && <Notice tone={imageSyncError ? 'error' : 'info'}>{imageSyncError || imageSyncMessage}</Notice>}
           </CardContent>}
         </Card>
+        <ProfileStorageCard activeProfileId={connection.id} />
       </TabsContent>
     </Tabs>
   </section>

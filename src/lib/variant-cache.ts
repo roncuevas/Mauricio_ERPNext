@@ -4,7 +4,9 @@ import { readItemCatalog } from './item-cache'
 
 const databaseName = 'mauricio-erpnext-variants'
 const storeName = 'variant-catalogs'
-const config = { databaseName, storeName }
+/** Where this cache lives, for measuring and clearing a profile's data. */
+export const variantCacheLocation = { databaseName, storeName }
+const config = variantCacheLocation
 const store = createCacheStore<VariantCatalogCache>(config)
 
 export const readVariantCatalog = store.read
