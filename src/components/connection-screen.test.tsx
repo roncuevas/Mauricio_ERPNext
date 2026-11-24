@@ -236,6 +236,12 @@ describe('ConnectionScreen', () => {
     expect(checkedProfile()).toBe('norte')
   })
 
+  it('opens the storage of every profile from the icon below the card', async () => {
+    await render(stored)
+    await click(button(t('profileStorage.title'))[0])
+    await eventually(() => expect(document.querySelector('[role=dialog]')?.textContent).toContain(t('profileStorage.description')))
+  })
+
   it('toggles the API key help', async () => {
     await render([])
     const toggle = button(t('connection.apiHelp.toggle'))[0]

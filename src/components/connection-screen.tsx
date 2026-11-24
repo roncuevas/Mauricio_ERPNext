@@ -8,14 +8,16 @@ import { clearProfileData } from '../lib/profile-data'
 import { verifyConnection } from '../lib/erpnext'
 import { PasswordInput } from './password-input'
 import { useConfirmDialog } from './confirm-dialog'
-import { Check, Share2, Trash2 } from 'lucide-react'
+import { Check, Share2, Trash2, HardDrive } from 'lucide-react'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
 import { readLastProfileId, rememberProfileUserName, removeProfile, writeLastProfileId, writeProfiles } from '../lib/storage'
 import type { ConnectionProfile, StoredProfile } from '../lib/types'
 import { LanguageSelector } from './language-selector'
 import { ThemePaletteSelector } from './theme-palette-selector'
 import { ThemeModeToggle } from './layout'
-import { TooltipProvider } from './ui/tooltip'
+import { TooltipProvider, WithTooltip } from './ui/tooltip'
+import { ProfileStorageSheet } from './profile-storage'
+import { SheetTrigger } from './ui/sheet'
 
 /** Where ERPNext issues the API Key and Secret, behind a disclosure so the form stays short for people who have them. */
 function ApiKeyHelp({ baseUrl }: { baseUrl: string }) {
@@ -202,6 +204,9 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
             <LanguageSelector compact tooltip />
             <ThemePaletteSelector compact tooltip />
             <ThemeModeToggle className="connection-theme-toggle" tooltip />
+            <ProfileStorageSheet>
+              <WithTooltip label={t('profileStorage.title')}><SheetTrigger asChild><IconButton type="button" className="connection-storage-button" label={t('profileStorage.title')} title="" icon={<HardDrive aria-hidden="true" strokeWidth={1.8} />} /></SheetTrigger></WithTooltip>
+            </ProfileStorageSheet>
           </div>
         </TooltipProvider>
       </div>

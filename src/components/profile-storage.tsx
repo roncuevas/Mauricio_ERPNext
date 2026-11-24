@@ -1,7 +1,9 @@
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, RefreshCw } from 'lucide-react'
-import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, Notice, Spinner } from './ui'
+import { ChevronDown, RefreshCw, X } from 'lucide-react'
+import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, IconButton, Notice, Spinner } from './ui'
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from './ui/item'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
 import { useConfirmDialog } from './confirm-dialog'
@@ -147,4 +149,32 @@ export function ProfileStorageCard({ activeProfileId }: { activeProfileId: strin
     </CardHeader>
     <CardContent><ProfileStorageList state={state} /></CardContent>
   </Card>
+}
+
+function ProfileStorageSheetBody() {
+  const { t } = useTranslation()
+  const state = useProfileStorage()
+  return <>
+    <SheetHeader className="profile-storage-sheet-header">
+      <div className="profile-storage-sheet-heading">
+        <SheetTitle>{t('profileStorage.title')}</SheetTitle>
+        <SheetClose asChild><IconButton type="button" size="compact" label={t('common.close')} icon={<X aria-hidden="true" />} /></SheetClose>
+      </div>
+      <SheetDescription>{t('profileStorage.description')}</SheetDescription>
+      <div><MeasureButton state={state} /></div>
+    </SheetHeader>
+    <div className="profile-storage-sheet-body"><ProfileStorageList state={state} /></div>
+  </>
+}
+
+/**
+ * The same storage view for the login screen, where no profile is open yet; it measures only while open. `children`
+ * holds its `SheetTrigger`, so closing returns focus to it.
+ */
+export function ProfileStorageSheet({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return <Sheet open={open} onOpenChange={setOpen}>
+    {children}
+    <SheetContent side="right" className="profile-storage-sheet">{open && <ProfileStorageSheetBody />}</SheetContent>
+  </Sheet>
 }
