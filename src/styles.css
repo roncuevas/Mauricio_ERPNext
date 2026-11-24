@@ -413,32 +413,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .connection-card-heading p:last-child { margin: 0; color: var(--color-muted); font-size: .78rem; line-height: 1.45; }
 .connection-eyebrow { margin: 0; color: var(--color-primary); font-size: .65rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .connection-notice { margin-bottom: 1rem; }
-.connection-import { display: grid; gap: .75rem; margin-bottom: 1.25rem; }
-.connection-import > .button { width: 100%; }
-.connection-import-panel { display: grid; gap: .75rem; border: 1px solid var(--color-border-subtle); border-radius: .75rem; background: var(--color-surface-muted); padding: .85rem; }
+.connection-import-panel { display: grid; gap: .75rem; margin-bottom: 1.25rem; border: 1px solid var(--color-border-subtle); border-radius: .75rem; background: var(--color-surface-muted); padding: .85rem; }
 .connection-import-panel p { margin: 0; color: var(--color-muted); font-size: .72rem; line-height: 1.4; }
 .connection-import-panel .button { width: 100%; }
 .connection-profile-card { min-width: 0; }
-.connection-profiles { display: grid; gap: .55rem; margin-bottom: 1.25rem; border-top: 1px solid var(--color-border-subtle); padding-top: 1.15rem; }
-.connection-section-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-.connection-section-heading .field-label { margin: 0; }
-.connection-section-heading > span { color: var(--color-muted); font-size: .68rem; }
+.connection-profiles { display: grid; gap: .55rem; margin-bottom: 1.1rem; }
+.connection-profiles > .field-label { margin: 0; }
 .connection-profile-card { border: 1px solid var(--color-border-subtle); border-radius: .7rem; background: var(--color-surface-muted); padding: .65rem; transition: border-color .15s ease, background .15s ease; }
+.connection-profile-card.is-selected { border-color: var(--color-primary); background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px var(--color-primary); }
 .connection-profile-card:has(.connection-profile-details:hover) { border-color: var(--color-accent); background: var(--color-primary-soft); }
 .connection-profile-details { display: grid; gap: .2rem; border-radius: .45rem; padding: .15rem; color: var(--color-heading); }
 .connection-profile-details { overflow-wrap: anywhere; }
 .connection-profile-details strong, .connection-profile-details span { overflow-wrap: anywhere; }
 .connection-profile-details span { color: var(--color-muted); }
 .connection-profile-actions { flex-wrap: wrap; justify-content: flex-end; }
-.connection-selected-profile { min-width: 0; }
-.connection-selected-profile strong, .connection-selected-profile span { display: block; overflow-wrap: anywhere; }
-.connection-selected-profile span { margin-top: .25rem; color: var(--color-muted); }
-.connection-selected-profile { display: grid; gap: .15rem; margin-bottom: .15rem; border: 1px solid var(--color-accent); border-radius: .7rem; background: var(--color-primary-soft); padding: .75rem; color: var(--color-heading); font-size: .82rem; }
 .connection-form { display: grid; gap: 1rem; }
 .connection-form > .button { width: 100%; }
 .connection-form-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
 .connection-form-actions > .button { flex: 1 1 10rem; }
-.connection-security-note { display: flex; align-items: center; justify-content: center; gap: .4rem; margin: 1.25rem 0 0; color: var(--color-muted); font-size: .68rem; }
+.connection-alt-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1.25rem; margin-top: .85rem; }
+.connection-link { min-height: 2.25rem; border: 0; border-radius: .4rem; background: transparent; padding: 0 .25rem; color: var(--color-primary); font-size: .8rem; font-weight: 650; cursor: pointer; }
+.connection-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.connection-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.connection-security-note { display: flex; align-items: center; justify-content: center; gap: .4rem; margin: .75rem 0 0; color: var(--color-muted); font-size: .68rem; }
 .connection-security-note span { color: var(--color-success); font-size: .55rem; }
 .quotation-context { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; padding: 1rem; }
 .quotation-context .field { min-width: min(100%, 24rem); }

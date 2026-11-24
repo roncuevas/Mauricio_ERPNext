@@ -221,11 +221,9 @@ export default interface Resources {
       "new": "Nueva conexión",
       "passwordPlaceholder": "Mínimo 8 caracteres",
       "preferences": "Idioma y apariencia",
-      "profile": "perfil",
       "profileName": "Nombre del perfil",
       "profilePlaceholder": "Mi ERPNext",
       "profiles": "Perfiles guardados",
-      "profilesPlural": "perfiles",
       "saveError": "No se pudo guardar la conexión.",
       "secure": "Conexión segura",
       "security": "Las credenciales se cifran y permanecen solo en este navegador.",
@@ -237,7 +235,8 @@ export default interface Resources {
       "unlock": "Desbloquea tu instancia",
       "unlockButton": "Desbloquear",
       "url": "URL de ERPNext",
-      "urlPlaceholder": "https://erp.example.com"
+      "urlPlaceholder": "https://erp.example.com",
+      "useSaved": "Usar un perfil guardado"
     },
     "connectionStatus": {
       "checking": "Comprobando conexión",

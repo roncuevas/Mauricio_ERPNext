@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card, Field, IconButton, Input, Notice, Spinner } from './ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
-import { removeProfile, writeProfiles } from '../lib/storage'
+import { readLastProfileId, removeProfile, writeLastProfileId, writeProfiles } from '../lib/storage'
 import type { ConnectionProfile, StoredProfile } from '../lib/types'
 import { LanguageSelector } from './language-selector'
 import { ThemePaletteSelector } from './theme-palette-selector'
@@ -22,11 +22,13 @@ type ConnectionFormState = { label: string; baseUrl: string; apiKey: string; api
 export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { profiles: StoredProfile[]; onUnlock: (p: ConnectionProfile) => Promise<void>; onProfilesChange: (p: StoredProfile[]) => void }) {
   const { t } = useTranslation()
   const shared = useMemo(() => readSharedConnection(window.location.search, window.location.hash), [])
-  const [selected, setSelected] = useState<StoredProfile | null>(null)
+  // A returning user lands on the password of the profile used last; a shared link or no profiles opens the new form.
+  const [initialProfile] = useState(() => shared ? null : profiles.find((profile) => profile.id === readLastProfileId()) ?? profiles[0] ?? null)
+  const [selected, setSelected] = useState<StoredProfile | null>(initialProfile)
   const [form, setForm] = useState<ConnectionFormState>({ label: shared?.label ?? '', baseUrl: shared?.baseUrl ?? '', apiKey: shared?.apiKey ?? '', apiSecret: shared?.apiSecret ?? '', passphrase: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [mode, setMode] = useState<'new' | 'unlock' | 'share'>('new')
+  const [mode, setMode] = useState<'new' | 'unlock' | 'share'>(initialProfile ? 'unlock' : 'new')
   const [shareNotice, setShareNotice] = useState('')
   const [showImport, setShowImport] = useState(false)
   const [importLink, setImportLink] = useState('')
@@ -39,7 +41,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
   async function submit(event: FormEvent) {
     event.preventDefault(); setError(''); setBusy(true)
     try {
-      if (mode === 'unlock' && selected) { await onUnlock(await decryptProfile(selected, form.passphrase)); return }
+      if (mode === 'unlock' && selected) { const profile = await decryptProfile(selected, form.passphrase); writeLastProfileId(selected.id); await onUnlock(profile); return }
       if (mode === 'share' && selected) {
         const profile = await decryptProfile(selected, form.passphrase)
         const url = buildShareUrl(profile, window.location.href)
@@ -50,7 +52,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
       if (!profile.apiKey || !profile.apiSecret) throw new Error(t('errors.apiRequired'))
       const stored = await encryptProfile(profile, form.passphrase)
       const next = [...profiles.filter((p) => p.id !== stored.id), stored]
-      writeProfiles(next); onProfilesChange(next); await onUnlock(profile)
+      writeProfiles(next); onProfilesChange(next); writeLastProfileId(stored.id); await onUnlock(profile)
     } catch (reason) { setError(reason instanceof Error ? reason.message : t('connection.saveError')) } finally { setBusy(false) }
   }
 
@@ -74,9 +76,30 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
     removeProfile(profile.id)
     const next = profiles.filter((p) => p.id !== profile.id)
     onProfilesChange(next)
-    if (selected?.id === profile.id) setSelected(null)
+    if (selected?.id === profile.id) {
+      if (next[0]) chooseProfile(next[0])
+      else startNew()
+    }
   }
 
+  function chooseProfile(profile: StoredProfile, nextMode: 'unlock' | 'share' = 'unlock') {
+    setSelected(profile)
+    setMode(nextMode)
+    setShareNotice('')
+    setError('')
+    setShowImport(false)
+    updateForm({ passphrase: '' })
+  }
+
+  function startNew(importing = false) {
+    setMode('new')
+    setSelected(null)
+    setShareNotice('')
+    setError('')
+    setShowImport(importing)
+  }
+
+  const savedProfile = mode !== 'new' ? selected : null
   const heading = mode === 'unlock' ? t('connection.unlock') : mode === 'share' ? t('connection.share') : t('connection.connect')
   const updateForm = (patch: Partial<ConnectionFormState>) => setForm((current) => ({ ...current, ...patch }))
 
@@ -90,16 +113,28 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
         <Card className="connection-card p-6 sm:p-8">
           <div className="connection-card-heading"><p className="connection-eyebrow">{t('connection.secure')}</p><h1>{heading}</h1><p>{t('connection.security')}</p></div>
           {shared && <div className="connection-notice"><Notice tone="warning">{t('connection.sharedLinkWarning')}</Notice></div>}
-          <div className="connection-import">
-            <Button type="button" variant="secondary" onClick={() => { setShowImport((value) => !value); setError(''); setShareNotice('') }}>{showImport ? t('connection.cancelImport') : t('connection.importLink')}</Button>
-            {showImport && <div className="connection-import-panel"><Field label={t('connection.linkLabel')}><Input type="url" value={importLink} onChange={(e) => setImportLink(e.target.value)} placeholder={t('connection.linkPlaceholder')} autoFocus /></Field><p>{t('connection.security')}</p><Button type="button" onClick={importFromLink}>{t('connection.importButton')}</Button></div>}
-          </div>
-          {profiles.length > 0 && <div className="connection-profiles"><div className="connection-section-heading"><p className="field-label">{t('connection.profiles')}</p><span>{profiles.length} {profiles.length === 1 ? t('connection.profile') : t('connection.profilesPlural')}</span></div>{profiles.map((profile) => <div key={profile.id} className="connection-profile-card flex items-center gap-2"><button type="button" className="connection-profile-details min-w-0 flex-1 text-left" onClick={() => { setSelected(profile); setMode('unlock'); setShareNotice(''); updateForm({ passphrase: '' }) }}><strong className="block text-sm">{profile.label}</strong><span className="block text-xs">{profile.baseUrl}</span></button><div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" label={t('connection.shareProfile')} icon={<ShareIcon />} onClick={() => { setSelected(profile); setMode('share'); setShareNotice(''); setError(''); updateForm({ passphrase: '' }) }} /><IconButton type="button" label={t('connection.deleteProfile')} variant="danger" icon={<TrashIcon />} onClick={() => deleteProfile(profile)} /></div></div>)}</div>}
+          {savedProfile && <div className="connection-profiles">
+            {profiles.length > 1 && <p className="field-label">{t('connection.profiles')}</p>}
+            {profiles.map((profile) => {
+              const active = profile.id === savedProfile.id
+              return <div key={profile.id} className={`connection-profile-card flex items-center gap-2 ${active ? 'is-selected' : ''}`}>
+                <button type="button" className="connection-profile-details min-w-0 flex-1 text-left" aria-pressed={active} onClick={() => chooseProfile(profile)}><strong className="block text-sm">{profile.label}</strong><span className="block text-xs">{profile.baseUrl}</span></button>
+                <div className="connection-profile-actions flex shrink-0 gap-2"><IconButton type="button" size="compact" label={t('connection.shareProfile')} icon={<ShareIcon />} onClick={() => chooseProfile(profile, 'share')} /><IconButton type="button" size="compact" label={t('connection.deleteProfile')} variant="danger" icon={<TrashIcon />} onClick={() => deleteProfile(profile)} /></div>
+              </div>
+            })}
+          </div>}
+          {mode === 'new' && showImport && <div className="connection-import-panel"><Field label={t('connection.linkLabel')}><Input type="url" value={importLink} onChange={(e) => setImportLink(e.target.value)} placeholder={t('connection.linkPlaceholder')} autoFocus /></Field><Button type="button" onClick={importFromLink}>{t('connection.importButton')}</Button></div>}
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
           <form className="connection-form" onSubmit={submit}>
-            {(mode === 'unlock' || mode === 'share') && selected ? <><div className="connection-selected-profile"><strong>{selected.label}</strong><span>{selected.baseUrl}</span></div><Field label={t('connection.localPassword')}><Input autoFocus type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><div className="connection-form-actions"><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button><Button type="button" variant="secondary" onClick={() => { setMode('new'); setSelected(null); setShareNotice(''); setError('') }}>{t('connection.new')}</Button></div></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : t('connection.encryptConnect')}</Button></>}
+            {savedProfile ? <><Field label={t('connection.localPassword')}><Input key={`${savedProfile.id}-${mode}`} autoFocus type="password" autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : t('connection.encryptConnect')}</Button></>}
           </form>
+          <div className="connection-alt-actions">
+            {mode === 'share' && savedProfile && <button type="button" className="connection-link" onClick={() => chooseProfile(savedProfile)}>{t('common.cancel')}</button>}
+            {savedProfile && <button type="button" className="connection-link" onClick={() => startNew()}>{t('connection.new')}</button>}
+            {!savedProfile && profiles.length > 0 && <button type="button" className="connection-link" onClick={() => chooseProfile(profiles.find((profile) => profile.id === readLastProfileId()) ?? profiles[0])}>{t('connection.useSaved')}</button>}
+            <button type="button" className="connection-link" aria-expanded={mode === 'new' ? showImport : false} onClick={() => mode === 'new' ? setShowImport((value) => !value) : startNew(true)}>{mode === 'new' && showImport ? t('connection.cancelImport') : t('connection.importLink')}</button>
+          </div>
           <p className="connection-security-note"><span aria-hidden="true">●</span> {t('connection.credentialsLocal')}</p>
         </Card>
         <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>

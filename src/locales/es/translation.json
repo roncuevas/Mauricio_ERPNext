@@ -80,6 +80,7 @@
     "lockConfirmAction": "Sí, bloquear"
   },
   "connection": {
+    "useSaved": "Usar un perfil guardado",
     "preferences": "Idioma y apariencia",
     "secure": "Conexión segura",
     "connect": "Conecta tu instancia",
@@ -87,8 +88,6 @@
     "share": "Comparte tu perfil",
     "security": "Las credenciales se cifran y permanecen solo en este navegador.",
     "profiles": "Perfiles guardados",
-    "profile": "perfil",
-    "profilesPlural": "perfiles",
     "new": "Nueva conexión",
     "profileName": "Nombre del perfil",
     "profilePlaceholder": "Mi ERPNext",

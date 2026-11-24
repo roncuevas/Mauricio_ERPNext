@@ -80,6 +80,7 @@
     "lockConfirmAction": "Yes, lock"
   },
   "connection": {
+    "useSaved": "Use a saved profile",
     "preferences": "Language and appearance",
     "secure": "Secure connection",
     "connect": "Connect your instance",
@@ -87,8 +88,6 @@
     "share": "Share your profile",
     "security": "Credentials are encrypted and remain only in this browser.",
     "profiles": "Saved profiles",
-    "profile": "profile",
-    "profilesPlural": "profiles",
     "new": "New connection",
     "profileName": "Profile name",
     "profilePlaceholder": "My ERPNext",
