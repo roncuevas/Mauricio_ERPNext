@@ -24,7 +24,7 @@ describe('PendingImages', () => {
   })
 
   async function render(items: VariantItem[], view: MissingImageView = 'tree') {
-    const client = { setItemImage: vi.fn(async (_name: string, url: string) => url), isExternalImageUrl: (url: string) => url.startsWith('https://'), getImage: vi.fn(), getDocument: vi.fn() }
+    const client = { setItemImage: vi.fn(async (_name: string, url: string) => url), isExternalImageUrl: (url: string) => url.startsWith('https://'), getImage: vi.fn(async () => new Blob(['x'])), getDocument: vi.fn() }
     const onImagesSaved = vi.fn(async () => false)
     const onMessage = vi.fn()
     container = document.createElement('div')
@@ -94,4 +94,13 @@ describe('PendingImages', () => {
     await click(button('pendingPage.images.useForTemplate'))
     expect(client.setItemImage).toHaveBeenCalledWith('cap', '/files/red.png')
   })
+
+  it('loads the thumbnail of an image that is not cached yet', async () => {
+    const createObjectURL = vi.fn(() => 'blob:thumb')
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() })
+    await render([item('bowl', { has_variants: 1, image: '/files/bowl.png' }), item('bowl-xl', { variant_of: 'bowl' })])
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)) })
+    expect(container.querySelector('.pending-family-head img')?.getAttribute('src')).toBe('blob:thumb')
+  })
 })
+

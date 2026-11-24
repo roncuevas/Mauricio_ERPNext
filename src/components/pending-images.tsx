@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Download, ImageOff, ImagePlus } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, ImageOff, ImagePlus } from 'lucide-react'
 import { Badge, Button } from './ui'
 import { ProductImage } from './product-image'
 import { ImagePreviewDialog, type ImagePreview } from './image-preview-dialog'
@@ -9,7 +9,7 @@ import { useConfirmDialog } from './confirm-dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from './ui/dropdown-menu'
 import type { createErpNextClient } from '../lib/erpnext'
 import type { MissingImageGroup, MissingImageRow, MissingImageView } from '../lib/pending-items'
-import { loadProductImage, shareCachedProductImage } from '../lib/product-image-sync'
+import { shareCachedProductImage } from '../lib/product-image-sync'
 import type { VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -46,7 +46,6 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
     setExpanded(new Set(search ? groups.filter((group) => group.kind === 'family').map(groupKey) : []))
   }
   const [busy, setBusy] = useState<Busy | null>(null)
-  const [thumbnailVersion, setThumbnailVersion] = useState<Record<string, number>>({})
   const [preview, setPreview] = useState<ImagePreview | null>(null)
 
   const families = groups.filter((group): group is Family => group.kind === 'family')
@@ -89,32 +88,9 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
     if (accepted) await applyImage(`template:${family.template.name}`, variant, [family.template], t('pendingPage.images.templateUpdated'))
   }
 
-  /** Downloads, on request, the family's images that are not cached yet; thumbnails then reread the cache. */
-  async function loadThumbnails(family: Family) {
-    if (busy) return
-    const members = [family.template, ...family.variants].filter((item) => item.image?.trim() && !client.isExternalImageUrl(item.image))
-    setBusy({ key: `thumbs:${family.template.name}`, done: 0, total: members.length })
-    onMessage('')
-    let cursor = 0
-    let done = 0
-    let failed = 0
-    const worker = async () => {
-      while (cursor < members.length) {
-        const item = members[cursor++]
-        await loadProductImage(client, profileId, item).catch(() => { failed += 1 })
-        done += 1
-        setBusy({ key: `thumbs:${family.template.name}`, done, total: members.length })
-      }
-    }
-    await Promise.all(Array.from({ length: Math.min(4, members.length) }, () => worker()))
-    setBusy(null)
-    setThumbnailVersion((current) => ({ ...current, [family.template.name]: (current[family.template.name] ?? 0) + 1 }))
-    if (failed) onMessage(t('pendingPage.images.thumbnailsFailed', { count: failed }))
-  }
-
   const progress = (key: string) => busy?.key === key ? t('pendingPage.images.applying', { done: busy.done, total: busy.total }) : null
-  const thumb = (item: VariantItem, version = 0) => item.image?.trim()
-    ? <ProductImage key={`${item.name}:${item.image}:${version}`} client={client} profileId={profileId} item={item} className="pending-thumb" onPreview={(source) => setPreview({ source, name: item.item_name || item.name, code: item.name })} />
+  const thumb = (item: VariantItem) => item.image?.trim()
+    ? <ProductImage key={`${item.name}:${item.image}`} client={client} profileId={profileId} item={item} className="pending-thumb" autoLoad onPreview={(source) => setPreview({ source, name: item.item_name || item.name, code: item.name })} />
     : <span className="pending-thumb pending-thumb-empty" role="img" aria-label={t('pendingPage.images.noImage')}><ImageOff aria-hidden="true" /></span>
   /** The template takes a variant's image: directly when only one has an image, otherwise picked from a menu. */
   const useVariantImageAction = (family: Family) => {
@@ -175,13 +151,11 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
         }
         const { template, variants, missingVariants, variantsWithImage, templateMissing } = group
         const isOpen = expanded.has(template.name)
-        const version = thumbnailVersion[template.name] ?? 0
         const templateName = template.item_name || template.name
-        const canLoadThumbs = [template, ...variants].some((item) => item.image?.trim() && !client.isExternalImageUrl(item.image))
         return <article className="pending-family" role="listitem">
           <div className="pending-row pending-image-row pending-family-head">
             <button type="button" className="pending-family-toggle" aria-expanded={isOpen} aria-label={t(isOpen ? 'pendingPage.images.hideVariants' : 'pendingPage.images.showVariants', { name: templateName })} onClick={() => toggle(template.name)}><ChevronRight aria-hidden="true" /></button>
-            {thumb(template, version)}
+            {thumb(template)}
             <div className="pending-item-main">
               <h2>{templateName}</h2>
               <p>{template.name} · {missingVariants.length ? t('pendingPage.images.variantsMissing', { missing: missingVariants.length, count: variants.length }) : t('pendingPage.images.variantsComplete', { count: variants.length })}</p>
@@ -191,14 +165,13 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
               {!templateMissing && missingVariants.length > 0 && <Button type="button" variant="secondary" size="compact" disabled={busy !== null} loading={busy?.key === `apply:${template.name}`} onClick={() => { void applyTemplateToVariants(group) }}>{progress(`apply:${template.name}`) ?? t('pendingPage.images.applyToVariants', { count: missingVariants.length })}</Button>}
               {templateMissing && variantsWithImage.length > 0 && useVariantImageAction(group)}
               {templateMissing && assignButton(template)}
-              {canLoadThumbs && <Button type="button" variant="secondary" size="compact" disabled={busy !== null} loading={busy?.key === `thumbs:${template.name}`} onClick={() => { void loadThumbnails(group) }}><Download className="size-4" aria-hidden="true" />{progress(`thumbs:${template.name}`) ?? t('pendingPage.images.loadThumbnails')}</Button>}
             </div>
           </div>
           {isOpen && <div className="pending-family-variants" role="list" aria-label={t('pendingPage.images.variantsOf', { name: templateName })}>
             {variants.map((variant) => {
               const missing = !variant.image?.trim()
               return <div key={variant.name} className="pending-row pending-image-row pending-variant-row" role="listitem">
-                {thumb(variant, version)}
+                {thumb(variant)}
                 <div className="pending-item-main"><h3>{variant.item_name || variant.name}</h3><p>{variant.name}</p></div>
                 {missing && <div className="pending-item-tags"><Badge tone="warning">{t('pendingPage.images.noImage')}</Badge></div>}
                 <div className="pending-item-actions">

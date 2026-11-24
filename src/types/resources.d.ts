@@ -445,6 +445,15 @@ export default interface Resources {
       "unlockSidebar": "Expandir barra lateral",
       "variants": "Variantes"
     },
+    "pagination": {
+      "label": "Paginación",
+      "next": "Página siguiente",
+      "page": "Página {{page}} de {{totalPages}}",
+      "pageSize": "Resultados por página",
+      "perPage": "{{count}} por página",
+      "previous": "Página anterior",
+      "range": "{{first}}–{{last}} de {{count}}"
+    },
     "pendingPage": {
       "actualStock": "Físico",
       "addBuyingPrice": "Precio de compra",
@@ -521,7 +530,6 @@ export default interface Resources {
         "collapseAll": "Colapsar todo",
         "expandAll": "Expandir todo",
         "hideVariants": "Ocultar variantes de {{name}}",
-        "loadThumbnails": "Cargar miniaturas",
         "noImage": "Sin imagen",
         "partial": "Se guardó en {{done}} de {{total}}. No se pudo en: {{names}}.",
         "refresh": "Actualizar imágenes",
@@ -532,8 +540,6 @@ export default interface Resources {
         "refreshing": "Actualizando imágenes…",
         "showVariants": "Mostrar variantes de {{name}}",
         "templateUpdated": "La plantilla ahora tiene imagen.",
-        "thumbnailsFailed_one": "No se pudo cargar 1 miniatura.",
-        "thumbnailsFailed_other": "No se pudieron cargar {{count}} miniaturas.",
         "useForTemplate": "Usar en plantilla",
         "useForTemplateDescription": "La plantilla {{template}} tomará la imagen de {{variant}}.",
         "useForTemplateTitle": "¿Usar esta imagen en la plantilla?",

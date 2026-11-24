@@ -26,6 +26,21 @@ export async function loadProductImage(client: Client, profileId: string, item: 
   return { url: imageUrl, blob }
 }
 
+const MAX_PARALLEL_LOADS = 4
+let activeLoads = 0
+const waitingLoads: Array<() => void> = []
+
+/** `loadProductImage` with at most four downloads at a time, for thumbnails that load as they scroll into view. */
+export function loadProductImageQueued(client: Client, profileId: string, item: { name: string; image?: string }) {
+  return new Promise<Awaited<ReturnType<typeof loadProductImage>>>((resolve, reject) => {
+    const run = () => {
+      activeLoads += 1
+      loadProductImage(client, profileId, item).then(resolve, reject).finally(() => { activeLoads -= 1; waitingLoads.shift()?.() })
+    }
+    if (activeLoads < MAX_PARALLEL_LOADS) run(); else waitingLoads.push(run)
+  })
+}
+
 /** Copy a cached image to items that now share its URL, so they show it without another download. */
 export async function shareCachedProductImage(profileId: string, sourceItem: string, url: string, targets: string[]) {
   const cached = await readProductImage(profileId, sourceItem)
