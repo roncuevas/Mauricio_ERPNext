@@ -83,11 +83,6 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
   return (
     <main className="connection-screen flex min-h-screen items-center justify-center p-4 sm:p-6">
       <div className="connection-shell w-full">
-        <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
-          <LanguageSelector />
-          <ThemePaletteSelector />
-          <ThemeModeToggle className="connection-theme-toggle" />
-        </div>
         <header className="connection-branding">
           <img className="connection-brand-logo" src="/icon-192.png" alt={t('common.appName')} />
           <div><p className="connection-brand-name">{t('common.appName')}</p><p className="connection-brand-caption">{t('common.appCaption')}</p></div>
@@ -107,6 +102,11 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           </form>
           <p className="connection-security-note"><span aria-hidden="true">●</span> {t('connection.credentialsLocal')}</p>
         </Card>
+        <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
+          <LanguageSelector compact />
+          <ThemePaletteSelector compact />
+          <ThemeModeToggle className="connection-theme-toggle" />
+        </div>
       </div>
     </main>
   )
