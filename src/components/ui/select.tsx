@@ -3,12 +3,14 @@ import { Children, isValidElement, type ComponentProps, type ReactNode } from 'r
 import { cn } from '@/lib/utils'
 import { EntityCombobox } from '../entity-combobox'
 
+/** `searchable` turns the list into a search box; when omitted, lists of more than 8 options get one. */
 type SelectProps = ComponentProps<typeof SelectPrimitive.Root> & { searchable?: boolean }
 type SelectOption = { value: string; label: string }
 type ElementProps = { children?: ReactNode; value?: unknown; placeholder?: string; 'aria-label'?: string }
 
 function textContent(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(textContent).join('')
   if (!isValidElement(node)) return ''
   return textContent((node.props as ElementProps).children)
 }
@@ -27,11 +29,11 @@ function collectOptions(node: ReactNode, options: SelectOption[] = []) {
   return options
 }
 
-export function Select({ searchable = false, children, value, defaultValue, onValueChange, disabled, ...props }: SelectProps) {
+export function Select({ searchable, children, value, defaultValue, onValueChange, disabled, ...props }: SelectProps) {
   const trigger = Children.toArray(children).find((child) => isValidElement(child) && child.type === SelectTrigger)
   const content = Children.toArray(children).find((child) => isValidElement(child) && child.type === SelectContent)
   const options = collectOptions(content && isValidElement(content) ? (content.props as ElementProps).children : null)
-  const shouldSearch = searchable || options.length > 8
+  const shouldSearch = searchable ?? options.length > 8
   if (shouldSearch && options.length > 0) {
     const triggerProps = trigger && isValidElement(trigger) ? trigger.props as ElementProps : {}
     const valuePlaceholder = Children.toArray(triggerProps.children).find((child) => isValidElement(child) && child.type === SelectValue)
