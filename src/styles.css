@@ -437,6 +437,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .connection-help-panel ol { display: grid; gap: .35rem; margin: 0; padding-left: 1.15rem; list-style: decimal; }
 .connection-help-panel p { margin: 0; color: var(--color-muted); font-size: .74rem; }
 .connection-help-panel .connection-link { justify-self: start; min-height: 1.75rem; padding-inline: 0; }
+.connection-password { display: grid; gap: .4rem; }
+.connection-password-hint { display: grid; gap: .15rem; color: var(--color-muted); font-size: .74rem; line-height: 1.4; }
+.connection-password-hint p { display: flex; align-items: center; gap: .3rem; margin: 0; }
+.connection-password-hint .is-ready { color: var(--color-success); font-weight: 650; }
+.connection-password-hint svg { width: .9rem; height: .9rem; }
+.password-input > .control, .password-input > .control:focus, .password-input > .control:focus-visible { border: 0; outline: none; box-shadow: none; background: transparent; }
+.password-input-toggle.button { border-color: transparent; background: transparent; color: var(--color-muted); }
+.password-input-toggle.button:hover:not(:disabled) { border-color: transparent; background: color-mix(in srgb, var(--color-ink) 6%, transparent); color: var(--color-heading); }
+.password-input-toggle svg { width: 1rem; height: 1rem; }
 .connection-alt-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1.25rem; margin-top: .85rem; }
 .connection-link { min-height: 2.25rem; border: 0; border-radius: .4rem; background: transparent; padding: 0 .25rem; color: var(--color-primary); font-size: .8rem; font-weight: 650; cursor: pointer; }
 .connection-link:hover { text-decoration: underline; text-underline-offset: 3px; }

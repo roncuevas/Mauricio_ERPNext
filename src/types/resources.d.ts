@@ -227,7 +227,17 @@ export default interface Resources {
       "linkPlaceholder": "Pega aquí el link completo",
       "localPassword": "Contraseña local",
       "new": "Nueva conexión",
-      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "newLocalPassword": "Nueva contraseña local",
+      "password": {
+        "hide": "Ocultar contraseña",
+        "minimum_one": "Mínimo {{count}} carácter.",
+        "minimum_other": "Mínimo {{count}} caracteres.",
+        "purpose": "Crea una contraseña nueva solo para este navegador; no es la de ERPNext. La pedirá cada vez que entres.",
+        "ready": "Longitud correcta.",
+        "remaining_one": "Falta {{count}} carácter.",
+        "remaining_other": "Faltan {{count}} caracteres.",
+        "show": "Mostrar contraseña"
+      },
       "preferences": "Idioma y apariencia",
       "profileName": "Nombre del perfil",
       "profilePlaceholder": "Mi ERPNext",

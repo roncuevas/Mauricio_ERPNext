@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card, Field, IconButton, Input, Notice, Spinner } from './ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
 import { verifyConnection } from '../lib/erpnext'
+import { PasswordInput } from './password-input'
+import { Check } from 'lucide-react'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
 import { readLastProfileId, removeProfile, writeLastProfileId, writeProfiles } from '../lib/storage'
 import type { ConnectionProfile, StoredProfile } from '../lib/types'
@@ -36,6 +38,18 @@ function ApiKeyHelp({ baseUrl }: { baseUrl: string }) {
       <p>{t('connection.apiHelp.note')}</p>
       {deskUrl && <a className="connection-link" href={deskUrl} target="_blank" rel="noopener noreferrer">{t('connection.apiHelp.open')}</a>}
     </div>}
+  </div>
+}
+
+const MIN_PASSWORD = 8
+
+/** Says the local password is new and only for this browser, and counts down to the minimum length while typing. */
+function PasswordHint({ id, length }: { id: string; length: number }) {
+  const { t } = useTranslation()
+  const ready = length >= MIN_PASSWORD
+  return <div id={id} className="connection-password-hint">
+    <p>{t('connection.password.purpose')}</p>
+    <p className={ready ? 'is-ready' : undefined} aria-live="polite">{ready ? <><Check aria-hidden="true" /> {t('connection.password.ready')}</> : length ? t('connection.password.remaining', { count: MIN_PASSWORD - length }) : t('connection.password.minimum', { count: MIN_PASSWORD })}</p>
   </div>
 }
 
@@ -124,6 +138,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
   }
 
   const savedProfile = mode !== 'new' ? selected : null
+  const passwordHintId = useId()
   const heading = mode === 'unlock' ? t('connection.unlock') : mode === 'share' ? t('connection.share') : t('connection.connect')
   const updateForm = (patch: Partial<ConnectionFormState>) => setForm((current) => ({ ...current, ...patch }))
 
@@ -151,7 +166,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
           <form className="connection-form" onSubmit={submit}>
-            {savedProfile ? <><Field label={t('connection.localPassword')}><Input key={`${savedProfile.id}-${mode}`} autoFocus type="password" autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><ApiKeyHelp baseUrl={form.baseUrl} /><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
+            {savedProfile ? <><Field label={t('connection.localPassword')}><PasswordInput key={`${savedProfile.id}-${mode}`} autoFocus autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><PasswordInput value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><ApiKeyHelp baseUrl={form.baseUrl} /><div className="connection-password"><Field label={t('connection.newLocalPassword')}><PasswordInput value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required autoComplete="new-password" aria-describedby={passwordHintId} /></Field><PasswordHint id={passwordHintId} length={form.passphrase.length} /></div><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
           </form>
           <div className="connection-alt-actions">
             {mode === 'share' && savedProfile && <button type="button" className="connection-link" onClick={() => chooseProfile(savedProfile)}>{t('common.cancel')}</button>}

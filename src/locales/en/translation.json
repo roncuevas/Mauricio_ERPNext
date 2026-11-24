@@ -80,6 +80,8 @@
     "lockConfirmAction": "Yes, lock"
   },
   "connection": {
+    "password": {"show": "Show password", "hide": "Hide password", "purpose": "Create a new password just for this browser; it is not your ERPNext password. You'll enter it each time you sign in.", "minimum_one": "At least {{count}} character.", "minimum_other": "At least {{count}} characters.", "remaining_one": "{{count}} more character.", "remaining_other": "{{count}} more characters.", "ready": "Length looks good."},
+    "newLocalPassword": "New local password",
     "apiHelp": {"toggle": "Where do I get the API Key and API Secret?", "step1": "Sign in to ERPNext and open your avatar menu, top right › My Settings.", "step2": "In the Settings tab, find API Access and select Generate Keys.", "step3": "Copy the API Secret right away: ERPNext shows it only once. The API Key stays visible in the same section.", "note": "Generating keys again stops the previous ones from working. Your user needs permissions on items, prices and stock.", "open": "Open my ERPNext in a new tab"},
     "verify": {"checking": "Checking connection…", "credentials": "ERPNext rejected the API Key or API Secret. Check they are complete and the user has API access.", "unreachable": "No response from {{host}}. Check the URL and that the instance allows CORS from {{origin}}.", "timeout": "{{host}} took too long to respond. Check the URL or try again.", "notErpNext": "{{host}} responded, but not as ERPNext. Check the URL is your instance, without extra paths."},
     "useSaved": "Use a saved profile",
@@ -98,7 +100,6 @@
     "apiKey": "API Key",
     "apiSecret": "API Secret",
     "localPassword": "Local password",
-    "passwordPlaceholder": "At least 8 characters",
     "encryptConnect": "Encrypt and connect",
     "unlockButton": "Unlock",
     "importLink": "Import from link",
