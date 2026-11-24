@@ -1,5 +1,7 @@
 import { ErpNextError, type createErpNextClient } from './erpnext'
 import { listProductImages, readProductImage, writeProductImage } from './product-image-cache'
+import { readItemCatalog, writeItemCatalog } from './item-cache'
+import { readVariantCatalog, writeVariantCatalog } from './variant-cache'
 
 type Client = ReturnType<typeof createErpNextClient>
 
@@ -31,7 +33,8 @@ export async function shareCachedProductImage(profileId: string, sourceItem: str
   await Promise.all(targets.map((itemName) => writeProductImage({ profileId, itemName, url, blob: cached.blob })))
 }
 
-export async function downloadMissingProductImages(client: Client, profileId: string, onProgress: (completed: number, total: number) => void) {
+/** The image field of every Item, read in pages of 500. */
+async function listItemImages(client: Client) {
   const records: Array<{ name: string; image?: string }> = []
   let start = 0
   const pageLength = 500
@@ -41,6 +44,33 @@ export async function downloadMissingProductImages(client: Client, profileId: st
     if (page.data.length < pageLength) break
     start += page.data.length
   }
+  return records
+}
+
+/**
+ * Updates only the image field of the cached Items and variants from ERPNext, without downloading
+ * the rest of the catalog or any image file. Returns how many cached items changed.
+ */
+export async function refreshItemImages(client: Client, profileId: string) {
+  const images = new Map((await listItemImages(client)).map((record) => [record.name, record.image?.trim() || '']))
+  const [variants, items] = await Promise.all([readVariantCatalog(profileId), readItemCatalog(profileId)])
+  const changed = new Set<string>()
+  const withImages = <T extends { name: string; image?: string }>(list: T[]) => list.map((item) => {
+    if (!images.has(item.name)) return item
+    const image = images.get(item.name) || undefined
+    if ((item.image?.trim() || undefined) === image) return item
+    changed.add(item.name)
+    return { ...item, image }
+  })
+  await Promise.all([
+    variants && writeVariantCatalog({ ...variants, imageFieldLoaded: true, items: withImages(variants.items) }),
+    items && writeItemCatalog({ ...items, imageFieldLoaded: true, items: withImages(items.items) }),
+  ])
+  return { changed: changed.size }
+}
+
+export async function downloadMissingProductImages(client: Client, profileId: string, onProgress: (completed: number, total: number) => void) {
+  const records = await listItemImages(client)
 
   const cached = new Map((await listProductImages(profileId)).map((record) => [record.itemName, record.url]))
   const pending = records.filter((record) => record.image && !client.isExternalImageUrl(record.image) && cached.get(record.name) !== record.image)

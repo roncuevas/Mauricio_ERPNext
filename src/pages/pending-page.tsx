@@ -22,6 +22,7 @@ import { rankProductSearch } from '../lib/search'
 import { patchItemCatalog } from '../lib/item-cache'
 import { patchVariantCatalog } from '../lib/variant-cache'
 import { readStockCache } from '../lib/stock-cache'
+import { refreshItemImages } from '../lib/product-image-sync'
 import type { ItemCatalogCache, ItemPrice, StockCache, VariantCatalogCache, VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
@@ -88,6 +89,19 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
       ])
       setRefreshMessage('')
     },
+  })
+  // Rereads only the image field of the Items, so the tab reflects images assigned elsewhere without a full catalog refresh.
+  const imagesRefresh = useMutation({
+    mutationFn: () => refreshItemImages(client, profileId),
+    onMutate: () => setImageSaveMessage(''),
+    onSuccess: async ({ changed }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.catalog.variant(profileId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.catalog.item(profileId) }),
+      ])
+      setImageSaveMessage(t('pendingPage.images.refreshed', { count: changed }))
+    },
+    onError: (error) => setImageSaveMessage(error instanceof Error ? error.message : t('pendingPage.images.refreshError')),
   })
   const stockRefresh = useMutation({
     mutationFn: async () => {
@@ -213,6 +227,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
           </div>
           <div className="pending-toolbar-actions">
             {activeTab === 'stock' && stock.data && leafWarehouses.length > 1 && <Select value={stockWarehouse || ALL_WAREHOUSES} onValueChange={(value) => updateParams({ warehouse: value === ALL_WAREHOUSES ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.warehouse')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value={ALL_WAREHOUSES}>{t('pendingPage.allWarehouses')}</SelectItem>{leafWarehouses.map((candidate) => <SelectItem key={candidate.name} value={candidate.name}>{candidate.warehouse_name || candidate.name}</SelectItem>)}</SelectContent></Select>}
+            {activeTab === 'images' && variants.data && <Button type="button" variant="secondary" onClick={() => imagesRefresh.mutate()} disabled={imagesRefresh.isPending || refresh.isPending}><RefreshCw className={`mr-2 size-4${imagesRefresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{imagesRefresh.isPending ? t('pendingPage.images.refreshing') : t('pendingPage.images.refresh')}</Button>}
             {activeTab === 'stock' && <Button type="button" variant="secondary" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}><RefreshCw className={`mr-2 size-4${stockRefresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button>}
             {activeTab === 'images' && imagesReady && <Select value={imageView} onValueChange={(value) => updateParams({ imageView: value === 'tree' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.imageView.label')}><SelectValue /></SelectTrigger><SelectContent>{MISSING_IMAGE_VIEWS.map((view) => <SelectItem key={view} value={view}>{t(`pendingPage.imageView.${view}`, { count: imageViewCounts[view] })}</SelectItem>)}</SelectContent></Select>}
             {activeTab === 'prices' && <Select value={priceFilter || 'all'} onValueChange={(value) => updateParams({ price: value === 'all' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.priceFilter.label')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('pendingPage.priceFilter.all')}</SelectItem><SelectItem value="buying">{t('pendingPage.priceFilter.buying', { count: missingPriceCounts.buying })}</SelectItem><SelectItem value="selling">{t('pendingPage.priceFilter.selling', { count: missingPriceCounts.selling })}</SelectItem></SelectContent></Select>}
