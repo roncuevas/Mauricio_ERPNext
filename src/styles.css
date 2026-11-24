@@ -27,8 +27,6 @@
 .pending-toolbar > .pending-toolbar-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .5rem; }
 .pending-toolbar .pending-select { width: 13rem; flex: 0 0 auto; }
 .pending-toolbar strong small { color: var(--color-muted); font-size: .8rem; font-weight: 500; }
-/* The global `button { font: inherit }` rule outranks the layered compact size; keep row buttons and links the same size. */
-.pending-item-actions .button-compact { font-size: .75rem; }
 .pending-menu { min-width: 17rem; }
 .pending-menu-option { display: grid; gap: .1rem; }
 .pending-menu-option > span { display: inline-flex; align-items: center; gap: .35rem; color: var(--color-heading); font-weight: 600; }
@@ -150,7 +148,8 @@
 * { box-sizing: border-box; }
 html, body { overflow-x: hidden; }
 body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--app-font-family); }
-button, input, select, textarea { font: inherit; font-family: var(--app-font-family); }
+/* Fields keep 16px so iOS does not zoom on focus. Buttons inherit their font in Tailwind's base layer, so the button size classes can set it. */
+input, select, textarea { font: inherit; font-family: var(--app-font-family); }
 button, .button, [role="button"] { letter-spacing: -.01em; }
 .button, button { font-family: var(--app-font-family); font-weight: 650; }
 button { cursor: pointer; }
