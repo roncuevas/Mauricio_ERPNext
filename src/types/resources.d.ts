@@ -538,6 +538,14 @@ export default interface Resources {
       "imageFileHint": "Selecciona una imagen desde tu dispositivo.",
       "imageFileInvalid": "Selecciona un archivo de imagen válido.",
       "imageFileSize": "{{size}} KB",
+      "imageInheritance": {
+        "all": "Todas",
+        "empty": "Nada que heredar en esta dirección",
+        "emptyDescription": "Ninguna familia tiene una imagen que se pueda aplicar así. Cambia el filtro para ver todas las imágenes faltantes.",
+        "label": "Imagen que se puede heredar",
+        "toTemplate": "Para plantilla ({{count}})",
+        "toVariants": "Para variantes ({{count}})"
+      },
       "imageLink": "Enlace de ERPNext",
       "imageLinkHint": "Pega una ruta /files/... de este ERPNext o un enlace HTTPS público. Los enlaces externos necesitan internet y no se guardan en la caché local.",
       "imageLinkInvalid": "Usa una ruta /files/... de este ERPNext o un enlace público HTTPS válido.",

@@ -14,7 +14,7 @@ import { CatalogErrorNotice } from '../components/catalog-guidance'
 import { createErpNextClient } from '../lib/erpnext'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { queryKeys } from '../lib/query-keys'
-import { findIncompleteCatalogItems, countMissingImages, countPending, PENDING_CATEGORIES, type PendingCategory, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
+import { findIncompleteCatalogItems, countMissingImages, countPending, PENDING_CATEGORIES, type PendingCategory, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, filterByInheritance, IMAGE_INHERITANCES, type ImageInheritance, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
 import { PENDING_PAGE_SIZES, readPendingPreferences, writePendingPreferences, type PendingPageSize } from '../lib/pending-preferences'
 import { paginate } from '../lib/pagination'
 import { ListPagination } from '../components/list-pagination'
@@ -159,15 +159,19 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const filteredStockShortages = rankProductSearch(stockShortages, search, ({ item }) => searchableItem(item))
   const incompleteItems = useMemo(() => findIncompleteCatalogItems(items ?? []), [items])
   const filteredIncompleteItems = rankProductSearch(incompleteItems, search, ({ item }) => searchableItem(item))
-  const imageGroups = useMemo(() => findMissingImageGroups(items ?? []), [items])
+  const allImageGroups = useMemo(() => findMissingImageGroups(items ?? []), [items])
+  const inheritanceParam = searchParams.get('inherit') as ImageInheritance | null
+  const inheritance = inheritanceParam && IMAGE_INHERITANCES.includes(inheritanceParam) ? inheritanceParam : undefined
+  const inheritanceCounts = useMemo(() => ({ toVariants: countMissingImages(filterByInheritance(allImageGroups, 'toVariants'), 'toVariants'), toTemplate: countMissingImages(filterByInheritance(allImageGroups, 'toTemplate'), 'toTemplate') }), [allImageGroups])
+  const imageGroups = useMemo(() => inheritance ? filterByInheritance(allImageGroups, inheritance) : allImageGroups, [allImageGroups, inheritance])
   // A family matches when its template or any variant matches.
   const filteredImageGroups = search ? imageGroups.filter((group) => rankProductSearch(group.kind === 'item' ? [group.item] : [group.template, ...group.variants], search, searchableItem).length > 0) : imageGroups
   const imageViewParam = searchParams.get('imageView') as MissingImageView | null
   const imageView: MissingImageView = imageViewParam && MISSING_IMAGE_VIEWS.includes(imageViewParam) ? imageViewParam : 'tree'
   // Flat views match each item by itself, so a variant search does not bring in its siblings.
-  const imageRows = useMemo(() => imageView === 'tree' ? [] : missingImageRows(imageGroups, imageView), [imageGroups, imageView])
+  const imageRows = useMemo(() => imageView === 'tree' ? [] : missingImageRows(imageGroups, imageView, inheritance), [imageGroups, imageView, inheritance])
   const filteredImageRows = rankProductSearch(imageRows, search, ({ item }) => searchableItem(item))
-  const imageViewCounts = useMemo(() => ({ tree: countMissingImages(imageGroups), list: countMissingImages(imageGroups), templates: missingImageRows(imageGroups, 'templates').length, variants: missingImageRows(imageGroups, 'variants').length }), [imageGroups])
+  const imageViewCounts = useMemo(() => ({ tree: countMissingImages(imageGroups, inheritance), list: countMissingImages(imageGroups, inheritance), templates: missingImageRows(imageGroups, 'templates', inheritance).length, variants: missingImageRows(imageGroups, 'variants', inheritance).length }), [imageGroups, inheritance])
   const imagesReady = variants.data?.imageFieldLoaded === true
   const notReady = variants.isPending || prices.isPending
   const dateLabel = (date?: string) => date ? new Date(date).toLocaleString(i18n.language) : t('pendingPage.notUpdated')
@@ -175,7 +179,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const formatQuantity = (quantity: number) => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(quantity)
   const isUrgentPrice = (row: PendingItem) => row.missingPrices.length > 0
   const isUrgentData = (row: IncompleteCatalogItem) => row.missingFields.length > 0
-  const tabCounts = countPending({ pending, lowMargins, imageGroups: imagesReady ? imageGroups : null, stockShortages: stock.data ? stockShortages : null, incompleteItems })
+  const tabCounts = countPending({ pending, lowMargins, imageGroups: imagesReady ? allImageGroups : null, stockShortages: stock.data ? stockShortages : null, incompleteItems })
   const visible = { prices: filteredPrices, templates: filteredTemplates, margin: filteredMargins, images: imagesReady ? (imageView === 'tree' ? filteredImageGroups : filteredImageRows) : [], stock: filteredStockShortages, data: filteredIncompleteItems }[activeTab]
   const paged = paginate<unknown>(visible, requestedPage, pageSize)
   const pageOf = <T,>(rows: T[]) => paginate(rows, requestedPage, pageSize).rows
@@ -189,7 +193,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
     writePendingPreferences(profileId, { ...readPendingPreferences(profileId), pageSize: next })
     updateParams({ page: '' })
   }
-  const activeCount = activeTab === 'prices' ? filteredPrices.filter(isUrgentPrice).length : activeTab === 'data' ? filteredIncompleteItems.filter(isUrgentData).length : activeTab === 'images' ? (imageView === 'tree' ? countMissingImages(filteredImageGroups) : filteredImageRows.length) : visible.length
+  const activeCount = activeTab === 'prices' ? filteredPrices.filter(isUrgentPrice).length : activeTab === 'data' ? filteredIncompleteItems.filter(isUrgentData).length : activeTab === 'images' ? (imageView === 'tree' ? countMissingImages(filteredImageGroups, inheritance) : filteredImageRows.length) : visible.length
   const lowPriorityCount = activeTab === 'images' ? 0 : visible.length - activeCount
 
   async function updateImageCache(updated: VariantItem[], imageUrl: string) {
@@ -208,7 +212,11 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   }
 
   const priceListFor = (kind: PendingPriceKind) => kind === 'buying' ? preferences.buyingPriceList : preferences.sellingPriceList
-  const empty = (key: 'prices' | 'templates' | 'margin' | 'images' | 'stock' | 'data', linkLabel?: string) => <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t(`pendingPage.${key}Clear`)} description={search ? t('pendingPage.noSearchDescription') : t(`pendingPage.${key}ClearDescription`)} linkLabel={linkLabel} />
+  // An inheritance filter with nothing to fill does not mean every item has an image.
+  const inheritanceEmpty = !search && Boolean(inheritance)
+  const empty = (key: 'prices' | 'templates' | 'margin' | 'images' | 'stock' | 'data', linkLabel?: string) => key === 'images' && inheritanceEmpty
+    ? <PendingEmpty search={search} title={t('pendingPage.imageInheritance.empty')} description={t('pendingPage.imageInheritance.emptyDescription')} linkLabel={linkLabel} />
+    : <PendingEmpty search={search} title={search ? t('pendingPage.noSearchResults') : t(`pendingPage.${key}Clear`)} description={search ? t('pendingPage.noSearchDescription') : t(`pendingPage.${key}ClearDescription`)} linkLabel={linkLabel} />
   const list = <T,>(rows: T[], getKey: (row: T) => string, render: (row: T) => ReactNode) => <div role="list"><VirtualizedCollection className="pending-list" items={rows} getKey={getKey} estimateSize={72} renderItem={render} /></div>
 
   return <section className="pending-workspace">
@@ -240,6 +248,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
             {activeTab === 'images' && variants.data && <Button type="button" variant="secondary" onClick={() => imagesRefresh.mutate()} disabled={imagesRefresh.isPending || refresh.isPending}><RefreshCw className={`mr-2 size-4${imagesRefresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{imagesRefresh.isPending ? t('pendingPage.images.refreshing') : t('pendingPage.images.refresh')}</Button>}
             {activeTab === 'stock' && <Button type="button" variant="secondary" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}><RefreshCw className={`mr-2 size-4${stockRefresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button>}
             {activeTab === 'images' && imagesReady && <Select value={imageView} onValueChange={(value) => updateParams({ imageView: value === 'tree' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.imageView.label')}><SelectValue /></SelectTrigger><SelectContent>{MISSING_IMAGE_VIEWS.map((view) => <SelectItem key={view} value={view}>{t(`pendingPage.imageView.${view}`, { count: imageViewCounts[view] })}</SelectItem>)}</SelectContent></Select>}
+            {activeTab === 'images' && imagesReady && <Select value={inheritance ?? 'all'} onValueChange={(value) => updateParams({ inherit: value === 'all' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.imageInheritance.label')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('pendingPage.imageInheritance.all')}</SelectItem>{IMAGE_INHERITANCES.map((option) => <SelectItem key={option} value={option}>{t(`pendingPage.imageInheritance.${option}`, { count: inheritanceCounts[option] })}</SelectItem>)}</SelectContent></Select>}
             {activeTab === 'prices' && <Select value={priceFilter || 'all'} onValueChange={(value) => updateParams({ price: value === 'all' ? '' : value })}><SelectTrigger className="pending-select" aria-label={t('pendingPage.priceFilter.label')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('pendingPage.priceFilter.all')}</SelectItem><SelectItem value="buying">{t('pendingPage.priceFilter.buying', { count: missingPriceCounts.buying })}</SelectItem><SelectItem value="selling">{t('pendingPage.priceFilter.selling', { count: missingPriceCounts.selling })}</SelectItem></SelectContent></Select>}
             <PendingSearchForm key={activeTab} initialValue={search} onSearch={(value) => updateParams({ q: value })} />
           </div>

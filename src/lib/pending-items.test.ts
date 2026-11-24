@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findIncompleteCatalogItems, findMissingImageGroups, countMissingImages, missingImageRows, findPendingItems, findStockShortages, summarizePending } from './pending-items'
+import { findIncompleteCatalogItems, findMissingImageGroups, countMissingImages, missingImageRows, filterByInheritance, findPendingItems, findStockShortages, summarizePending } from './pending-items'
 import type { ItemPrice, StockBin, VariantItem } from './types'
 
 const item = (name: string, fields: Partial<VariantItem> = {}): VariantItem => ({ name, ...fields })
@@ -120,5 +120,31 @@ describe('summarizePending', () => {
 
   it('leaves images unknown until the catalog tracks them', () => {
     expect(summarizePending({ items: [item('Pinzas', { image: '' })], prices: [], stock: { bins: [], warehouses: [] }, imagesReady: false, preferences }).images).toBeNull()
+  })
+})
+
+describe('image inheritance', () => {
+  const entry = (name: string, extra: Partial<VariantItem> = {}) => ({ name, item_name: name, disabled: 0, image: '/files/x.png', ...extra }) as VariantItem
+  const items = [
+    entry('Playera', { has_variants: 1 }), entry('Playera-R', { variant_of: 'Playera', image: '' }), entry('Playera-A', { variant_of: 'Playera', image: '' }),
+    entry('Gorra', { has_variants: 1, image: '' }), entry('Gorra-R', { variant_of: 'Gorra' }), entry('Gorra-A', { variant_of: 'Gorra', image: '' }),
+    entry('Bolsa', { has_variants: 1, image: '' }), entry('Bolsa-R', { variant_of: 'Bolsa', image: '' }),
+    entry('Pinzas', { image: '' }),
+  ]
+  const groups = findMissingImageGroups(items)
+  const names = (list: ReturnType<typeof findMissingImageGroups>) => list.map((group) => group.kind === 'family' ? group.template.name : group.item.name)
+
+  it('keeps the families whose template image can fill their variants', () => {
+    const fillable = filterByInheritance(groups, 'toVariants')
+    expect(names(fillable)).toEqual(['Playera'])
+    expect(countMissingImages(fillable, 'toVariants')).toBe(2)
+    expect(missingImageRows(fillable, 'list', 'toVariants').map((row) => row.item.name)).toEqual(['Playera-A', 'Playera-R'])
+  })
+
+  it('keeps the families whose variant image can fill the template', () => {
+    const fillable = filterByInheritance(groups, 'toTemplate')
+    expect(names(fillable)).toEqual(['Gorra'])
+    expect(countMissingImages(fillable, 'toTemplate')).toBe(1)
+    expect(missingImageRows(fillable, 'list', 'toTemplate').map((row) => row.item.name)).toEqual(['Gorra'])
   })
 })

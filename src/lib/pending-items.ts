@@ -109,20 +109,42 @@ type MissingImageFamily = Extract<MissingImageGroup, { kind: 'family' }>
 /** One item without an image, for the flat views; `family` is set for templates and variants. */
 export type MissingImageRow = { item: VariantItem; role: 'item' | 'template' | 'variant'; family?: MissingImageFamily }
 
-/** Flattens the groups into the items that lack an image, keeping only templates or variants when asked. */
-export function missingImageRows(groups: MissingImageGroup[], view: Exclude<MissingImageView, 'tree'> = 'list'): MissingImageRow[] {
+/**
+ * Gaps a family can fill from an image it already has: `toVariants` when the template has one and variants lack it,
+ * `toTemplate` when the template lacks one and a variant has it.
+ */
+export type ImageInheritance = 'toVariants' | 'toTemplate'
+export const IMAGE_INHERITANCES: ImageInheritance[] = ['toVariants', 'toTemplate']
+
+/** Keeps the families that can fill their gaps in that direction; loose products never can. */
+export function filterByInheritance(groups: MissingImageGroup[], inheritance: ImageInheritance): MissingImageGroup[] {
+  return groups.filter((group) => group.kind === 'family' && (inheritance === 'toVariants'
+    ? !group.templateMissing && group.missingVariants.length > 0
+    : group.templateMissing && group.variantsWithImage.length > 0))
+}
+
+/**
+ * Flattens the groups into the items that lack an image, keeping only templates or variants when asked. With an
+ * `inheritance` it keeps only the items that direction fills: variants for `toVariants`, templates for `toTemplate`.
+ */
+export function missingImageRows(groups: MissingImageGroup[], view: Exclude<MissingImageView, 'tree'> = 'list', inheritance?: ImageInheritance): MissingImageRow[] {
   const rows: MissingImageRow[] = []
   for (const group of groups) {
-    if (group.kind === 'item') { if (view === 'list') rows.push({ item: group.item, role: 'item' }); continue }
-    if (group.templateMissing && view !== 'variants') rows.push({ item: group.template, role: 'template', family: group })
-    if (view !== 'templates') rows.push(...group.missingVariants.map((item) => ({ item, role: 'variant' as const, family: group })))
+    if (group.kind === 'item') { if (view === 'list' && !inheritance) rows.push({ item: group.item, role: 'item' }); continue }
+    if (group.templateMissing && view !== 'variants' && inheritance !== 'toVariants') rows.push({ item: group.template, role: 'template', family: group })
+    if (view !== 'templates' && inheritance !== 'toTemplate') rows.push(...group.missingVariants.map((item) => ({ item, role: 'variant' as const, family: group })))
   }
   return rows
 }
 
-
-export function countMissingImages(groups: MissingImageGroup[]) {
-  return groups.reduce((total, group) => total + (group.kind === 'item' ? 1 : group.missingVariants.length + Number(group.templateMissing)), 0)
+/** Items without an image; with an `inheritance`, only those that direction would fill. */
+export function countMissingImages(groups: MissingImageGroup[], inheritance?: ImageInheritance) {
+  return groups.reduce((total, group) => {
+    if (group.kind === 'item') return total + (inheritance ? 0 : 1)
+    if (inheritance === 'toTemplate') return total + Number(group.templateMissing)
+    if (inheritance === 'toVariants') return total + group.missingVariants.length
+    return total + group.missingVariants.length + Number(group.templateMissing)
+  }, 0)
 }
 
 function activePrice(price: ItemPrice, today: string) {
