@@ -26,14 +26,14 @@ describe('PendingPage', () => {
     queryClient.setQueryData(queryKeys.catalog.variant('profile'), { updatedAt: '2026-11-23T00:00:00Z', imageFieldLoaded: true, items: [{ name: 'FOOD-1', item_name: 'Croquetas', item_group: 'Food', stock_uom: 'Nos', is_stock_item: 1 }] })
     queryClient.setQueryData(queryKeys.catalog.price('profile'), { updatedAt: '2026-11-23T00:00:00Z', prices: [] })
     queryClient.setQueryData(queryKeys.catalog.item('profile'), { items: [] })
-    queryClient.setQueryData(queryKeys.catalog.stock('profile'), { updatedAt: '2026-11-23T00:00:00Z', companies: [], warehouses: [{ name: 'Tienda' }], bins: [{ item_code: 'FOOD-1', warehouse: 'Tienda', actual_qty: 0 }] })
+    queryClient.setQueryData(queryKeys.catalog.stock('profile'), { updatedAt: '2026-11-23T00:00:00Z', companies: [], warehouses: [{ name: 'Tienda' }, { name: 'Bodega' }], bins: [{ item_code: 'FOOD-1', warehouse: 'Tienda', actual_qty: 0 }, { item_code: 'FOOD-1', warehouse: 'Bodega', actual_qty: 7 }] })
     container = document.createElement('div')
     document.body.append(container)
     root = createRoot(container)
     await act(async () => {
       root.render(createElement(QueryClientProvider, { client: queryClient },
         createElement(MemoryRouter, { initialEntries: [url] },
-          createElement(Routes, null, createElement(Route, { path: '/pendientes', element: createElement(PendingPage, { client: {} as never, profileId: 'profile' }) })))))
+          createElement(Routes, null, createElement(Route, { path: '/pendientes', element: createElement(PendingPage, { client: { newDocumentUrl: (doctype: string, values: Record<string, string> = {}) => `https://erp.test/app/${doctype}/new?${new URLSearchParams(values)}` } as never, profileId: 'profile' }) })))))
     })
   }
 
@@ -45,7 +45,7 @@ describe('PendingPage', () => {
   })
 
   it('restores the tab and search from the URL', async () => {
-    await renderAt('/pendientes?tab=stock&q=Croq')
+    await renderAt('/pendientes?tab=stock&q=Croq&warehouse=Tienda')
     expect(container.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toContain('pendingPage.tabs.stock')
     expect(container.querySelector<HTMLInputElement>('input[aria-label="pendingPage.search"]')?.value).toBe('Croq')
     expect(container.textContent).toContain('pendingPage.stockStatus.out')
@@ -56,6 +56,24 @@ describe('PendingPage', () => {
     const links = Array.from(container.querySelectorAll<HTMLAnchorElement>('a[href^="/prices/manage/"]'))
     expect(links.map((link) => new URL(link.href, 'http://x').searchParams.get('kind'))).toEqual(['selling'])
     expect(container.querySelector('[aria-label="pendingPage.priceFilter.label"]')?.textContent).toContain('pendingPage.priceFilter.selling')
+  })
+
+  it('offers specific actions to resolve a stock shortage in the selected warehouse', async () => {
+    await renderAt('/pendientes?tab=stock&warehouse=Tienda')
+    const trigger = container.querySelector<HTMLButtonElement>('button[aria-label="pendingPage.resolveFor"]')
+    expect(trigger).not.toBeNull()
+    await act(async () => {
+      trigger!.focus()
+      trigger!.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }))
+    })
+    const hrefs = Array.from(document.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]')).map((link) => link.getAttribute('href'))
+    expect(hrefs).toEqual([
+      '/stock/reconciliation?item=FOOD-1&itemWarehouse=Tienda',
+      '/stock/receipt?item=FOOD-1&warehouse=Tienda',
+      'https://erp.test/app/Stock Entry/new?stock_entry_type=Material+Transfer&from_warehouse=Bodega&to_warehouse=Tienda',
+      'https://erp.test/app/Material Request/new?material_request_type=Purchase&set_warehouse=Tienda',
+      '/stock?search=FOOD-1',
+    ])
   })
 })
 

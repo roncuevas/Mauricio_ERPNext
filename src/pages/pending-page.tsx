@@ -2,10 +2,11 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CircleAlert, ImageOff, ImagePlus, RefreshCw } from 'lucide-react'
+import { ChevronDown, CircleAlert, ExternalLink, ImageOff, ImagePlus, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription, Badge, Button, ButtonLink, Input, PageHeader, SearchButton, Spinner } from '../components/ui'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu'
 import { PendingImageEditor } from '../components/pending-image-editor'
 import { CatalogErrorNotice } from '../components/catalog-guidance'
 import { createErpNextClient } from '../lib/erpnext'
@@ -120,6 +121,19 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const filteredMargins = rankProductSearch(lowMargins, search, ({ item }) => searchableItem(item))
   const leafWarehouses = useMemo(() => (stock.data?.warehouses ?? []).filter((candidate) => !candidate.disabled && !candidate.is_group), [stock.data?.warehouses])
   const stockWarehouse = leafWarehouses.some((candidate) => candidate.name === warehouse) ? warehouse : ''
+  // For a shortage in one warehouse, the active warehouse holding the most stock of that item is the transfer source.
+  const transferSources = useMemo(() => {
+    const sources = new Map<string, { warehouse: string; qty: number }>()
+    if (!stockWarehouse) return sources
+    const active = new Set(leafWarehouses.map((candidate) => candidate.name))
+    for (const bin of stock.data?.bins ?? []) {
+      const qty = Number(bin.actual_qty ?? 0)
+      if (bin.warehouse === stockWarehouse || !active.has(bin.warehouse) || qty <= 0) continue
+      if (qty > (sources.get(bin.item_code)?.qty ?? 0)) sources.set(bin.item_code, { warehouse: bin.warehouse, qty })
+    }
+    return sources
+  }, [leafWarehouses, stock.data?.bins, stockWarehouse])
+  const warehouseLabel = (name: string) => leafWarehouses.find((candidate) => candidate.name === name)?.warehouse_name || name
   const stockShortages = useMemo(() => findStockShortages(items ?? [], stock.data?.bins ?? [], stock.data?.warehouses ?? [], stockWarehouse || undefined), [stock.data?.bins, stock.data?.warehouses, stockWarehouse, items])
   const filteredStockShortages = rankProductSearch(stockShortages, search, ({ item }) => searchableItem(item))
   const incompleteItems = useMemo(() => findIncompleteCatalogItems(items ?? []), [items])
@@ -225,13 +239,35 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
             <Button type="button" variant="secondary" size="compact" onClick={() => { setImageSaveMessage(''); setImageItem(item) }}><ImagePlus className="size-4" aria-hidden="true" />{t('pendingPage.assignImage')}</Button>
           </PendingRow>
         }) : empty('images')}</TabsContent>
-        <TabsContent value="stock">{stockRefreshMessage && <p className="pending-refresh-message" role="status">{stockRefreshMessage}</p>}{stockRefresh.error && <CatalogErrorNotice error={stockRefresh.error} />}{!stock.data ? <div className="pending-empty-state"><CircleAlert aria-hidden="true" /><div><h2>{t('pendingPage.stockCacheMissing')}</h2><p>{t('pendingPage.stockCacheMissingDescription')}</p></div><Button type="button" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}>{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button></div> : filteredStockShortages.length ? list(filteredStockShortages, (row) => row.item.name, ({ item, actualQty, projectedQty, safetyStock, status }) => <PendingRow item={item} meta={item.stock_uom} tags={<><Badge tone={status === 'out' ? 'danger' : 'warning'}>{t(`pendingPage.stockStatus.${status}`)}</Badge><span className="pending-figure">{t('pendingPage.actualStock')} {formatQuantity(actualQty)}</span><span className="pending-figure">{t('pendingPage.projectedStock')} {formatQuantity(projectedQty)}</span>{status === 'low' && <span className="pending-figure">{t('pendingPage.safetyStock')} {formatQuantity(safetyStock)}</span>}</>}><ButtonLink variant="secondary" size="compact" to={`/stock?search=${encodeURIComponent(item.name)}`}>{t('pendingPage.viewStock')}</ButtonLink></PendingRow>) : empty('stock')}</TabsContent>
+        <TabsContent value="stock">{stockRefreshMessage && <p className="pending-refresh-message" role="status">{stockRefreshMessage}</p>}{stockRefresh.error && <CatalogErrorNotice error={stockRefresh.error} />}{!stock.data ? <div className="pending-empty-state"><CircleAlert aria-hidden="true" /><div><h2>{t('pendingPage.stockCacheMissing')}</h2><p>{t('pendingPage.stockCacheMissingDescription')}</p></div><Button type="button" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}>{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button></div> : filteredStockShortages.length ? list(filteredStockShortages, (row) => row.item.name, ({ item, actualQty, projectedQty, safetyStock, status }) => <PendingRow item={item} meta={item.stock_uom} tags={<><Badge tone={status === 'out' ? 'danger' : 'warning'}>{t(`pendingPage.stockStatus.${status}`)}</Badge><span className="pending-figure">{t('pendingPage.actualStock')} {formatQuantity(actualQty)}</span><span className="pending-figure">{t('pendingPage.projectedStock')} {formatQuantity(projectedQty)}</span>{status === 'low' && <span className="pending-figure">{t('pendingPage.safetyStock')} {formatQuantity(safetyStock)}</span>}</>}><StockResolveMenu name={item.item_name || item.name} links={{
+          reconcile: `/stock/reconciliation?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { itemWarehouse: stockWarehouse } : {}) })}`,
+          receive: `/stock/receipt?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { warehouse: stockWarehouse } : {}) })}`,
+          stock: `/stock?search=${encodeURIComponent(item.name)}`,
+          transfer: transferSources.get(item.name) ? { url: client.newDocumentUrl('Stock Entry', { stock_entry_type: 'Material Transfer', from_warehouse: transferSources.get(item.name)!.warehouse, to_warehouse: stockWarehouse }), from: warehouseLabel(transferSources.get(item.name)!.warehouse), qty: formatQuantity(transferSources.get(item.name)!.qty) } : undefined,
+          request: client.newDocumentUrl('Material Request', { material_request_type: 'Purchase', set_warehouse: stockWarehouse }),
+        }} /></PendingRow>) : empty('stock')}</TabsContent>
         <TabsContent value="data">{filteredIncompleteItems.length ? list(filteredIncompleteItems, (row) => row.item.name, ({ item, missingFields, optionalFields }) => <PendingRow item={item} tags={<>{missingFields.map((field) => <Badge key={field} tone="warning">{t(`pendingPage.fields.${field}`)}</Badge>)}{optionalFields.map((field) => <Badge key={field} tone="neutral">{t(`pendingPage.fields.${field}`)}</Badge>)}</>}><ButtonLink variant="secondary" size="compact" to={`/items/${encodeURIComponent(item.name)}`}>{t('pendingPage.completeItem')}</ButtonLink></PendingRow>) : empty('data')}</TabsContent>
       </Tabs>
       <div className="sr-only" aria-live="polite">{t('pendingPage.count', { count: activeCount })}</div>
     </>}
     <PendingImageEditor key={imageItem?.name ?? 'closed'} client={client} item={imageItem} onClose={() => setImageItem(null)} onSaved={saveItemImage} />
   </section>
+}
+
+function StockResolveMenu({ name, links }: { name: string; links: { reconcile: string; receive: string; stock: string; transfer?: { url: string; from: string; qty: string }; request: string } }) {
+  const { t } = useTranslation()
+  const option = (title: string, hint: string, external = false) => <span className="pending-menu-option"><span>{title}{external && <ExternalLink aria-hidden="true" />}</span><small>{hint}</small></span>
+  return <DropdownMenu>
+    <DropdownMenuTrigger asChild><Button type="button" variant="secondary" size="compact" aria-label={t('pendingPage.resolveFor', { name })}>{t('pendingPage.resolve')}<ChevronDown className="size-4" aria-hidden="true" /></Button></DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="pending-menu">
+      <DropdownMenuItem asChild><Link to={links.reconcile}>{option(t('pendingPage.resolveActions.reconcile'), t('pendingPage.resolveActions.reconcileHint'))}</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link to={links.receive}>{option(t('pendingPage.resolveActions.receive'), t('pendingPage.resolveActions.receiveHint'))}</Link></DropdownMenuItem>
+      {links.transfer && <DropdownMenuItem asChild><a href={links.transfer.url} target="_blank" rel="noreferrer">{option(t('pendingPage.resolveActions.transfer', { warehouse: links.transfer.from }), t('pendingPage.resolveActions.transferHint', { qty: links.transfer.qty }), true)}</a></DropdownMenuItem>}
+      <DropdownMenuItem asChild><a href={links.request} target="_blank" rel="noreferrer">{option(t('pendingPage.resolveActions.request'), t('pendingPage.resolveActions.requestHint'), true)}</a></DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem asChild><Link to={links.stock}>{t('pendingPage.viewStock')}</Link></DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
 }
 
 function PendingRow({ item, meta, tags, children }: { item: VariantItem; meta?: string; tags?: ReactNode; children: ReactNode }) {

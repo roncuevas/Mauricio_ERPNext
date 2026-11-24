@@ -535,6 +535,18 @@ export default interface Resources {
       "refreshComplete": "Catálogos actualizados.",
       "refreshProgress": "Actualizando catálogo {{current}} de {{total}}…",
       "refreshing": "Actualizando…",
+      "resolve": "Resolver",
+      "resolveActions": {
+        "receive": "Registrar recepción",
+        "receiveHint": "Llegó mercancía del proveedor",
+        "reconcile": "Contar y ajustar",
+        "reconcileHint": "La existencia física no coincide con el sistema",
+        "request": "Solicitar compra",
+        "requestHint": "Solicitud de material para comprar · se abre en ERPNext",
+        "transfer": "Transferir desde {{warehouse}}",
+        "transferHint": "Hay {{qty}} disponibles · se abre en ERPNext"
+      },
+      "resolveFor": "Resolver faltante de {{name}}",
       "safetyStock": "Stock de seguridad",
       "search": "Buscar producto…",
       "selling": "Sin precio de venta",
