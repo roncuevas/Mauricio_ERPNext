@@ -352,7 +352,7 @@ export function PriceManagementPage({ client, profileId }: { client: Client; pro
   const [message, setMessage] = useState('')
   const [sessionPrices, setSessionPrices] = useState<ItemPrice[]>([])
   const returnToPrices = searchParams.get('returnTo') || '/prices'
-  const returnLabel = returnToPrices === '/items' ? t('pricesPage.backToProducts') : t('pricesPage.backToPrices')
+  const returnLabel = returnToPrices === '/items' ? t('pricesPage.backToProducts') : returnToPrices.startsWith('/pendientes') ? t('pricesPage.backToPending') : t('pricesPage.backToPrices')
   const item = cachedItem ?? itemQuery.data
   const existingPrices = useMemo(() => sortPricesByPriceList([...(pricesQuery.data?.prices ?? []).filter((price) => price.item_code === itemName), ...sessionPrices.filter((price) => price.item_code === itemName && !(pricesQuery.data?.prices ?? []).some((cached) => cached.name === price.name))]), [itemName, pricesQuery.data?.prices, sessionPrices])
   const editingPrice = existingPrices.find((price) => price.name === editingPriceName)
