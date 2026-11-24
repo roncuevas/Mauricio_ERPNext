@@ -14,7 +14,7 @@ import { CatalogErrorNotice } from '../components/catalog-guidance'
 import { createErpNextClient } from '../lib/erpnext'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { queryKeys } from '../lib/query-keys'
-import { findIncompleteCatalogItems, countMissingImages, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
+import { findIncompleteCatalogItems, countMissingImages, countPending, PENDING_CATEGORIES, type PendingCategory, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
 import { PENDING_PAGE_SIZES, readPendingPreferences, writePendingPreferences, type PendingPageSize } from '../lib/pending-preferences'
 import { paginate } from '../lib/pagination'
 import { ListPagination } from '../components/list-pagination'
@@ -28,8 +28,8 @@ import { refreshItemImages } from '../lib/product-image-sync'
 import type { ItemCatalogCache, ItemPrice, StockCache, VariantCatalogCache, VariantItem } from '../lib/types'
 
 type Client = ReturnType<typeof createErpNextClient>
-type PendingTab = 'prices' | 'templates' | 'margin' | 'images' | 'stock' | 'data'
-const PENDING_TABS: PendingTab[] = ['prices', 'templates', 'margin', 'images', 'stock', 'data']
+type PendingTab = PendingCategory
+const PENDING_TABS = PENDING_CATEGORIES
 const ALL_WAREHOUSES = '__all__'
 
 function priceManagementUrl(itemCode: string, price: ItemPrice | undefined, kind: PendingPriceKind, priceList: string, returnTo: string) {
@@ -175,15 +175,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
   const formatQuantity = (quantity: number) => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(quantity)
   const isUrgentPrice = (row: PendingItem) => row.missingPrices.length > 0
   const isUrgentData = (row: IncompleteCatalogItem) => row.missingFields.length > 0
-  // Inherited prices and a missing brand are listed but do not count as pending.
-  const tabCounts: Record<PendingTab, number | null> = {
-    prices: priceRows.filter(isUrgentPrice).length,
-    templates: templateRows.length,
-    margin: lowMargins.length,
-    images: imagesReady ? countMissingImages(imageGroups) : null,
-    stock: stock.data ? stockShortages.length : null,
-    data: incompleteItems.filter(isUrgentData).length,
-  }
+  const tabCounts = countPending({ pending, lowMargins, imageGroups: imagesReady ? imageGroups : null, stockShortages: stock.data ? stockShortages : null, incompleteItems })
   const visible = { prices: filteredPrices, templates: filteredTemplates, margin: filteredMargins, images: imagesReady ? (imageView === 'tree' ? filteredImageGroups : filteredImageRows) : [], stock: filteredStockShortages, data: filteredIncompleteItems }[activeTab]
   const paged = paginate<unknown>(visible, requestedPage, pageSize)
   const pageOf = <T,>(rows: T[]) => paginate(rows, requestedPage, pageSize).rows

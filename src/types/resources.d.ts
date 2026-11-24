@@ -381,6 +381,19 @@ export default interface Resources {
       "prices": "Precios",
       "products": "Productos",
       "quotations": "Cotizaciones",
+      "review": {
+        "categories": {
+          "data": "Artículos con datos incompletos",
+          "images": "Productos sin imagen",
+          "margin": "Precios con margen bajo",
+          "prices": "Sin precio de compra o venta",
+          "stock": "Agotados o bajo stock de seguridad",
+          "templates": "Plantillas sin variantes"
+        },
+        "clear": "Nada por revisar en el catálogo.",
+        "title": "Por revisar",
+        "viewAll": "Ver pendientes"
+      },
       "setup": {
         "complete": "Completado",
         "description": "Descarga el catálogo y los precios de ERPNext para buscar y vender sin esperar a la red.",

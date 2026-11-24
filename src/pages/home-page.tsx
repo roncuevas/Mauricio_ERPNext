@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CacheSyncTable } from '../components/cache-manager-panel'
@@ -7,9 +8,12 @@ import { Button, ButtonLink, Card, CardAction, CardDescription, CardHeader, Card
 import { contextCacheIds, managedCacheOrder, readHomeCacheData, type ManagedCacheId, type ManagedCacheOverview } from '../lib/cache-manager'
 import { activePosProfile, buildHomeStats } from '../lib/home-stats'
 import { readPosPreferences } from '../lib/pos-preferences'
+import { catalogQueryOptions } from '../lib/catalog-query-options'
+import { readPendingPreferences } from '../lib/pending-preferences'
+import { summarizePending, type PendingCategory } from '../lib/pending-items'
 import { localDate } from '../lib/sales-orders'
 import type { createErpNextClient } from '../lib/erpnext'
-import { ArrowRight, CircleAlert, CircleCheck, Clock, Plus, TriangleAlert } from 'lucide-react'
+import { ArrowRight, ChevronRight, CircleAlert, CircleCheck, Clock, Plus, TriangleAlert } from 'lucide-react'
 
 type Client = ReturnType<typeof createErpNextClient>
 
@@ -52,6 +56,25 @@ function SetupChecklist({ entries, busyIds, busy, onDownload }: { entries: Manag
   </Card>
 }
 
+/** Order of the review list: what blocks selling first, catalog tidiness last. */
+const reviewOrder: PendingCategory[] = ['stock', 'prices', 'margin', 'data', 'images', 'templates']
+
+/** Catalog work waiting in Pendientes, each kind linking straight to its tab. */
+function ReviewCard({ counts, format }: { counts: Record<PendingCategory, number | null>; format: ReturnType<typeof useFormatters> }) {
+  const { t } = useTranslation()
+  const rows = reviewOrder.flatMap((category) => { const count = counts[category]; return count ? [{ category, count }] : [] })
+  return <Card className="home-review">
+    <CardHeader><CardTitle>{t('home.review.title')}</CardTitle><CardAction><ButtonLink to="/pendientes" variant="secondary" size="compact">{t('home.review.viewAll')}</ButtonLink></CardAction></CardHeader>
+    {rows.length ? <ul className="home-review-list">{rows.map(({ category, count }) => <li key={category}>
+      <Link className="home-review-link" to={`/pendientes?tab=${category}`}>
+        <span>{t(`home.review.categories.${category}`)}</span>
+        <strong>{format.number(count)}</strong>
+        <ChevronRight aria-hidden="true" />
+      </Link>
+    </li>)}</ul> : <p className="home-attention-clear"><CircleCheck aria-hidden="true" />{t('home.review.clear')}</p>}
+  </Card>
+}
+
 export function HomePage({ client, profileId }: { client: Client; profileId: string }) {
   const { t } = useTranslation()
   const format = useFormatters()
@@ -61,6 +84,9 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
   const stats = useMemo(() => buildHomeStats(query.data, today), [query.data, today])
   const activeProfile = useMemo(() => activePosProfile(query.data, readPosPreferences(profileId).profileName), [query.data, profileId])
   const entries = useMemo(() => managedCacheOrder.map((id) => query.data?.overview.find((entry) => entry.id === id)).filter((entry): entry is ManagedCacheOverview => Boolean(entry)), [query.data])
+  const variants = useQuery(catalogQueryOptions.variant(profileId))
+  const prices = useQuery(catalogQueryOptions.price(profileId))
+  const reviewCounts = useMemo(() => variants.data && prices.data ? summarizePending({ items: variants.data.items, prices: prices.data.prices, stock: query.data?.stock ?? null, imagesReady: variants.data.imageFieldLoaded === true, preferences: readPendingPreferences(profileId) }, today) : null, [variants.data, prices.data, query.data?.stock, profileId, today])
   const sync = useManagedCacheRefresh({ client, profileId, activeProfile, onSettled: () => queryClient.invalidateQueries({ queryKey: ['home-cache-data', profileId] }) })
 
   const needsSetup = !query.isPending && setupCacheIds.some((id) => !entries.find((entry) => entry.id === id)?.updatedAt)
@@ -94,6 +120,8 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
         </Card>
 
         <div className="home-columns">
+          <div className="home-main-column">
+          {reviewCounts && <ReviewCard counts={reviewCounts} format={format} />}
           <Card className="home-attention">
             <CardHeader><CardTitle>{t('home.attention.title')}</CardTitle></CardHeader>
             {hasAttention ? <ul className="home-attention-list">
@@ -103,6 +131,7 @@ export function HomePage({ client, profileId }: { client: Client; profileId: str
               {missing.length > 0 && <AttentionItem tone="warning" action={<Button type="button" variant="secondary" size="compact" disabled={sync.busy} onClick={() => void sync.refreshMany(missing.map((entry) => entry.id))}>{t('home.setup.download')}</Button>}>{t('home.attention.missing', { count: missing.length, labels: labels(missing) })}</AttentionItem>}
             </ul> : <p className="home-attention-clear"><CircleCheck aria-hidden="true" />{t('home.attention.clear')}</p>}
           </Card>
+          </div>
 
           <Card className="home-catalog">
             <CardHeader><CardTitle>{t('home.operationalStats')}</CardTitle></CardHeader>

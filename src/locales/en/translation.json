@@ -120,6 +120,7 @@
     "sharedLinkImported": "Link imported. Only the local password is needed to encrypt and connect."
   },
   "home": {
+    "review": {"title": "To review", "viewAll": "View pending", "clear": "Nothing to review in the catalog.", "categories": {"stock": "Out of stock or below safety stock", "prices": "Missing buying or selling price", "margin": "Prices with low margin", "data": "Items with incomplete data", "images": "Products without an image", "templates": "Templates without variants"}},
     "title": "Home",
     "products": "Products",
     "variants": "Variants",

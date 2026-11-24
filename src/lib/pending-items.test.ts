@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findIncompleteCatalogItems, findMissingImageGroups, countMissingImages, missingImageRows, findPendingItems, findStockShortages } from './pending-items'
+import { findIncompleteCatalogItems, findMissingImageGroups, countMissingImages, missingImageRows, findPendingItems, findStockShortages, summarizePending } from './pending-items'
 import type { ItemPrice, StockBin, VariantItem } from './types'
 
 const item = (name: string, fields: Partial<VariantItem> = {}): VariantItem => ({ name, ...fields })
@@ -106,3 +106,19 @@ describe('other pending checks', () => {
   })
 })
 
+
+describe('summarizePending', () => {
+  const item = (name: string, extra: Partial<VariantItem> = {}) => ({ name, item_name: name, item_group: 'Productos', stock_uom: 'Pza', disabled: 0, has_variants: 0, image: '/files/x.png', ...extra }) as VariantItem
+  const price = (item_code: string, price_list: string, buying: boolean, rate = 100) => ({ name: `${item_code}-${price_list}`, item_code, price_list, price_list_rate: rate, buying: buying ? 1 : 0, selling: buying ? 0 : 1, currency: 'MXN' }) as ItemPrice
+  const preferences = { buyingPriceList: 'Compra', sellingPriceList: 'Venta', lowMarginThreshold: 10 }
+
+  it('counts each pending category the way the Pendientes tabs do', () => {
+    const items = [item('Martillo'), item('Pinzas', { image: '' }), item('Taladro', { item_group: '' }), item('Gorra', { has_variants: 1 })]
+    const prices = [price('Martillo', 'Compra', true, 95), price('Martillo', 'Venta', false), price('Taladro', 'Compra', true, 50), price('Taladro', 'Venta', false)]
+    expect(summarizePending({ items, prices, stock: null, imagesReady: true, preferences }, '2026-11-24')).toEqual({ prices: 1, templates: 1, margin: 1, images: 1, stock: null, data: 1 })
+  })
+
+  it('leaves images unknown until the catalog tracks them', () => {
+    expect(summarizePending({ items: [item('Pinzas', { image: '' })], prices: [], stock: { bins: [], warehouses: [] }, imagesReady: false, preferences }).images).toBeNull()
+  })
+})

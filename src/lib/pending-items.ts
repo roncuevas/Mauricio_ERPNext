@@ -202,3 +202,32 @@ export function findLowMarginPrices(items: VariantItem[], prices: ItemPrice[], o
   }
   return lowMargin.sort((left, right) => left.marginPercentage - right.marginPercentage || (left.item.item_name || left.item.name).localeCompare(right.item.item_name || right.item.name))
 }
+
+export type PendingCategory = 'prices' | 'templates' | 'margin' | 'images' | 'stock' | 'data'
+export const PENDING_CATEGORIES: PendingCategory[] = ['prices', 'templates', 'margin', 'images', 'stock', 'data']
+
+/**
+ * How many items each pending category holds. Inherited prices and a missing brand are listed but do not count;
+ * a category whose source is not downloaded (images before the image field, stock before the inventory) is `null`.
+ */
+export function countPending({ pending, lowMargins, imageGroups, stockShortages, incompleteItems }: { pending: PendingItem[]; lowMargins: LowMarginPrice[]; imageGroups: MissingImageGroup[] | null; stockShortages: PendingStockItem[] | null; incompleteItems: IncompleteCatalogItem[] }): Record<PendingCategory, number | null> {
+  return {
+    prices: pending.filter((row) => row.kind !== 'template' && row.missingPrices.length > 0).length,
+    templates: pending.filter((row) => row.kind === 'template').length,
+    margin: lowMargins.length,
+    images: imageGroups ? countMissingImages(imageGroups) : null,
+    stock: stockShortages ? stockShortages.length : null,
+    data: incompleteItems.filter((row) => row.missingFields.length > 0).length,
+  }
+}
+
+/** Pending counts for the whole catalog and every warehouse, as the home page summarizes them. */
+export function summarizePending({ items, prices, stock, imagesReady, preferences }: { items: VariantItem[]; prices: ItemPrice[]; stock: { bins: StockBin[]; warehouses: Warehouse[] } | null; imagesReady: boolean; preferences: { buyingPriceList: string; sellingPriceList: string; lowMarginThreshold: number } }, today = todayLocal()) {
+  return countPending({
+    pending: findPendingItems(items, prices, { buying: preferences.buyingPriceList, selling: preferences.sellingPriceList }, today),
+    lowMargins: findLowMarginPrices(items, prices, { threshold: preferences.lowMarginThreshold, buyingPriceList: preferences.buyingPriceList }, today),
+    imageGroups: imagesReady ? findMissingImageGroups(items) : null,
+    stockShortages: stock ? findStockShortages(items, stock.bins, stock.warehouses) : null,
+    incompleteItems: findIncompleteCatalogItems(items),
+  })
+}

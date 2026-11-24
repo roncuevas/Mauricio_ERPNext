@@ -777,7 +777,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-today-figures dd strong { color: var(--color-heading); font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
 .home-today-figures dd span { color: var(--color-muted); font-size: .875rem; }
 .home-columns { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 1fr); align-items: start; gap: 1.25rem; }
-.home-attention, .home-catalog, .home-sync, .home-setup { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: .85rem; padding: 1.25rem; }
+.home-main-column { display: grid; min-width: 0; gap: 1.25rem; }
+.home-review-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.home-review-list > li + li { border-top: 1px solid var(--color-border-subtle); }
+.home-review-link { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .75rem; margin: 0 -.5rem; padding: .6rem .5rem; border-radius: .5rem; color: var(--color-ink); font-size: .875rem; text-decoration: none; transition: background-color .15s ease; }
+.home-review-list > li:first-child .home-review-link { margin-top: -.35rem; }
+.home-review-link:hover { background: var(--color-surface-muted); }
+.home-review-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.home-review-link > strong { color: var(--color-heading); font-weight: 700; font-variant-numeric: tabular-nums; }
+.home-review-link > svg { width: 1rem; height: 1rem; color: var(--color-muted); transition: transform .15s ease, color .15s ease; }
+.home-review-link:hover > svg { color: var(--color-primary); transform: translateX(2px); }
+.home-review, .home-attention, .home-catalog, .home-sync, .home-setup { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: .85rem; padding: 1.25rem; }
 .home-attention-list { display: grid; margin: 0; padding: 0; list-style: none; }
 .home-attention-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .75rem; padding: .7rem 0; border-top: 1px solid var(--color-border-subtle); font-size: .875rem; color: var(--color-ink); }
 .home-attention-item:first-child { border-top: 0; padding-top: 0; }
@@ -1613,7 +1623,7 @@ button.pos-product-price-link { border: 0; background: transparent; padding: 0; 
 }
 
 @media (max-width: 640px) {
-  .home-today, .home-attention, .home-catalog, .home-sync, .home-setup { padding: 1rem; }
+  .home-today, .home-review, .home-attention, .home-catalog, .home-sync, .home-setup { padding: 1rem; }
   .home-attention-item, .home-setup-steps > li { grid-template-columns: auto minmax(0, 1fr); }
   .home-attention-item > :last-child, .home-setup-steps > li > :last-child { grid-column: 2; justify-self: start; }
   .home-sync [data-slot="card-action"] { grid-row: auto; grid-column: 1; }
