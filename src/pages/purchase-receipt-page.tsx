@@ -40,9 +40,10 @@ export function PurchaseReceiptPage({ client, profileId }: { client: Client; pro
   const suppliers = useMemo(() => (suppliersQuery.data?.suppliers ?? []).filter((supplier) => !supplier.disabled), [suppliersQuery.data?.suppliers])
   const prices = useMemo(() => pricesQuery.data?.prices ?? [], [pricesQuery.data?.prices])
 
-  const warehouseParam = searchParams.get('warehouse') ?? ''
+  const warehouseParam = searchParams.get('warehouse') ?? ''; const itemParam = searchParams.get('item') ?? ''
   const initialDraft = useCallback((): ReceiptDraft => ({ supplier: '', warehouseName: warehouseParam, deliveryNote: '', lines: [] }), [warehouseParam])
-  const { draft, update, clear, restored, dismissRestored } = useStockDraft<ReceiptDraft>(`mauricio:${profileId}:draft:purchase-receipt`, initialDraft)
+  // A product opened from Pendientes joins a saved receipt of the same warehouse; a receipt of another warehouse is not mixed in.
+  const { draft, update, clear, restored, dismissRestored } = useStockDraft<ReceiptDraft>(`mauricio:${profileId}:draft:purchase-receipt`, initialDraft, (saved) => !warehouseParam || saved.warehouseName === warehouseParam)
   const { supplier, warehouseName, deliveryNote, lines } = draft
 
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -82,6 +83,16 @@ export function PurchaseReceiptPage({ client, profileId }: { client: Client; pro
     pendingFocus.current = itemCode
     update((current) => ({ lines: current.lines.some((line) => line.itemCode === itemCode) ? [...current.lines] : [...current.lines, { itemCode, qty: '', rejectedQty: '', uom: purchaseUomOptions(itemsByName.get(itemCode)).defaultUom, rate: null }] }))
   }
+
+  // Add the requested product once the stock catalog can resolve its purchase UOM.
+  const itemParamAdded = useRef(false)
+  useEffect(() => {
+    if (!itemParam || itemParamAdded.current || !itemsByName.has(itemParam)) return
+    itemParamAdded.current = true
+    addItem(itemParam)
+  // addItem only depends on itemsByName, which this effect already tracks.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemParam, itemsByName])
 
   const updateLine = (itemCode: string, patch: Partial<ReceiptLine>) => update((current) => ({ lines: current.lines.map((line) => line.itemCode === itemCode ? { ...line, ...patch } : line) }))
   const lineKeys = useLineEntryKeys({ items, pickerRef, onScan: addItem })

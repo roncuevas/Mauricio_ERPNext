@@ -47,4 +47,10 @@ describe('ERPNext REST client', () => {
     expect(client.documentUrl('Purchase Receipt', 'MAT-PRE-0001')).toBe('https://erp.example.com/app/purchase-receipt/MAT-PRE-0001')
     expect(client.documentUrl('Stock Reconciliation', 'A/B 1')).toBe('https://erp.example.com/app/stock-reconciliation/A%2FB%201')
   })
+
+  it('builds the desk URL of a new document with prefilled fields', () => {
+    const client = createErpNextClient({ id: 'test', label: 'Test', baseUrl: 'https://erp.example.com/', apiKey: 'key', apiSecret: 'secret' })
+    expect(client.newDocumentUrl('Stock Entry', { stock_entry_type: 'Material Transfer', to_warehouse: 'Tienda - M', from_warehouse: '' })).toBe('https://erp.example.com/app/stock-entry/new?stock_entry_type=Material+Transfer&to_warehouse=Tienda+-+M')
+    expect(client.newDocumentUrl('Material Request')).toBe('https://erp.example.com/app/material-request/new')
+  })
 })

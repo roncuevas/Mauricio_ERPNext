@@ -110,6 +110,11 @@ export function createErpNextClient(connection: ConnectionProfile) {
     profileId: connection.id,
     /** Desk URL of a document, to open it in ERPNext from a success message. */
     documentUrl(doctype: string, name: string) { return `${baseUrl}/app/${doctype.toLowerCase().replace(/ /g, '-')}/${encodeURIComponent(name)}` },
+    /** Desk URL of a new document; Frappe copies the query values into the form's fields. */
+    newDocumentUrl(doctype: string, values: Record<string, string> = {}) {
+      const query = new URLSearchParams(Object.entries(values).filter(([, value]) => value)).toString()
+      return `${baseUrl}/app/${doctype.toLowerCase().replace(/ /g, '-')}/new${query ? `?${query}` : ''}`
+    },
     async getImage(url: string) { return requestImage(url) },
     isExternalImageUrl(url: string) {
       try {
