@@ -1106,8 +1106,11 @@ export default interface Resources {
       "variant": "Variante"
     },
     "productImages": {
-      "cacheDescription": "Descarga imágenes faltantes de los productos y variantes guardados en esta conexión.",
+      "cacheDescription": "Descarga imágenes faltantes de los productos y variantes guardados en esta conexión. «Forzar descarga» vuelve a bajar todas, aunque ya estén guardadas.",
       "cacheTitle": "Caché de imágenes",
+      "forceAction": "Forzar descarga",
+      "forceDescription": "Se descargarán otra vez todas las imágenes de productos de esta conexión, aunque ya estén guardadas. Sirve cuando una imagen se reemplazó en ERPNext sin cambiar de dirección. Puede tardar y usar bastantes datos.",
+      "forceTitle": "¿Volver a descargar todas las imágenes?",
       "loadError": "No se pudo cargar la imagen.",
       "loadFor": "Obtener imagen de {{name}}",
       "loadHint": "Haz clic para obtener imagen desde ERPNext.",

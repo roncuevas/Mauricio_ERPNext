@@ -84,10 +84,14 @@ export async function refreshItemImages(client: Client, profileId: string) {
   return { changed: changed.size }
 }
 
-export async function downloadMissingProductImages(client: Client, profileId: string, onProgress: (completed: number, total: number) => void) {
+/**
+ * Downloads the ERPNext-hosted image of every Item whose cached copy is missing or points to another file. `force`
+ * downloads them all again, for files replaced in ERPNext without changing their URL.
+ */
+export async function downloadMissingProductImages(client: Client, profileId: string, onProgress: (completed: number, total: number) => void, { force = false }: { force?: boolean } = {}) {
   const records = await listItemImages(client)
 
-  const cached = new Map((await listProductImages(profileId)).map((record) => [record.itemName, record.url]))
+  const cached = force ? new Map<string, string>() : new Map((await listProductImages(profileId)).map((record) => [record.itemName, record.url]))
   const pending = records.filter((record) => record.image && !client.isExternalImageUrl(record.image) && cached.get(record.name) !== record.image)
   let cursor = 0
   let downloaded = 0

@@ -11,6 +11,7 @@ import { Switch } from '../components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { CacheManagerPanel } from '../components/cache-manager-panel'
 import { ProfileStorageCard } from '../components/profile-storage'
+import { useConfirmDialog } from '../components/confirm-dialog'
 import { EntityCombobox } from '../components/entity-combobox'
 import { LanguageSelector } from '../components/language-selector'
 import { useTheme } from '../components/theme-provider'
@@ -81,6 +82,7 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
   const [posMessage, setPosMessage] = useState('')
   const [posError, setPosError] = useState('')
   const [imageSync, setImageSync] = useState<{ completed: number; total: number } | null>(null)
+  const { confirm: confirmImages, dialog: imageDialog } = useConfirmDialog()
   const [imageSyncMessage, setImageSyncMessage] = useState('')
   const [imageSyncError, setImageSyncError] = useState('')
   const [appPreferences, setAppPreferences] = useState<AppPreferences>(() => readAppPreferences())
@@ -125,12 +127,17 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
     setPosMessage(t('settings.posReset'))
   }
 
-  async function refreshMissingImages() {
+  async function forceImageDownload() {
+    const ok = await confirmImages({ title: t('productImages.forceTitle'), description: t('productImages.forceDescription'), confirmLabel: t('productImages.forceAction'), tone: 'primary' })
+    if (ok) await refreshMissingImages(true)
+  }
+
+  async function refreshMissingImages(force = false) {
     setImageSync({ completed: 0, total: 0 })
     setImageSyncMessage('')
     setImageSyncError('')
     try {
-      const result = await downloadMissingProductImages(client, connection.id, (completed, total) => setImageSync({ completed, total }))
+      const result = await downloadMissingProductImages(client, connection.id, (completed, total) => setImageSync({ completed, total }), { force })
       const failureExamples = result.failureDetails.map((error) => t('productImages.syncFailureExample', { error })).join(' ')
       const remainingFailures = result.failed > result.failureDetails.length ? ` ${t('productImages.syncMoreFailures', { count: result.failed - result.failureDetails.length })}` : ''
       setImageSyncMessage(`${t('productImages.syncComplete', result)} ${failureExamples}${remainingFailures}`.trim())
@@ -312,13 +319,14 @@ export function SettingsPage({ connection, onLock }: { connection: ConnectionPro
       <TabsContent value="data" className="settings-panel">
         <CacheManagerPanel client={client} profileId={connection.id} activeProfile={activeProfile} />
         <Card className="settings-card">
-          <CardHeader><CardTitle as="h2">{t('productImages.cacheTitle')}</CardTitle><CardDescription>{t('productImages.cacheDescription')}</CardDescription><CardAction><Button type="button" variant="secondary" onClick={() => void refreshMissingImages()} disabled={Boolean(imageSync)}>{imageSync ? <><Spinner /> {t('productImages.syncing')}</> : t('productImages.syncAction')}</Button></CardAction></CardHeader>
+          <CardHeader><CardTitle as="h2">{t('productImages.cacheTitle')}</CardTitle><CardDescription>{t('productImages.cacheDescription')}</CardDescription><CardAction className="settings-card-actions"><Button type="button" variant="secondary" onClick={() => void refreshMissingImages()} disabled={Boolean(imageSync)}>{imageSync ? <><Spinner /> {t('productImages.syncing')}</> : t('productImages.syncAction')}</Button><Button type="button" variant="secondary" onClick={() => void forceImageDownload()} disabled={Boolean(imageSync)}>{t('productImages.forceAction')}</Button></CardAction></CardHeader>
           {(imageSync || imageSyncMessage || imageSyncError) && <CardContent>
             {imageSync && <p role="status" className="settings-facts-pending">{t('productImages.syncProgress', imageSync)}</p>}
             {(imageSyncMessage || imageSyncError) && <Notice tone={imageSyncError ? 'error' : 'info'}>{imageSyncError || imageSyncMessage}</Notice>}
           </CardContent>}
         </Card>
         <ProfileStorageCard activeProfileId={connection.id} />
+        {imageDialog}
       </TabsContent>
     </Tabs>
   </section>

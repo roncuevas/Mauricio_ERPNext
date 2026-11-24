@@ -817,6 +817,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 [data-slot="sheet-content"] [data-slot="sheet-header"] { padding-right: 2.75rem; }
 
 /* Settings: section nav + shadcn Card/Field/Item composition */
+/* The main action comes first in the DOM, so it leads when stacked on phones and sits rightmost on wider screens. */
+.settings-card-actions { display: flex; flex-flow: row-reverse wrap; justify-content: flex-start; gap: .5rem; }
 .settings-card { min-width: 0; overflow: clip; }
 .settings-card > [data-slot="card-header"] { padding: 1.25rem 1.25rem .75rem; }
 .settings-card [data-slot="card-title"] { color: var(--color-heading); font-size: 1rem; font-weight: 650; line-height: 1.4; }
