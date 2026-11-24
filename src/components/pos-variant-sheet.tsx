@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
-import { Check, Search, X } from 'lucide-react'
+import { Check, Search } from 'lucide-react'
 import { Button, Input, Spinner } from './ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
@@ -64,7 +64,7 @@ export function PosVariantSheet({ template, variants: allVariants, hideUnavailab
 
   return <Sheet open={open} onOpenChange={(next) => { if (!next) onClose() }}>
     <SheetContent side="bottom" className="pos-variant-sheet mx-auto max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl">
-      <SheetHeader className="pos-sheet-heading"><SheetTitle>{template.item_name || template.name}</SheetTitle><SheetDescription className="sr-only">{t('pos.variant.description')}</SheetDescription><SheetClose asChild><Button type="button" variant="secondary" size="icon" aria-label={t('pos.variant.close')} title={t('pos.variant.close')}><X aria-hidden="true" /></Button></SheetClose></SheetHeader>
+      <SheetHeader className="pos-sheet-heading"><SheetTitle>{template.item_name || template.name}</SheetTitle><SheetDescription className="sr-only">{t('pos.variant.description')}</SheetDescription></SheetHeader>
       {loading ? <div className="pos-sheet-loading" role="status"><Spinner /> {t('pos.variant.loading')}</div> : error ? <p className="notice notice-error" role="alert">{error}</p> : !variants.length ? <p className="muted">{t('pos.variant.empty')}</p> : <div className="pos-variant-sheet-body">
         <section className="pos-variant-picker" aria-labelledby="pos-variant-picker-title">
           <h3 id="pos-variant-picker-title" className="pos-variant-heading">{t('pos.variant.heading', { count: variants.length })}</h3>

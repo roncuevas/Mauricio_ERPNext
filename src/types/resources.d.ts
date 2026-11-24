@@ -691,7 +691,6 @@ export default interface Resources {
       "closing": {
         "capture": "Captura del arqueo",
         "captured": "Capturado",
-        "closePanel": "Cerrar panel",
         "closeShift": "Cerrar turno",
         "closing": "Cerrando",
         "confirmAction": "Confirmar cierre",
@@ -930,7 +929,6 @@ export default interface Resources {
         "addPrice": "Agregar precio",
         "addToCart": "Agregar al carrito",
         "checkingPrice": "Consultando precio…",
-        "close": "Cerrar selección de variante",
         "configuration": "Configuración de variante",
         "description": "Elige una variante, presentación y precio antes de agregarla al carrito.",
         "empty": "Esta plantilla no tiene variantes activas disponibles.",
@@ -1370,7 +1368,6 @@ export default interface Resources {
       "addProducts": "Agrega productos desde la búsqueda superior.",
       "allCustomers": "Todos los clientes",
       "amount": "Importe",
-      "back": "Volver a ventas",
       "cancel": "Cancelar",
       "company": "Compañía",
       "contextHint": "La fecha y el POS Profile controlan el conjunto consultado.",

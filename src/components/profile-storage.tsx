@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, RefreshCw, X } from 'lucide-react'
-import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, IconButton, Notice, Spinner } from './ui'
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
+import { ChevronDown, RefreshCw } from 'lucide-react'
+import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, Notice, Spinner } from './ui'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from './ui/item'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
 import { useConfirmDialog } from './confirm-dialog'
@@ -156,10 +156,7 @@ function ProfileStorageSheetBody() {
   const state = useProfileStorage()
   return <>
     <SheetHeader className="profile-storage-sheet-header">
-      <div className="profile-storage-sheet-heading">
-        <SheetTitle>{t('profileStorage.title')}</SheetTitle>
-        <SheetClose asChild><IconButton type="button" size="compact" label={t('common.close')} icon={<X aria-hidden="true" />} /></SheetClose>
-      </div>
+      <SheetTitle>{t('profileStorage.title')}</SheetTitle>
       <SheetDescription>{t('profileStorage.description')}</SheetDescription>
       <div><MeasureButton state={state} /></div>
     </SheetHeader>
