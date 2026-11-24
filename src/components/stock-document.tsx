@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, PackageSearch } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { ChevronDown, ExternalLink, PackageSearch } from 'lucide-react'
 import { Button, ButtonLink, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from './ui'
 import { Alert, AlertDescription } from './ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
@@ -76,5 +77,18 @@ export function DraftRestoredNotice({ onDiscard, onDismiss }: { onDiscard: () =>
       <Button type="button" variant="secondary" size="compact" onClick={onDiscard}>{t('stockPage.discardDraft')}</Button>
       <Button type="button" variant="secondary" size="compact" onClick={onDismiss}>{t('stockPage.keepDraft')}</Button>
     </div>
+  </Alert>
+}
+
+export type StockNavigationState = { stockNotice?: string; stockDocument?: { doctype: string; name: string } } | null
+
+/** Confirmation a stock document leaves in the navigation state of the page it returns to. */
+export function StockDocumentNotice({ documentUrl }: { documentUrl: (doctype: string, name: string) => string }) {
+  const { t } = useTranslation()
+  const state = useLocation().state as StockNavigationState
+  if (!state?.stockNotice) return null
+  return <Alert className="notice-info stock-success" role="status">
+    <AlertDescription>{state.stockNotice}</AlertDescription>
+    {state.stockDocument && <a className="button button-secondary button-compact" href={documentUrl(state.stockDocument.doctype, state.stockDocument.name)} target="_blank" rel="noreferrer">{t('stockPage.openInErpNext')}<ExternalLink aria-hidden="true" /></a>}
   </Alert>
 }

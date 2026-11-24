@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isOpeningEntryError, itemCanReconcile, localPostingNow, movementPayload, paginateStock, reconciliationDifference, reconciliationPayload, refreshStockBins, searchReconciliationItems, stockErrorMessage, stockSearch, visibleStockBins } from './stock'
+import { isOpeningEntryError, stockBackPath, itemCanReconcile, localPostingNow, movementPayload, paginateStock, reconciliationDifference, reconciliationPayload, refreshStockBins, searchReconciliationItems, stockErrorMessage, stockSearch, visibleStockBins } from './stock'
 import type { StockBin, VariantItem } from './types'
 
 describe('stock payloads', () => {
@@ -105,5 +105,18 @@ describe('stock payloads', () => {
     const items = [{ name: 'ITEM-001', is_stock_item: 1 }, { name: 'SERVICE', is_stock_item: 0 }] as VariantItem[]
     const bins = [{ item_code: 'ITEM-001', warehouse: 'Almacén A', actual_qty: 3 }, { item_code: 'SERVICE', warehouse: 'Almacén A', actual_qty: 2 }, { item_code: 'ITEM-001', warehouse: 'Almacén B', actual_qty: 0 }] as StockBin[]
     expect(visibleStockBins(bins, items, [{ name: 'Almacén A' }, { name: 'Almacén B', disabled: 1 }])).toEqual([bins[0], bins[1]])
+  })
+})
+
+describe('stockBackPath', () => {
+  it('returns to an in-app returnTo, otherwise to the stock page with its filters', () => {
+    expect(stockBackPath(new URLSearchParams({ returnTo: '/pendientes?tab=stock&warehouse=Tienda', item: 'A' }))).toBe('/pendientes?tab=stock&warehouse=Tienda')
+    expect(stockBackPath(new URLSearchParams({ warehouse: 'Tienda', search: 'croq', item: 'A' }))).toBe('/stock?warehouse=Tienda&search=croq')
+    expect(stockBackPath(new URLSearchParams())).toBe('/stock')
+  })
+
+  it('ignores a returnTo that leaves the app', () => {
+    expect(stockBackPath(new URLSearchParams({ returnTo: 'https://evil.example' }))).toBe('/stock')
+    expect(stockBackPath(new URLSearchParams({ returnTo: '//evil.example' }))).toBe('/stock')
   })
 })

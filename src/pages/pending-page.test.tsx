@@ -68,8 +68,8 @@ describe('PendingPage', () => {
     })
     const hrefs = Array.from(document.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]')).map((link) => link.getAttribute('href'))
     expect(hrefs).toEqual([
-      '/stock/reconciliation?item=FOOD-1&itemWarehouse=Tienda',
-      '/stock/receipt?item=FOOD-1&warehouse=Tienda',
+      `/stock/reconciliation?item=FOOD-1&itemWarehouse=Tienda&returnTo=${encodeURIComponent('/pendientes?tab=stock&warehouse=Tienda')}`,
+      `/stock/receipt?item=FOOD-1&warehouse=Tienda&returnTo=${encodeURIComponent('/pendientes?tab=stock&warehouse=Tienda')}`,
       'https://erp.test/app/Stock Entry/new?stock_entry_type=Material+Transfer&from_warehouse=Bodega&to_warehouse=Tienda',
       'https://erp.test/app/Material Request/new?material_request_type=Purchase&set_warehouse=Tienda',
       '/stock?search=FOOD-1',

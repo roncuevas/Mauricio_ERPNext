@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, PackageSearch, RefreshCw } from 'lucide-react'
+import { PackageSearch, RefreshCw } from 'lucide-react'
 import { Badge, Button, ButtonLink, Field, Input, Notice, PageHeader, RefreshButton, SearchButton } from '../components/ui'
-import { Alert, AlertDescription } from '../components/ui/alert'
+import { StockDocumentNotice } from '../components/stock-document'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Skeleton } from '../components/ui/skeleton'
@@ -17,7 +17,6 @@ import { queryKeys } from '../lib/query-keys'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 
 type Client = ReturnType<typeof createErpNextClient>
-type StockNavigationState = { stockNotice?: string; stockDocument?: { doctype: string; name: string } } | null
 
 const number = (value: number | undefined) => Number(value ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 3 })
 
@@ -42,7 +41,6 @@ export function StockPage({ client, profileId }: { client: Client; profileId: st
   const update = (values: Record<string, string>) => setSearchParams({ ...(company ? { company } : {}), ...(warehouse ? { warehouse } : {}), ...(search ? { search } : {}), ...values })
   const returnQuery = stockReturnQuery(searchParams); const withQuery = (path: string) => `${path}${returnQuery ? `?${returnQuery}` : ''}`
   const adjustPath = (itemCode: string, binWarehouse: string) => { const query = new URLSearchParams(returnQuery); query.set('item', itemCode); query.set('itemWarehouse', binWarehouse); return `/stock/reconciliation?${query}` }
-  const location = useLocation(); const navigationState = location.state as StockNavigationState
   const hasFilters = Boolean(company || warehouse || search)
   const receiveAction = <ButtonLink to={withQuery('/stock/receipt')} className="stock-receive-action">{t('stockPage.receive')}</ButtonLink>
 
@@ -59,10 +57,7 @@ export function StockPage({ client, profileId }: { client: Client; profileId: st
 
   return <section className="stock-workspace">
     <PageHeader title={t('stockPage.title')} description={t('stockPage.description')} mobileAction={receiveAction} action={<>{receiveAction}<ButtonLink to={withQuery('/stock/reconciliation')} variant="secondary">{t('stockPage.reconcile')}</ButtonLink><RefreshButton label={t('stockPage.refresh')} onClick={() => refresh.mutate()} loading={refresh.isPending} /></>} />
-    {navigationState?.stockNotice && <Alert className="notice-info stock-success" role="status">
-      <AlertDescription>{navigationState.stockNotice}</AlertDescription>
-      {navigationState.stockDocument && <a className="button button-secondary button-compact" href={client.documentUrl(navigationState.stockDocument.doctype, navigationState.stockDocument.name)} target="_blank" rel="noreferrer">{t('stockPage.openInErpNext')}<ExternalLink aria-hidden="true" /></a>}
-    </Alert>}
+    <StockDocumentNotice documentUrl={client.documentUrl} />
     {stockQuery.isLoading && <div className="stock-loading" aria-busy="true" aria-label={t('stockPage.loadingCatalog')}><Skeleton className="h-24 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>}
     {!stockQuery.isLoading && !cache && <Empty className="stock-empty">
       <PackageSearch aria-hidden="true" className="stock-lines-empty-icon" />

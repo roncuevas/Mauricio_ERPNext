@@ -130,6 +130,14 @@ export function stockReturnQuery(params: URLSearchParams) {
   return query.toString()
 }
 
+/** Where a stock document returns: a same-app `returnTo` (e.g. Pendientes) or the stock page with its filters. */
+export function stockBackPath(params: URLSearchParams) {
+  const returnTo = params.get('returnTo')
+  if (returnTo?.startsWith('/') && !returnTo.startsWith('//')) return returnTo
+  const query = stockReturnQuery(params)
+  return `/stock${query ? `?${query}` : ''}`
+}
+
 export function reconciliationDifference(systemQty: number, counted: string) {
   if (counted.trim() === '') return null
   const qty = Number(counted)

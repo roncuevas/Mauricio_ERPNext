@@ -17,7 +17,7 @@ import { useLineEntryKeys, useStockDraft } from '../components/use-stock-documen
 import { useStockItems } from '../components/use-stock-items'
 import { createErpNextClient } from '../lib/erpnext'
 import { purchaseReceiptPayload, purchaseUomOptions, suggestPurchaseRate, type RateSuggestion } from '../lib/purchase-receipt'
-import { localPostingNow, refreshStockBins, saveAndSubmit, stockErrorMessage, stockReturnQuery } from '../lib/stock'
+import { localPostingNow, refreshStockBins, saveAndSubmit, stockErrorMessage, stockBackPath } from '../lib/stock'
 import { writeStockCache } from '../lib/stock-cache'
 import { readSupplierCatalog } from '../lib/supplier-cache'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
@@ -96,7 +96,8 @@ export function PurchaseReceiptPage({ client, profileId }: { client: Client; pro
 
   const updateLine = (itemCode: string, patch: Partial<ReceiptLine>) => update((current) => ({ lines: current.lines.map((line) => line.itemCode === itemCode ? { ...line, ...patch } : line) }))
   const lineKeys = useLineEntryKeys({ items, pickerRef, onScan: addItem })
-  const backPath = `/stock${stockReturnQuery(searchParams) ? `?${stockReturnQuery(searchParams)}` : ''}`
+  const backPath = stockBackPath(searchParams)
+  const backLabel = backPath.startsWith('/pendientes') ? t('pricesPage.backToPending') : t('stockPage.backToStock')
 
   async function submit() {
     setError('')
@@ -138,7 +139,7 @@ export function PurchaseReceiptPage({ client, profileId }: { client: Client; pro
     } catch (reason) { setError(stockErrorMessage(reason)) } finally { setBusy(false) }
   }
 
-  const header = <PageHeader title={t('receiptPage.title')} description={t('receiptPage.description')} action={<ButtonLink to={backPath} variant="secondary">{t('stockPage.backToStock')}</ButtonLink>} />
+  const header = <PageHeader title={t('receiptPage.title')} description={t('receiptPage.description')} action={<ButtonLink to={backPath} variant="secondary">{backLabel}</ButtonLink>} />
   if (isLoading || suppliersQuery.isLoading) return <section className="stock-document">{header}<div className="stock-document-loading" aria-busy="true" aria-label={t('stockPage.loadingCatalog')}><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-32 w-full" /></div></section>
   if (!cache) return <section className="stock-document">{header}<Notice tone="info">{t('stockPage.downloadFirst')}</Notice></section>
 

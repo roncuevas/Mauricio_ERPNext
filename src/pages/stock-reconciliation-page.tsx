@@ -17,7 +17,7 @@ import { StockItemPicker } from '../components/stock-item-picker'
 import { useLineEntryKeys, useStockDraft } from '../components/use-stock-document'
 import { useStockItems } from '../components/use-stock-items'
 import { createErpNextClient } from '../lib/erpnext'
-import { isOpeningEntryError, localPostingNow, reconciliationDifference, reconciliationPayload, refreshStockBins, saveAndSubmit, stockErrorMessage, stockReturnQuery, type StockReconciliationPurpose } from '../lib/stock'
+import { isOpeningEntryError, localPostingNow, reconciliationDifference, reconciliationPayload, refreshStockBins, saveAndSubmit, stockErrorMessage, stockBackPath, type StockReconciliationPurpose } from '../lib/stock'
 import { writeStockCache } from '../lib/stock-cache'
 import { queryKeys } from '../lib/query-keys'
 
@@ -94,7 +94,8 @@ export function StockReconciliationPage({ client, profileId }: { client: Client;
 
   const updateLine = (itemCode: string, patch: Partial<CountLine>) => update((current) => ({ lines: current.lines.map((line) => line.itemCode === itemCode ? { ...line, ...patch } : line) }))
   const lineKeys = useLineEntryKeys({ items, pickerRef, onScan: addItem })
-  const backPath = `/stock${stockReturnQuery(searchParams) ? `?${stockReturnQuery(searchParams)}` : ''}`
+  const backPath = stockBackPath(searchParams)
+  const backLabel = backPath.startsWith('/pendientes') ? t('pricesPage.backToPending') : t('stockPage.backToStock')
 
   async function submit() {
     setError(''); setOpeningRequired(false)
@@ -131,7 +132,7 @@ export function StockReconciliationPage({ client, profileId }: { client: Client;
     } catch (reason) { setError(stockErrorMessage(reason)); setOpeningRequired(purpose !== 'Opening Stock' && isOpeningEntryError(reason)) } finally { setBusy(false) }
   }
 
-  const header = <PageHeader title={t('stockPage.reconciliationTitle')} description={t('stockPage.reconciliationDescription')} action={<ButtonLink to={backPath} variant="secondary">{t('stockPage.backToStock')}</ButtonLink>} />
+  const header = <PageHeader title={t('stockPage.reconciliationTitle')} description={t('stockPage.reconciliationDescription')} action={<ButtonLink to={backPath} variant="secondary">{backLabel}</ButtonLink>} />
   if (isLoading) return <section className="stock-document">{header}<div className="stock-document-loading" aria-busy="true" aria-label={t('stockPage.loadingCatalog')}><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-32 w-full" /></div></section>
   if (!cache) return <section className="stock-document">{header}<Notice tone="info">{t('stockPage.downloadFirst')}</Notice></section>
 

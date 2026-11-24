@@ -6,6 +6,7 @@ import { ChevronDown, CircleAlert, ExternalLink, ImageOff, ImagePlus, RefreshCw 
 import { Alert, AlertDescription, Badge, Button, ButtonLink, Input, PageHeader, SearchButton, Spinner } from '../components/ui'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { StockDocumentNotice } from '../components/stock-document'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu'
 import { PendingImageEditor } from '../components/pending-image-editor'
 import { CatalogErrorNotice } from '../components/catalog-guidance'
@@ -196,6 +197,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
 
   return <section className="pending-workspace">
     <PageHeader title={t('pendingPage.title')} description={t('pendingPage.description')} action={<Button type="button" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}><RefreshCw className={`mr-2 size-4${refresh.isPending ? ' animate-spin' : ''}`} aria-hidden="true" />{refresh.isPending ? t('pendingPage.refreshing') : t('pendingPage.refresh')}</Button>} />
+    <StockDocumentNotice documentUrl={client.documentUrl} />
     <div className="pending-status-bar">
       <div><strong>{t('pendingPage.priceLists')}</strong><span>{t('pendingPage.priceListsSummary', { buyingLabel: t('pendingPage.buyingList'), buying: preferences.buyingPriceList, sellingLabel: t('pendingPage.sellingList'), selling: preferences.sellingPriceList })}</span></div>
       <span>{t('pendingPage.updated', { variants: dateLabel(variants.data?.updatedAt), prices: dateLabel(prices.data?.updatedAt) })}</span>
@@ -240,8 +242,8 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
           </PendingRow>
         }) : empty('images')}</TabsContent>
         <TabsContent value="stock">{stockRefreshMessage && <p className="pending-refresh-message" role="status">{stockRefreshMessage}</p>}{stockRefresh.error && <CatalogErrorNotice error={stockRefresh.error} />}{!stock.data ? <div className="pending-empty-state"><CircleAlert aria-hidden="true" /><div><h2>{t('pendingPage.stockCacheMissing')}</h2><p>{t('pendingPage.stockCacheMissingDescription')}</p></div><Button type="button" onClick={() => stockRefresh.mutate()} disabled={stockRefresh.isPending}>{stockRefresh.isPending ? t('pendingPage.stockRefreshing') : t('pendingPage.stockRefresh')}</Button></div> : filteredStockShortages.length ? list(filteredStockShortages, (row) => row.item.name, ({ item, actualQty, projectedQty, safetyStock, status }) => <PendingRow item={item} meta={item.stock_uom} tags={<><Badge tone={status === 'out' ? 'danger' : 'warning'}>{t(`pendingPage.stockStatus.${status}`)}</Badge><span className="pending-figure">{t('pendingPage.actualStock')} {formatQuantity(actualQty)}</span><span className="pending-figure">{t('pendingPage.projectedStock')} {formatQuantity(projectedQty)}</span>{status === 'low' && <span className="pending-figure">{t('pendingPage.safetyStock')} {formatQuantity(safetyStock)}</span>}</>}><StockResolveMenu name={item.item_name || item.name} links={{
-          reconcile: `/stock/reconciliation?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { itemWarehouse: stockWarehouse } : {}) })}`,
-          receive: `/stock/receipt?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { warehouse: stockWarehouse } : {}) })}`,
+          reconcile: `/stock/reconciliation?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { itemWarehouse: stockWarehouse } : {}), returnTo })}`,
+          receive: `/stock/receipt?${new URLSearchParams({ item: item.name, ...(stockWarehouse ? { warehouse: stockWarehouse } : {}), returnTo })}`,
           stock: `/stock?search=${encodeURIComponent(item.name)}`,
           transfer: transferSources.get(item.name) ? { url: client.newDocumentUrl('Stock Entry', { stock_entry_type: 'Material Transfer', from_warehouse: transferSources.get(item.name)!.warehouse, to_warehouse: stockWarehouse }), from: warehouseLabel(transferSources.get(item.name)!.warehouse), qty: formatQuantity(transferSources.get(item.name)!.qty) } : undefined,
           request: client.newDocumentUrl('Material Request', { material_request_type: 'Purchase', set_warehouse: stockWarehouse }),
