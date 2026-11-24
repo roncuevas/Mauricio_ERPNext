@@ -2,6 +2,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { PendingImages } from './pending-images'
+import { useFamilyExpansion } from './use-family-expansion'
 import { findMissingImageGroups, missingImageRows, type MissingImageView } from '../lib/pending-items'
 import type { VariantItem } from '../lib/types'
 
@@ -32,7 +33,14 @@ describe('PendingImages', () => {
     root = createRoot(container)
     await act(async () => {
       const groups = findMissingImageGroups(items)
-      root.render(createElement(PendingImages, { client: client as never, profileId: 'profile', view, groups, rows: view === 'tree' ? [] : missingImageRows(groups, view), search: '', empty: null, onAssignImage: () => undefined, onImagesSaved, onMessage }))
+      // The page owns the expansion and its "expand all" control; the harness stands in for it.
+      function Harness() {
+        const expansion = useFamilyExpansion(groups, '')
+        return createElement('div', null,
+          createElement('button', { type: 'button', 'aria-label': 'toggle-all', onClick: expansion.toggleAll }),
+          createElement(PendingImages, { client: client as never, profileId: 'profile', view, groups, rows: view === 'tree' ? [] : missingImageRows(groups, view), expansion, empty: null, onAssignImage: () => undefined, onImagesSaved, onMessage }))
+      }
+      root.render(createElement(Harness))
     })
     return { client, onImagesSaved, onMessage }
   }
@@ -68,6 +76,14 @@ describe('PendingImages', () => {
     expect(container.querySelector('.pending-variant-row h3')?.textContent).toBe('cap-red')
   })
 
+  it('expands and collapses every family at once', async () => {
+    await render([item('cap', { has_variants: 1 }), item('cap-red', { variant_of: 'cap' }), item('bowl', { has_variants: 1 }), item('bowl-xl', { variant_of: 'bowl' })])
+    await click(button('toggle-all'))
+    expect(container.querySelectorAll('.pending-variant-row')).toHaveLength(2)
+    await click(button('toggle-all'))
+    expect(container.querySelector('.pending-variant-row')).toBeNull()
+  })
+
   it('opens a shown image larger and closes it', async () => {
     await render([item('bowl', { has_variants: 1, image: 'https://cdn.example/bowl.png' }), item('bowl-xl', { variant_of: 'bowl' })])
     await click(button('productImages.viewFor'))
@@ -79,7 +95,6 @@ describe('PendingImages', () => {
   it('shows only the variants without an image in the variants view', async () => {
     const { client } = await render([item('shirt', { has_variants: 1, image: '/files/shirt.png' }), item('shirt-s', { variant_of: 'shirt' }), item('shirt-m', { variant_of: 'shirt', image: '/files/m.png' }), item('bowl')], 'variants')
     expect(Array.from(container.querySelectorAll('.pending-row h2')).map((heading) => heading.textContent)).toEqual(['shirt-s'])
-    expect(container.querySelector('.pending-images-bar')).toBeNull()
     await click(button('pendingPage.assignTemplateImage'))
     expect(client.setItemImage).toHaveBeenCalledWith('shirt-s', '/files/shirt.png')
   })

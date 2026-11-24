@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, ImageOff, ImagePlus } from 'lucide-react'
+import { ChevronDown, ChevronRight, ImageOff, ImagePlus } from 'lucide-react'
 import { Badge, Button } from './ui'
 import { ProductImage } from './product-image'
 import { ImagePreviewDialog, type ImagePreview } from './image-preview-dialog'
@@ -11,6 +11,7 @@ import type { createErpNextClient } from '../lib/erpnext'
 import type { MissingImageGroup, MissingImageRow, MissingImageView } from '../lib/pending-items'
 import { shareCachedProductImage } from '../lib/product-image-sync'
 import type { VariantItem } from '../lib/types'
+import type { FamilyExpansion } from './use-family-expansion'
 
 type Client = ReturnType<typeof createErpNextClient>
 type Family = Extract<MissingImageGroup, { kind: 'family' }>
@@ -23,13 +24,13 @@ const groupKey = (group: MissingImageGroup) => group.kind === 'item' ? group.ite
  * from the template by its variants or by the template from a variant. `view` shows the families as a
  * hierarchy or, in the flat views, only `rows`: every item without an image, or just templates or variants.
  */
-export function PendingImages({ client, profileId, view, groups, rows, search, empty, onAssignImage, onImagesSaved, onMessage }: {
+export function PendingImages({ client, profileId, view, groups, rows, expansion, empty, onAssignImage, onImagesSaved, onMessage }: {
   client: Client
   profileId: string
   view: MissingImageView
   groups: MissingImageGroup[]
   rows: MissingImageRow[]
-  search: string
+  expansion: FamilyExpansion
   empty: ReactNode
   onAssignImage: (item: VariantItem) => void
   /** Saves the new image of these items in the local catalogs; resolves true when the cache write failed. */
@@ -38,19 +39,10 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
 }) {
   const { t } = useTranslation()
   const { confirm, dialog } = useConfirmDialog()
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
-  // Searching expands the matching families; clearing the search collapses them again.
-  const [expandedSearch, setExpandedSearch] = useState(search)
-  if (expandedSearch !== search) {
-    setExpandedSearch(search)
-    setExpanded(new Set(search ? groups.filter((group) => group.kind === 'family').map(groupKey) : []))
-  }
+  const { expanded, toggle } = expansion
   const [busy, setBusy] = useState<Busy | null>(null)
   const [preview, setPreview] = useState<ImagePreview | null>(null)
 
-  const families = groups.filter((group): group is Family => group.kind === 'family')
-  const allExpanded = families.length > 0 && families.every((family) => expanded.has(family.template.name))
-  const toggle = (name: string) => setExpanded((current) => { const next = new Set(current); if (next.has(name)) next.delete(name); else next.add(name); return next })
 
   /** Saves `imageUrl` on each target, one request at a time, and reports which ones failed. */
   async function applyImage(key: string, source: VariantItem, targets: VariantItem[], successMessage: string) {
@@ -134,11 +126,6 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
   if (!groups.length) return <>{empty}{dialog}</>
 
   return <>
-    {families.length > 0 && <div className="pending-images-bar">
-      <Button type="button" variant="secondary" size="compact" aria-expanded={allExpanded} onClick={() => setExpanded(allExpanded ? new Set() : new Set(families.map((family) => family.template.name)))}>
-        {allExpanded ? <ChevronsDownUp className="size-4" aria-hidden="true" /> : <ChevronsUpDown className="size-4" aria-hidden="true" />}{allExpanded ? t('pendingPage.images.collapseAll') : t('pendingPage.images.expandAll')}
-      </Button>
-    </div>}
     <div role="list">
       <VirtualizedCollection className="pending-list" items={groups} getKey={groupKey} estimateSize={76} renderItem={(group) => {
         if (group.kind === 'item') {
