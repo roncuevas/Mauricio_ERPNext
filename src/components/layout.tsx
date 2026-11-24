@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { IconButton } from './ui'
+import { WithTooltip } from './ui/tooltip'
 import { useTheme } from './theme-provider'
 import { featureFlags } from '../lib/feature-flags'
 import { LanguageSelector } from './language-selector'
@@ -134,9 +135,10 @@ export function MobileNavigation({ onLock, client }: { onLock: () => void; clien
   </div>
 }
 
-export function ThemeModeToggle({ className = 'app-sidebar-theme-toggle' }: { className?: string } = {}) {
+export function ThemeModeToggle({ className = 'app-sidebar-theme-toggle', tooltip = false }: { className?: string; tooltip?: boolean } = {}) {
   const { t } = useTranslation()
   const { colorMode, toggleColorMode } = useTheme()
   const label = colorMode === 'dark' ? t('navigation.lightMode') : t('navigation.darkMode')
-  return <IconButton className={className} type="button" label={label} title={label} onClick={toggleColorMode} icon={<SidebarIcon name={colorMode === 'dark' ? 'sun' : 'moon'} />} />
+  const button = <IconButton className={className} type="button" label={label} title={tooltip ? '' : label} onClick={toggleColorMode} icon={<SidebarIcon name={colorMode === 'dark' ? 'sun' : 'moon'} />} />
+  return tooltip ? <WithTooltip label={label}>{button}</WithTooltip> : button
 }

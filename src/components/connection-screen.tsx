@@ -14,6 +14,7 @@ import type { ConnectionProfile, StoredProfile } from '../lib/types'
 import { LanguageSelector } from './language-selector'
 import { ThemePaletteSelector } from './theme-palette-selector'
 import { ThemeModeToggle } from './layout'
+import { TooltipProvider } from './ui/tooltip'
 
 /** Where ERPNext issues the API Key and Secret, behind a disclosure so the form stays short for people who have them. */
 function ApiKeyHelp({ baseUrl }: { baseUrl: string }) {
@@ -193,11 +194,13 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
             <Button type="button" variant="link" aria-expanded={mode === 'new' ? showImport : false} onClick={() => mode === 'new' ? setShowImport((value) => !value) : startNew(true)}>{mode === 'new' && showImport ? t('connection.cancelImport') : t('connection.importLink')}</Button>
           </div>
         </Card>
-        <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
-          <LanguageSelector compact />
-          <ThemePaletteSelector compact />
-          <ThemeModeToggle className="connection-theme-toggle" />
-        </div>
+        <TooltipProvider delayDuration={200}>
+          <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
+            <LanguageSelector compact tooltip />
+            <ThemePaletteSelector compact tooltip />
+            <ThemeModeToggle className="connection-theme-toggle" tooltip />
+          </div>
+        </TooltipProvider>
       </div>
       {confirmDialog}
     </main>
