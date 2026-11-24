@@ -8,9 +8,18 @@ const reply = (status: number, body: unknown) => vi.stubGlobal('fetch', vi.fn(as
 describe('verifyConnection', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('returns the ERPNext user when the credentials are accepted', async () => {
-    reply(200, { message: 'ventas@example.com' })
-    await expect(verifyConnection(connection)).resolves.toBe('ventas@example.com')
+  it('returns the ERPNext user and their full name when the credentials are accepted', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => String(input).includes('get_logged_user')
+      ? new Response(JSON.stringify({ message: 'ventas@example.com' }), { status: 200 })
+      : new Response(JSON.stringify({ data: { name: 'ventas@example.com', first_name: 'Ana', last_name: 'López' } }), { status: 200 })))
+    await expect(verifyConnection(connection)).resolves.toEqual({ user: 'ventas@example.com', userName: 'Ana López' })
+  })
+
+  it('leaves the name out when the user record cannot be read', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => String(input).includes('get_logged_user')
+      ? new Response(JSON.stringify({ message: 'ventas@example.com' }), { status: 200 })
+      : new Response('{}', { status: 403 })))
+    await expect(verifyConnection(connection)).resolves.toEqual({ user: 'ventas@example.com', userName: undefined })
   })
 
   it('explains rejected credentials, including a Guest session', async () => {

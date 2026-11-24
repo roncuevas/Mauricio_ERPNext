@@ -439,10 +439,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .connection-form [data-slot="field-description"].is-ready { color: var(--color-success); font-weight: 650; }
 .connection-form [data-slot="field-description"] svg { width: .9rem; height: .9rem; }
 .connection-help-panel > a { justify-self: start; min-height: 1.75rem; padding-inline: 0; }
-.connection-profile-option { flex: 1 1 auto; width: auto; min-width: 0; cursor: pointer; align-items: center; gap: .65rem; border: 0; background: transparent; padding: .15rem; text-transform: none; letter-spacing: 0; }
+.connection-profile-option { flex: 1 1 auto; width: auto; min-width: 0; cursor: pointer; align-items: center; gap: 0; border: 0; background: transparent; padding: .15rem; text-transform: none; letter-spacing: 0; }
 .connection-profile-option [data-slot="field-content"] { min-width: 0; gap: .2rem; }
 .connection-profile-option [data-slot="field-label"] { color: var(--color-heading); font-size: .875rem; font-weight: 700; overflow-wrap: anywhere; }
-.connection-profile-option [data-slot="field-description"] { overflow: hidden; margin: 0; color: var(--color-muted); font-size: .75rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.connection-profile-option [data-slot="field-description"] { margin: 0; color: var(--color-muted); font-size: .75rem; font-weight: 600; overflow-wrap: anywhere; }
+.connection-profile-option .connection-profile-user { color: var(--color-ink); font-weight: 650; white-space: nowrap; }
+.connection-profile-card:has(:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.connection-form .connection-share-hint { align-items: flex-start; color: var(--color-primary); font-weight: 600; }
+.connection-form .connection-share-hint svg { margin-top: .1rem; flex: 0 0 auto; }
 .connection-profile-card:has([data-state="checked"]) { border-color: var(--color-primary); background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px var(--color-primary); }
 .connection-profile-card:has(.connection-profile-option:hover):not(:has([data-state="checked"])) { border-color: var(--color-accent); }
 .connection-alt-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1.25rem; margin-top: .85rem; }

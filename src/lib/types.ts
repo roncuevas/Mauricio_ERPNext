@@ -34,6 +34,8 @@ export type StoredProfile = {
   id: string
   label: string
   baseUrl: string
+  /** Full name of the ERPNext user the API key belongs to, learned when the connection is verified; kept beside the label, unencrypted. */
+  userName?: string
   salt: string
   iv: string
   ciphertext: string

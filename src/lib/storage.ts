@@ -23,3 +23,10 @@ export function readLastProfileId() {
 export function writeLastProfileId(id: string) {
   try { localStorage.setItem(lastProfileKey, id) } catch { /* Remembering the profile is a convenience. */ }
 }
+
+/** Records the name of the ERPNext user a saved profile signs in as, for profiles saved before that was learned. */
+export function rememberProfileUserName(id: string, userName: string) {
+  const next = readProfiles().map((profile) => profile.id === id ? { ...profile, userName } : profile)
+  writeProfiles(next)
+  return next
+}

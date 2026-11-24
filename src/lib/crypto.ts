@@ -28,13 +28,13 @@ async function deriveKey(passphrase: string, salt: Uint8Array) {
   )
 }
 
-export async function encryptProfile(profile: ConnectionProfile, passphrase: string): Promise<StoredProfile> {
+export async function encryptProfile(profile: ConnectionProfile, passphrase: string, userName?: string): Promise<StoredProfile> {
   if (passphrase.length < 8) throw new Error(i18n.t('connection.errors.passwordShort', { count: 8 }))
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const key = await deriveKey(passphrase, salt)
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: toArrayBuffer(iv) }, key, toArrayBuffer(encoder.encode(JSON.stringify(profile))))
-  return { version: 1, id: profile.id, label: profile.label, baseUrl: profile.baseUrl, salt: encode(salt), iv: encode(iv), ciphertext: encode(ciphertext) }
+  return { version: 1, id: profile.id, label: profile.label, baseUrl: profile.baseUrl, ...(userName ? { userName } : {}), salt: encode(salt), iv: encode(iv), ciphertext: encode(ciphertext) }
 }
 
 export async function decryptProfile(stored: StoredProfile, passphrase: string): Promise<ConnectionProfile> {

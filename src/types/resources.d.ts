@@ -255,6 +255,7 @@ export default interface Resources {
       "security": "Las credenciales se cifran y permanecen solo en este navegador.",
       "share": "Comparte tu perfil",
       "shareCopied": "Enlace copiado. Contiene credenciales: compártelo solo por un canal seguro.",
+      "shareHint": "Escribe la contraseña local de “{{label}}” para generar el enlace. Lleva tus credenciales: compártelo solo por un canal seguro.",
       "shareProfile": "Compartir perfil",
       "sharedLinkImported": "Link importado. Solo falta la contraseña local para cifrar y conectar.",
       "sharedLinkWarning": "Este enlace contiene credenciales en el fragmento local del navegador. Confirma la contraseña para cifrarlas; después el enlace se limpia.",

@@ -80,6 +80,7 @@
     "lockConfirmAction": "Yes, lock"
   },
   "connection": {
+    "shareHint": "Enter the local password for “{{label}}” to create the link. It carries your credentials: share it only through a secure channel.",
     "delete": {"title": "Delete this profile?", "description": "“{{label}}” will be removed from this browser. Your ERPNext does not change; to use it again you'll need to connect with the API Key and API Secret.", "action": "Delete profile"},
     "errors": {"passwordShort_one": "The local password must be at least {{count}} character.", "passwordShort_other": "The local password must be at least {{count}} characters.", "wrongPassword": "Couldn't unlock the connection. Check the password.", "httpsRequired": "The URL must use HTTPS. Only localhost can use HTTP."},
     "password": {"show": "Show password", "hide": "Hide password", "purpose": "Create a new password just for this browser; it is not your ERPNext password. You'll enter it each time you sign in.", "minimum_one": "At least {{count}} character.", "minimum_other": "At least {{count}} characters.", "remaining_one": "{{count}} more character.", "remaining_other": "{{count}} more characters.", "ready": "Length looks good."},

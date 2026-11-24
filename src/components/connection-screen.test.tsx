@@ -14,6 +14,10 @@ beforeAll(async () => {
 
 const centro: ConnectionProfile = { id: 'centro', label: 'Tienda Centro', baseUrl: 'https://centro.example.com', apiKey: 'key-centro', apiSecret: 'secret-centro' }
 const norte: ConnectionProfile = { id: 'norte', label: 'Sucursal Norte', baseUrl: 'https://norte.example.com', apiKey: 'key-norte', apiSecret: 'secret-norte' }
+/** ERPNext answering the logged user and that user's record, as the login asks for both. */
+const erpnext = (user: string, fullName?: string) => vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => String(input).includes('get_logged_user')
+  ? new Response(JSON.stringify({ message: user }), { status: 200 })
+  : new Response(JSON.stringify({ data: { name: user, ...(fullName ? { full_name: fullName } : {}) } }), { status: 200 }))
 const t = (key: string, options: Record<string, unknown> = {}) => (i18n.t as (key: string, options: Record<string, unknown>) => string)(key, options)
 
 let container: HTMLDivElement
@@ -92,6 +96,24 @@ describe('ConnectionScreen', () => {
     expect(localStorage.getItem('mauricio-erpnext:last-profile')).toBe('norte')
   }, 20_000)
 
+  it('learns the ERPNext user of a profile saved without it when unlocking', async () => {
+    vi.stubGlobal('fetch', erpnext('caja@example.com', 'Carlos Caja'))
+    localStorage.setItem('mauricio-erpnext:profiles', JSON.stringify(stored))
+    await render(stored)
+    await type(byLabel(t('connection.localPassword')), 'password-centro')
+    await submit()
+    await eventually(() => expect(onProfilesChange).toHaveBeenCalled())
+    expect(onProfilesChange.mock.calls[0][0].find((profile) => profile.id === 'centro')?.userName).toBe('Carlos Caja')
+    expect(onUnlock).toHaveBeenCalledWith(centro)
+  }, 20_000)
+
+  it('shows the ERPNext user name, never the email, under the profile name', async () => {
+    await render([{ ...stored[0], userName: 'Ana López' }, stored[1]])
+    expect(container.querySelector('.connection-profile-user')?.textContent).toBe('Ana López')
+    expect(container.querySelector('.connection-profile-user')?.parentElement?.textContent).toBe('Ana López · centro.example.com')
+    expect(container.textContent).not.toContain('@')
+  })
+
   it('switches profile from the radio group and rejects a wrong password', async () => {
     await render(stored)
     await click(container.querySelector('[role=radio][value=norte]')!)
@@ -109,6 +131,9 @@ describe('ConnectionScreen', () => {
     await click(button(t('connection.shareProfile'))[1])
     expect(checkedProfile()).toBe('norte')
     expect(container.querySelector('h1')?.textContent).toBe(t('connection.share'))
+    expect(button(t('connection.shareProfile'))[1].getAttribute('aria-pressed')).toBe('true')
+    const password = byLabel(t('connection.localPassword'))
+    expect(document.getElementById(password.getAttribute('aria-describedby')!)?.textContent).toContain(t('connection.shareHint', { label: norte.label }))
     await type(byLabel(t('connection.localPassword')), 'password-norte')
     await submit()
     await eventually(() => expect(writeText).toHaveBeenCalledTimes(1))
@@ -134,7 +159,7 @@ describe('ConnectionScreen', () => {
   })
 
   it('verifies a new connection with ERPNext before saving it', async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({ message: 'ventas@example.com' }), { status: 200 }))
+    const fetchMock = erpnext('ventas@example.com', 'Ana López')
     vi.stubGlobal('fetch', fetchMock)
     await render([])
     await type(byLabel(t('connection.profileName')), 'Nueva')
@@ -146,7 +171,10 @@ describe('ConnectionScreen', () => {
     await eventually(() => expect(onUnlock).toHaveBeenCalled())
     expect(String(fetchMock.mock.calls[0][0])).toContain('frappe.auth.get_logged_user')
     expect(onUnlock).toHaveBeenCalledWith(expect.objectContaining({ label: 'Nueva', baseUrl: 'https://nueva.example.com', apiKey: 'k', apiSecret: 's' }))
-    expect(JSON.parse(localStorage.getItem('mauricio-erpnext:profiles')!)).toHaveLength(1)
+    const saved = JSON.parse(localStorage.getItem('mauricio-erpnext:profiles')!) as StoredProfile[]
+    expect(saved).toHaveLength(1)
+    expect(saved[0].userName).toBe('Ana López')
+    expect(JSON.stringify(saved)).not.toContain('ventas@example.com')
   }, 20_000)
 
   it('keeps nothing when ERPNext rejects the new credentials', async () => {

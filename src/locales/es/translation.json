@@ -80,6 +80,7 @@
     "lockConfirmAction": "Sí, bloquear"
   },
   "connection": {
+    "shareHint": "Escribe la contraseña local de “{{label}}” para generar el enlace. Lleva tus credenciales: compártelo solo por un canal seguro.",
     "delete": {"title": "¿Eliminar este perfil?", "description": "Se borrará “{{label}}” de este navegador. Tu ERPNext no cambia; para volver a usarlo tendrás que conectar de nuevo con la API Key y el API Secret.", "action": "Eliminar perfil"},
     "errors": {"passwordShort_one": "La contraseña local debe tener al menos {{count}} carácter.", "passwordShort_other": "La contraseña local debe tener al menos {{count}} caracteres.", "wrongPassword": "No se pudo desbloquear la conexión. Revisa la contraseña.", "httpsRequired": "La URL debe usar HTTPS. Solo localhost puede usar HTTP."},
     "password": {"show": "Mostrar contraseña", "hide": "Ocultar contraseña", "purpose": "Crea una contraseña nueva solo para este navegador; no es la de ERPNext. La pedirá cada vez que entres.", "minimum_one": "Mínimo {{count}} carácter.", "minimum_other": "Mínimo {{count}} caracteres.", "remaining_one": "Falta {{count}} carácter.", "remaining_other": "Faltan {{count}} caracteres.", "ready": "Longitud correcta."},

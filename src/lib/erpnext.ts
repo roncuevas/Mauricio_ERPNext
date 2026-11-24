@@ -156,13 +156,14 @@ export type ErpNextClient = ReturnType<typeof createErpNextClient>
 /**
  * Confirms a new connection answers as ERPNext with these API credentials before it is saved, and turns the usual
  * failures (wrong key, unreachable URL or CORS, a site that is not ERPNext) into a message with the next step.
- * Returns the ERPNext user the credentials belong to.
+ * Returns the ERPNext user id and, when ERPNext shares it, the person's full name.
  */
-export async function verifyConnection(connection: ConnectionProfile): Promise<string> {
+export async function verifyConnection(connection: ConnectionProfile): Promise<{ user: string; userName?: string }> {
   const host = new URL(connection.baseUrl).host
+  const client = createErpNextClient(connection)
   let user: unknown
   try {
-    user = await createErpNextClient(connection).getCurrentUser()
+    user = await client.getCurrentUser()
   } catch (error) {
     if (error instanceof ErpNextError) {
       if (error.status === 401 || error.status === 403) throw new Error(i18n.t('connection.verify.credentials'), { cause: error })
@@ -173,5 +174,16 @@ export async function verifyConnection(connection: ConnectionProfile): Promise<s
   }
   if (user === 'Guest') throw new Error(i18n.t('connection.verify.credentials'))
   if (typeof user !== 'string' || !user) throw new Error(i18n.t('connection.verify.notErpNext', { host }))
-  return user
+  return { user, userName: await readUserName(client, user) }
+}
+
+/** The person's full name from their ERPNext User, or nothing when it is unset or the user cannot read it. */
+async function readUserName(client: ReturnType<typeof createErpNextClient>, user: string) {
+  try {
+    const profile = await client.getUserProfile(user)
+    const name = profile.full_name?.trim() || [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim()
+    return name && name !== user ? name : undefined
+  } catch {
+    return undefined
+  }
 }
