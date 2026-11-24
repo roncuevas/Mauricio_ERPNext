@@ -105,7 +105,7 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
       </DropdownMenuContent>
     </DropdownMenu>
   }
-  const assignButton = (item: VariantItem) => <Button type="button" variant="secondary" size="compact" disabled={busy !== null} onClick={() => onAssignImage(item)}><ImagePlus className="size-4" aria-hidden="true" />{t('pendingPage.assignImage')}</Button>
+  const assignButton = (item: VariantItem) => <Button type="button" variant="secondary" size="compact" disabled={busy !== null} onClick={() => onAssignImage(item)}><ImagePlus className="size-4" aria-hidden="true" /><span className="pending-action-label">{t('pendingPage.assignImage')}</span></Button>
 
   if (view !== 'tree') {
     if (!rows.length) return <>{empty}{dialog}</>
@@ -158,7 +158,8 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
             {thumb(template)}
             <div className="pending-item-main">
               <h2>{templateName}</h2>
-              <p>{template.name} · {missingVariants.length ? t('pendingPage.images.variantsMissing', { missing: missingVariants.length, count: variants.length }) : t('pendingPage.images.variantsComplete', { count: variants.length })}</p>
+              <p className="pending-code" title={template.name}>{template.name}</p>
+              <p>{missingVariants.length ? t('pendingPage.images.variantsMissing', { missing: missingVariants.length, count: variants.length }) : t('pendingPage.images.variantsComplete', { count: variants.length })}</p>
             </div>
             <div className="pending-item-tags"><Badge tone="neutral">{t('pendingPage.kind.template')}</Badge>{templateMissing && <Badge tone="warning">{t('pendingPage.images.noImage')}</Badge>}</div>
             <div className="pending-item-actions">
@@ -172,7 +173,7 @@ export function PendingImages({ client, profileId, view, groups, rows, search, e
               const missing = !variant.image?.trim()
               return <div key={variant.name} className="pending-row pending-image-row pending-variant-row" role="listitem">
                 {thumb(variant)}
-                <div className="pending-item-main"><h3>{variant.item_name || variant.name}</h3><p>{variant.name}</p></div>
+                <div className="pending-item-main"><h3>{variant.item_name || variant.name}</h3><p className="pending-code" title={variant.name}>{variant.name}</p></div>
                 {missing && <div className="pending-item-tags"><Badge tone="warning">{t('pendingPage.images.noImage')}</Badge></div>}
                 <div className="pending-item-actions">
                   {missing && !templateMissing && <Button type="button" variant="secondary" size="compact" disabled={busy !== null} loading={busy?.key === `variant:${variant.name}`} onClick={() => { void applyImage(`variant:${variant.name}`, template, [variant], t('pendingPage.imageSaved')) }}>{t('pendingPage.assignTemplateImage')}</Button>}

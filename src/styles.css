@@ -71,12 +71,28 @@
 .pending-variant-row:hover { background: var(--color-surface-muted); }
 .pending-variant-row .pending-thumb { width: 2.25rem; height: 2.25rem; }
 .pending-item-main h3 { color: var(--color-heading); font-size: .85rem; font-weight: 600; overflow-wrap: anywhere; }
+/* Long item codes stay on one line; the full code is in the tooltip. */
+.pending-item-main p.pending-code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
 @media (max-width: 640px) {
-  .pending-image-row { flex-wrap: wrap; }
-  /* Thumbnail, toggle and name share the first line; tags and actions wrap below it. */
-  .pending-image-row .pending-item-main { flex: 1 1 0; min-width: 0; }
-  .pending-image-row .pending-item-tags { flex-basis: 100%; }
-  .pending-family-variants { margin-left: 1rem; }
+  /*
+   * Phones: a large thumbnail anchors the top-left, the name, code and tags share one text column beside it, the
+   * family toggle sits top-right, and the actions span the full width underneath.
+   */
+  .pending-image-row { --pending-thumb: 4rem; display: grid; grid-template-columns: var(--pending-thumb) minmax(0, 1fr) auto; grid-template-areas: "thumb main toggle" "thumb tags toggle" "actions actions actions"; align-items: start; gap: .35rem 0; padding: .85rem 1rem; }
+  .pending-image-row > .pending-thumb { grid-area: thumb; width: var(--pending-thumb); height: var(--pending-thumb); border-radius: .65rem; }
+  .pending-image-row > .pending-item-main { grid-area: main; padding-left: .75rem; }
+  .pending-image-row > .pending-item-tags { grid-area: tags; padding-left: .75rem; }
+  .pending-image-row > .pending-item-actions { grid-area: actions; margin-top: .5rem; }
+  .pending-image-row > .pending-family-toggle { grid-area: toggle; width: 2.5rem; height: 2.5rem; margin: -.4rem -.6rem 0 .25rem; }
+  .pending-image-row > .pending-family-toggle svg { width: 1.15rem; height: 1.15rem; }
+  .pending-image-row .pending-item-main h2 { font-size: .95rem; line-height: 1.3; }
+  .pending-family-variants { margin: 0 .75rem .75rem; padding-left: .75rem; }
+  .pending-variant-row { --pending-thumb: 3.25rem; padding: .65rem .25rem .65rem .5rem; }
+  /* Next to the template action, "Assign image" shrinks to its icon so a variant keeps one row of actions. */
+  .pending-variant-row .pending-item-actions { flex-wrap: nowrap; }
+  .pending-variant-row .pending-item-actions > :last-child:not(:only-child) { flex: 0 0 2.75rem; padding-inline: 0; }
+  .pending-variant-row .pending-item-actions > :last-child:not(:only-child) .pending-action-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .pending-variant-row + .pending-variant-row { margin-top: 0; border-top: 1px solid var(--color-border-subtle); border-radius: 0; }
 }
 /* Full-size product image. */
 .image-preview-dialog { max-width: min(56rem, calc(100% - 2rem)); gap: .75rem; padding: 1rem; }
