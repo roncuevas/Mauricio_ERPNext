@@ -220,6 +220,7 @@ export default interface Resources {
       "localPassword": "Contraseña local",
       "new": "Nueva conexión",
       "passwordPlaceholder": "Mínimo 8 caracteres",
+      "preferences": "Idioma y apariencia",
       "profile": "perfil",
       "profileName": "Nombre del perfil",
       "profilePlaceholder": "Mi ERPNext",

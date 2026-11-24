@@ -5,6 +5,9 @@ import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
 import { removeProfile, writeProfiles } from '../lib/storage'
 import type { ConnectionProfile, StoredProfile } from '../lib/types'
+import { LanguageSelector } from './language-selector'
+import { ThemePaletteSelector } from './theme-palette-selector'
+import { ThemeModeToggle } from './layout'
 
 function ShareIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false"><circle cx="18" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.8" /><circle cx="6" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.8" /><circle cx="18" cy="19" r="2.5" stroke="currentColor" strokeWidth="1.8" /><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" /></svg>
@@ -80,6 +83,11 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
   return (
     <main className="connection-screen flex min-h-screen items-center justify-center p-4 sm:p-6">
       <div className="connection-shell w-full">
+        <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
+          <LanguageSelector />
+          <ThemePaletteSelector />
+          <ThemeModeToggle className="connection-theme-toggle" />
+        </div>
         <header className="connection-branding">
           <img className="connection-brand-logo" src="/icon-192.png" alt={t('common.appName')} />
           <div><p className="connection-brand-name">{t('common.appName')}</p><p className="connection-brand-caption">{t('common.appCaption')}</p></div>

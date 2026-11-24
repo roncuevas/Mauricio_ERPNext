@@ -80,6 +80,7 @@
     "lockConfirmAction": "Yes, lock"
   },
   "connection": {
+    "preferences": "Language and appearance",
     "secure": "Secure connection",
     "connect": "Connect your instance",
     "unlock": "Unlock your instance",

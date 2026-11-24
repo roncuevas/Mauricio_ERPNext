@@ -80,6 +80,7 @@
     "lockConfirmAction": "Sí, bloquear"
   },
   "connection": {
+    "preferences": "Idioma y apariencia",
     "secure": "Conexión segura",
     "connect": "Conecta tu instancia",
     "unlock": "Desbloquea tu instancia",
