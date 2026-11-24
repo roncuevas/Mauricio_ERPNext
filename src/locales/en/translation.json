@@ -80,6 +80,7 @@
     "lockConfirmAction": "Yes, lock"
   },
   "connection": {
+    "verify": {"checking": "Checking connection…", "credentials": "ERPNext rejected the API Key or API Secret. Check they are complete and the user has API access.", "unreachable": "No response from {{host}}. Check the URL and that the instance allows CORS from {{origin}}.", "timeout": "{{host}} took too long to respond. Check the URL or try again.", "notErpNext": "{{host}} responded, but not as ERPNext. Check the URL is your instance, without extra paths."},
     "useSaved": "Use a saved profile",
     "preferences": "Language and appearance",
     "secure": "Secure connection",

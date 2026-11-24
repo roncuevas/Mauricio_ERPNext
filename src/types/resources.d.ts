@@ -236,7 +236,14 @@ export default interface Resources {
       "unlockButton": "Desbloquear",
       "url": "URL de ERPNext",
       "urlPlaceholder": "https://erp.example.com",
-      "useSaved": "Usar un perfil guardado"
+      "useSaved": "Usar un perfil guardado",
+      "verify": {
+        "checking": "Comprobando conexión…",
+        "credentials": "ERPNext rechazó la API Key o el API Secret. Revisa que estén completos y que el usuario tenga acceso a la API.",
+        "notErpNext": "{{host}} respondió, pero no como ERPNext. Revisa que la URL sea la de tu instancia, sin rutas extra.",
+        "timeout": "{{host}} tardó demasiado en responder. Revisa la URL o inténtalo de nuevo.",
+        "unreachable": "No hubo respuesta de {{host}}. Revisa que la URL sea correcta y que la instancia permita CORS desde {{origin}}."
+      }
     },
     "connectionStatus": {
       "checking": "Comprobando conexión",

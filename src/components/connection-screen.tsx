@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Field, IconButton, Input, Notice, Spinner } from './ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
+import { verifyConnection } from '../lib/erpnext'
 import { buildShareUrl, clearSharedConnectionParams, readSharedConnection, readSharedConnectionFromLink } from '../lib/share-link'
 import { readLastProfileId, removeProfile, writeLastProfileId, writeProfiles } from '../lib/storage'
 import type { ConnectionProfile, StoredProfile } from '../lib/types'
@@ -50,6 +51,8 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
       }
       const profile: ConnectionProfile = { id: crypto.randomUUID(), label: form.label.trim() || new URL(form.baseUrl).hostname, baseUrl: normalizeBaseUrl(form.baseUrl), apiKey: form.apiKey.trim(), apiSecret: form.apiSecret.trim() }
       if (!profile.apiKey || !profile.apiSecret) throw new Error(t('errors.apiRequired'))
+      // Only a connection ERPNext accepts is encrypted and saved, so a typo never leaves a broken profile behind.
+      await verifyConnection(profile)
       const stored = await encryptProfile(profile, form.passphrase)
       const next = [...profiles.filter((p) => p.id !== stored.id), stored]
       writeProfiles(next); onProfilesChange(next); writeLastProfileId(stored.id); await onUnlock(profile)
@@ -127,7 +130,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
           <form className="connection-form" onSubmit={submit}>
-            {savedProfile ? <><Field label={t('connection.localPassword')}><Input key={`${savedProfile.id}-${mode}`} autoFocus type="password" autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : t('connection.encryptConnect')}</Button></>}
+            {savedProfile ? <><Field label={t('connection.localPassword')}><Input key={`${savedProfile.id}-${mode}`} autoFocus type="password" autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
           </form>
           <div className="connection-alt-actions">
             {mode === 'share' && savedProfile && <button type="button" className="connection-link" onClick={() => chooseProfile(savedProfile)}>{t('common.cancel')}</button>}
