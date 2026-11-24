@@ -13,6 +13,7 @@ export const buttonVariants = cva('button inline-flex shrink-0 items-center just
       secondary: 'button-secondary',
       action: 'button-action',
       danger: 'button-danger',
+      link: 'button-link',
     },
     size: {
       default: '',
