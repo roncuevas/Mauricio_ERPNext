@@ -202,6 +202,14 @@ export default interface Resources {
       "uom": "UOM"
     },
     "connection": {
+      "apiHelp": {
+        "note": "Si vuelves a generar claves, las anteriores dejan de funcionar. Tu usuario necesita permisos sobre productos, precios e inventario.",
+        "open": "Abrir mi ERPNext en otra pestaña",
+        "step1": "Entra a tu ERPNext y abre el menú de tu avatar, arriba a la derecha › Mi configuración (My Settings).",
+        "step2": "En la pestaña Configuración (Settings), busca Acceso API (API Access) y toca Generar claves (Generate Keys).",
+        "step3": "Copia el API Secret en ese momento: ERPNext solo lo muestra una vez. La API Key queda visible en ese mismo apartado.",
+        "toggle": "¿Dónde obtengo la API Key y el API Secret?"
+      },
       "apiKey": "API Key",
       "apiSecret": "API Secret",
       "cancelImport": "Cancelar importar desde link",

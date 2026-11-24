@@ -80,6 +80,7 @@
     "lockConfirmAction": "Sí, bloquear"
   },
   "connection": {
+    "apiHelp": {"toggle": "¿Dónde obtengo la API Key y el API Secret?", "step1": "Entra a tu ERPNext y abre el menú de tu avatar, arriba a la derecha › Mi configuración (My Settings).", "step2": "En la pestaña Configuración (Settings), busca Acceso API (API Access) y toca Generar claves (Generate Keys).", "step3": "Copia el API Secret en ese momento: ERPNext solo lo muestra una vez. La API Key queda visible en ese mismo apartado.", "note": "Si vuelves a generar claves, las anteriores dejan de funcionar. Tu usuario necesita permisos sobre productos, precios e inventario.", "open": "Abrir mi ERPNext en otra pestaña"},
     "verify": {"checking": "Comprobando conexión…", "credentials": "ERPNext rechazó la API Key o el API Secret. Revisa que estén completos y que el usuario tenga acceso a la API.", "unreachable": "No hubo respuesta de {{host}}. Revisa que la URL sea correcta y que la instancia permita CORS desde {{origin}}.", "timeout": "{{host}} tardó demasiado en responder. Revisa la URL o inténtalo de nuevo.", "notErpNext": "{{host}} respondió, pero no como ERPNext. Revisa que la URL sea la de tu instancia, sin rutas extra."},
     "useSaved": "Usar un perfil guardado",
     "preferences": "Idioma y apariencia",

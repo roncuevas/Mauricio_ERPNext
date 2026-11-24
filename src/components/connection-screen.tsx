@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Field, IconButton, Input, Notice, Spinner } from './ui'
 import { decryptProfile, encryptProfile, normalizeBaseUrl } from '../lib/crypto'
@@ -16,6 +16,27 @@ function ShareIcon() {
 
 function TrashIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false"><path d="M4.5 7.5h15M9 4.5h6l.75 3H8.25l.75-3ZM7 7.5l.75 12h8.5l.75-12M10 11v5M14 11v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>
+}
+
+/** Where ERPNext issues the API Key and Secret, behind a disclosure so the form stays short for people who have them. */
+function ApiKeyHelp({ baseUrl }: { baseUrl: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+  let deskUrl = ''
+  try { deskUrl = `${normalizeBaseUrl(baseUrl)}/app` } catch { /* The link appears once the URL is valid. */ }
+  return <div className="connection-help">
+    <button type="button" className="connection-link" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}>{t('connection.apiHelp.toggle')}</button>
+    {open && <div id={panelId} className="connection-help-panel">
+      <ol>
+        <li>{t('connection.apiHelp.step1')}</li>
+        <li>{t('connection.apiHelp.step2')}</li>
+        <li>{t('connection.apiHelp.step3')}</li>
+      </ol>
+      <p>{t('connection.apiHelp.note')}</p>
+      {deskUrl && <a className="connection-link" href={deskUrl} target="_blank" rel="noopener noreferrer">{t('connection.apiHelp.open')}</a>}
+    </div>}
+  </div>
 }
 
 type ConnectionFormState = { label: string; baseUrl: string; apiKey: string; apiSecret: string; passphrase: string }
@@ -130,7 +151,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           {error && <div className="connection-notice"><Notice>{error}</Notice></div>}
           {shareNotice && <div className="connection-notice"><Notice tone="warning">{shareNotice}</Notice></div>}
           <form className="connection-form" onSubmit={submit}>
-            {savedProfile ? <><Field label={t('connection.localPassword')}><Input key={`${savedProfile.id}-${mode}`} autoFocus type="password" autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
+            {savedProfile ? <><Field label={t('connection.localPassword')}><Input key={`${savedProfile.id}-${mode}`} autoFocus type="password" autoComplete="current-password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required /></Field><Button type="submit" disabled={busy}>{busy ? <Spinner /> : mode === 'share' ? t('connection.copyShare') : t('connection.unlockButton')}</Button></> : <><Field label={t('connection.profileName')}><Input value={form.label} onChange={(e) => updateForm({ label: e.target.value })} placeholder={t('connection.profilePlaceholder')} /></Field><Field label={t('connection.url')}><Input type="url" value={form.baseUrl} onChange={(e) => updateForm({ baseUrl: e.target.value })} placeholder={t('connection.urlPlaceholder')} required /></Field><Field label={t('connection.apiKey')}><Input value={form.apiKey} onChange={(e) => updateForm({ apiKey: e.target.value })} required autoComplete="off" /></Field><Field label={t('connection.apiSecret')}><Input type="password" value={form.apiSecret} onChange={(e) => updateForm({ apiSecret: e.target.value })} required autoComplete="off" /></Field><ApiKeyHelp baseUrl={form.baseUrl} /><Field label={t('connection.localPassword')}><Input type="password" value={form.passphrase} onChange={(e) => updateForm({ passphrase: e.target.value })} minLength={8} required placeholder={t('connection.passwordPlaceholder')} /></Field><Button type="submit" disabled={busy}>{busy ? <><Spinner /> {t('connection.verify.checking')}</> : t('connection.encryptConnect')}</Button></>}
           </form>
           <div className="connection-alt-actions">
             {mode === 'share' && savedProfile && <button type="button" className="connection-link" onClick={() => chooseProfile(savedProfile)}>{t('common.cancel')}</button>}

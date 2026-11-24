@@ -431,6 +431,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .connection-form > .button { width: 100%; }
 .connection-form-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
 .connection-form-actions > .button { flex: 1 1 10rem; }
+.connection-help { display: grid; justify-items: start; gap: .4rem; margin-top: -.5rem; }
+.connection-help > .connection-link { padding-inline: 0; }
+.connection-help-panel { display: grid; gap: .55rem; width: 100%; border: 1px solid var(--color-border-subtle); border-radius: .7rem; background: var(--color-surface-muted); padding: .8rem .9rem; color: var(--color-ink); font-size: .8rem; line-height: 1.45; }
+.connection-help-panel ol { display: grid; gap: .35rem; margin: 0; padding-left: 1.15rem; list-style: decimal; }
+.connection-help-panel p { margin: 0; color: var(--color-muted); font-size: .74rem; }
+.connection-help-panel .connection-link { justify-self: start; min-height: 1.75rem; padding-inline: 0; }
 .connection-alt-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1.25rem; margin-top: .85rem; }
 .connection-link { min-height: 2.25rem; border: 0; border-radius: .4rem; background: transparent; padding: 0 .25rem; color: var(--color-primary); font-size: .8rem; font-weight: 650; cursor: pointer; }
 .connection-link:hover { text-decoration: underline; text-underline-offset: 3px; }
