@@ -150,7 +150,7 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
           <div><p className="connection-brand-name">{t('common.appName')}</p><p className="connection-brand-caption">{t('common.appCaption')}</p></div>
         </header>
         <Card className="connection-card p-6 sm:p-8">
-          <div className="connection-card-heading"><p className="connection-eyebrow">{t('connection.secure')}</p><h1>{heading}</h1><p>{t('connection.security')}</p></div>
+          <div className="connection-card-heading"><h1>{heading}</h1><p>{t('connection.security')}</p></div>
           {shared && <div className="connection-notice"><Notice tone="warning">{t('connection.sharedLinkWarning')}</Notice></div>}
           {savedProfile && <div className="connection-profiles">
             {profiles.length > 1 && <p className="field-label">{t('connection.profiles')}</p>}
@@ -174,7 +174,6 @@ export function ConnectionScreen({ profiles, onUnlock, onProfilesChange }: { pro
             {!savedProfile && profiles.length > 0 && <button type="button" className="connection-link" onClick={() => chooseProfile(profiles.find((profile) => profile.id === readLastProfileId()) ?? profiles[0])}>{t('connection.useSaved')}</button>}
             <button type="button" className="connection-link" aria-expanded={mode === 'new' ? showImport : false} onClick={() => mode === 'new' ? setShowImport((value) => !value) : startNew(true)}>{mode === 'new' && showImport ? t('connection.cancelImport') : t('connection.importLink')}</button>
           </div>
-          <p className="connection-security-note"><span aria-hidden="true">●</span> {t('connection.credentialsLocal')}</p>
         </Card>
         <div className="connection-preferences" role="group" aria-label={t('connection.preferences')}>
           <LanguageSelector compact />

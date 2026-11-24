@@ -86,7 +86,6 @@
     "verify": {"checking": "Comprobando conexión…", "credentials": "ERPNext rechazó la API Key o el API Secret. Revisa que estén completos y que el usuario tenga acceso a la API.", "unreachable": "No hubo respuesta de {{host}}. Revisa que la URL sea correcta y que la instancia permita CORS desde {{origin}}.", "timeout": "{{host}} tardó demasiado en responder. Revisa la URL o inténtalo de nuevo.", "notErpNext": "{{host}} respondió, pero no como ERPNext. Revisa que la URL sea la de tu instancia, sin rutas extra."},
     "useSaved": "Usar un perfil guardado",
     "preferences": "Idioma y apariencia",
-    "secure": "Conexión segura",
     "connect": "Conecta tu instancia",
     "unlock": "Desbloquea tu instancia",
     "share": "Comparte tu perfil",
@@ -116,7 +115,6 @@
     "clipboardError": "No se pudo copiar automáticamente. Revisa los permisos del portapapeles e inténtalo de nuevo.",
     "sharedLinkWarning": "Este enlace contiene credenciales en el fragmento local del navegador. Confirma la contraseña para cifrarlas; después el enlace se limpia.",
     "sharedLinkImported": "Link importado. Solo falta la contraseña local para cifrar y conectar.",
-    "credentialsLocal": "Tu información no sale de este navegador.",
     "deleteConfirm": "¿Eliminar el perfil local “{{label}}”?"
   },
   "home": {
