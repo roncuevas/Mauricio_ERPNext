@@ -351,7 +351,8 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
   }, [profileId])
 
   useEffect(() => {
-    if (!pendingPriceResume || !prices.data) return
+    // Wait for the local cart to hydrate; otherwise hydration replaces the cart that already holds the new line.
+    if (!pendingPriceResume || !prices.data || !localCartsHydrated) return
     const rate = priceForUom(pendingPriceResume.item, pendingPriceResume.uom.uom, prices.data.prices, selectedProfile?.selling_price_list)
     if (rate > 0) {
       addConfiguredItem(pendingPriceResume.item, pendingPriceResume.uom, rate)
@@ -362,7 +363,7 @@ export function PosPage({ client, profileId }: { client: Client; profileId: stri
     setPendingPriceResume(null)
   // The callback is declared below to keep the POS handlers grouped together.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPriceResume, prices.data, selectedProfile?.selling_price_list])
+  }, [localCartsHydrated, pendingPriceResume, prices.data, selectedProfile?.selling_price_list])
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
