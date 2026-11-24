@@ -22,7 +22,8 @@ export async function loadProductImage(client: Client, profileId: string, item: 
   const cached = await readProductImage(profileId, item.name)
   if (cached?.url === imageUrl) return { url: imageUrl, blob: cached.blob }
   const blob = await client.getImage(imageUrl)
-  await writeProductImage({ profileId, itemName: item.name, url: imageUrl, blob })
+  // A cache that cannot store it (private mode, full storage) must not hide an image that did download.
+  await writeProductImage({ profileId, itemName: item.name, url: imageUrl, blob }).catch(() => undefined)
   return { url: imageUrl, blob }
 }
 

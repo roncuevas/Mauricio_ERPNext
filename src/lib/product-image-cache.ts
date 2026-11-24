@@ -1,4 +1,14 @@
 type ProductImageRecord = { id: string; profileId: string; itemName: string; url: string; blob: Blob; updatedAt: string }
+/**
+ * What IndexedDB holds: the bytes as an ArrayBuffer, because Safari/WebKit refuses to store Blobs in some contexts.
+ * Records written before carry `blob` instead.
+ */
+type StoredImageRecord = Omit<ProductImageRecord, 'blob'> & { bytes?: ArrayBuffer; type?: string; blob?: Blob }
+
+function fromStored(record: StoredImageRecord): ProductImageRecord {
+  const { bytes, type, blob, ...rest } = record
+  return { ...rest, blob: blob ?? new Blob(bytes ? [bytes] : [], { type: type ?? '' }) }
+}
 
 const databaseName = 'mauricio-erpnext-product-images'
 const storeName = 'images'
@@ -34,14 +44,15 @@ export function readProductImage(profileId: string, itemName: string) {
   if (!profileId.trim() || !itemName.trim()) return Promise.resolve(null)
   return transact<ProductImageRecord | null>('readonly', (store, resolve, reject) => {
     const request = store.get(imageId(profileId, itemName))
-    request.onsuccess = () => resolve((request.result as ProductImageRecord | undefined) ?? null)
+    request.onsuccess = () => { const stored = request.result as StoredImageRecord | undefined; resolve(stored ? fromStored(stored) : null) }
     request.onerror = () => reject(request.error)
   })
 }
 
-export function writeProductImage(record: Omit<ProductImageRecord, 'id' | 'updatedAt'>) {
-  if (!record.profileId.trim() || !record.itemName.trim() || !record.url.trim() || !record.blob.size) return Promise.reject(new Error('La imagen requiere perfil, producto, URL y contenido.'))
-  const value: ProductImageRecord = { ...record, id: imageId(record.profileId, record.itemName), updatedAt: new Date().toISOString() }
+export async function writeProductImage(record: Omit<ProductImageRecord, 'id' | 'updatedAt'>) {
+  if (!record.profileId.trim() || !record.itemName.trim() || !record.url.trim() || !record.blob.size) throw new Error('La imagen requiere perfil, producto, URL y contenido.')
+  const { blob, ...rest } = record
+  const value: StoredImageRecord = { ...rest, bytes: await blob.arrayBuffer(), type: blob.type, id: imageId(record.profileId, record.itemName), updatedAt: new Date().toISOString() }
   return transact<void>('readwrite', (store, resolve, reject) => {
     const request = store.put(value)
     request.onsuccess = () => resolve()
@@ -53,7 +64,7 @@ export function listProductImages(profileId: string) {
   if (!profileId.trim()) return Promise.resolve([] as ProductImageRecord[])
   return transact<ProductImageRecord[]>('readonly', (store, resolve, reject) => {
     const request = store.index('profileId').getAll(profileId)
-    request.onsuccess = () => resolve(request.result as ProductImageRecord[])
+    request.onsuccess = () => resolve((request.result as StoredImageRecord[]).map(fromStored))
     request.onerror = () => reject(request.error)
   })
 }

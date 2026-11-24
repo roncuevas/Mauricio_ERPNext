@@ -45,13 +45,15 @@ export type ProfileDataUsage = {
   total: number
 }
 
-/** UTF-8 size of a stored value, plus the bytes of any Blob it carries. Structured clone overhead is ignored. */
+/** UTF-8 size of a stored value, plus the bytes of any Blob or ArrayBuffer it carries. Structured clone overhead is ignored. */
 function recordBytes(value: unknown): number {
   if (value instanceof Blob) return value.size
+  if (value instanceof ArrayBuffer) return value.byteLength
   if (!value || typeof value !== 'object') return new Blob([JSON.stringify(value) ?? '']).size
   let blobs = 0
   const json = JSON.stringify(value, (_key, entry) => {
     if (entry instanceof Blob) { blobs += entry.size; return undefined }
+    if (entry instanceof ArrayBuffer) { blobs += entry.byteLength; return undefined }
     return entry
   })
   return new Blob([json]).size + blobs
