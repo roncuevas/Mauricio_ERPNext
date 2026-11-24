@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ErpNextClient } from './erpnext'
-import { listAllDocuments } from './pagination'
+import { listAllDocuments, paginate } from './pagination'
 
 describe('REST pagination', () => {
   it('loads all batches and reports progress before each request', async () => {
@@ -19,3 +19,15 @@ describe('REST pagination', () => {
     expect(listDocuments).toHaveBeenNthCalledWith(2, 'Item', { fields: ['name'], pageLength: 2, start: 2 })
   })
 })
+
+describe('paginate', () => {
+  const rows = Array.from({ length: 60 }, (_, index) => index + 1)
+
+  it('returns one page of rows and clamps the page number', () => {
+    expect(paginate(rows, 2, 25)).toEqual({ rows: rows.slice(25, 50), page: 2, totalPages: 3 })
+    expect(paginate(rows, 9, 25)).toMatchObject({ page: 3, rows: rows.slice(50) })
+    expect(paginate(rows, Number.NaN, 25)).toMatchObject({ page: 1 })
+    expect(paginate([], 4, 25)).toEqual({ rows: [], page: 1, totalPages: 1 })
+  })
+})
+

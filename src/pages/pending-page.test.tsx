@@ -21,9 +21,9 @@ describe('PendingPage', () => {
     container?.remove()
   })
 
-  async function renderAt(url: string) {
+  async function renderAt(url: string, variantItems: Array<Record<string, unknown>> = [{ name: 'FOOD-1', item_name: 'Croquetas', item_group: 'Food', stock_uom: 'Nos', is_stock_item: 1 }]) {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } })
-    queryClient.setQueryData(queryKeys.catalog.variant('profile'), { updatedAt: '2026-11-23T00:00:00Z', imageFieldLoaded: true, items: [{ name: 'FOOD-1', item_name: 'Croquetas', item_group: 'Food', stock_uom: 'Nos', is_stock_item: 1 }] })
+    queryClient.setQueryData(queryKeys.catalog.variant('profile'), { updatedAt: '2026-11-23T00:00:00Z', imageFieldLoaded: true, items: variantItems })
     queryClient.setQueryData(queryKeys.catalog.price('profile'), { updatedAt: '2026-11-23T00:00:00Z', prices: [] })
     queryClient.setQueryData(queryKeys.catalog.item('profile'), { items: [] })
     queryClient.setQueryData(queryKeys.catalog.stock('profile'), { updatedAt: '2026-11-23T00:00:00Z', companies: [], warehouses: [{ name: 'Tienda' }, { name: 'Bodega' }], bins: [{ item_code: 'FOOD-1', warehouse: 'Tienda', actual_qty: 0 }, { item_code: 'FOOD-1', warehouse: 'Bodega', actual_qty: 7 }] })
@@ -74,6 +74,15 @@ describe('PendingPage', () => {
       'https://erp.test/app/Material Request/new?material_request_type=Purchase&set_warehouse=Tienda',
       '/stock?search=FOOD-1',
     ])
+  })
+
+  it('shows 25 results per page and moves between pages', async () => {
+    await renderAt('/pendientes?tab=images', Array.from({ length: 30 }, (_, index) => ({ name: `ITEM-${String(index + 1).padStart(2, '0')}` })))
+    const names = () => Array.from(container.querySelectorAll('.pending-row h2')).map((heading) => heading.textContent)
+    expect(names()).toHaveLength(25)
+    expect(container.querySelector('.list-pagination')?.textContent).toContain('pagination.page')
+    await act(async () => { container.querySelector<HTMLButtonElement>('button[aria-label="pagination.next"]')!.click() })
+    expect(names()).toEqual(['ITEM-26', 'ITEM-27', 'ITEM-28', 'ITEM-29', 'ITEM-30'])
   })
 })
 

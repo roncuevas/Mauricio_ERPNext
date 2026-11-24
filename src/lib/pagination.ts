@@ -14,3 +14,10 @@ export async function listAllDocuments<T>(client: ErpNextClient, doctype: string
     start += batch.data.length
   }
 }
+
+/** The rows of one page; an out-of-range page is clamped to the first or last one. */
+export function paginate<T>(rows: T[], page: number, pageSize: number) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const safePage = Math.min(Math.max(Number.isFinite(page) ? Math.trunc(page) : 1, 1), totalPages)
+  return { rows: rows.slice((safePage - 1) * pageSize, safePage * pageSize), page: safePage, totalPages }
+}
