@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronRight, ImageOff, ImagePlus } from 'lucide-react'
 import { Badge, Button } from './ui'
 import { ProductImage } from './product-image'
-import { ImagePreviewDialog, type ImagePreview } from './image-preview-dialog'
 import { VirtualizedCollection } from './virtualized-collection'
 import { useConfirmDialog } from './confirm-dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from './ui/dropdown-menu'
@@ -41,7 +40,6 @@ export function PendingImages({ client, profileId, view, groups, rows, expansion
   const { confirm, dialog } = useConfirmDialog()
   const { expanded, toggle } = expansion
   const [busy, setBusy] = useState<Busy | null>(null)
-  const [preview, setPreview] = useState<ImagePreview | null>(null)
 
 
   /** Saves `imageUrl` on each target, one request at a time, and reports which ones failed. */
@@ -82,7 +80,7 @@ export function PendingImages({ client, profileId, view, groups, rows, expansion
 
   const progress = (key: string) => busy?.key === key ? t('pendingPage.images.applying', { done: busy.done, total: busy.total }) : null
   const thumb = (item: VariantItem) => item.image?.trim()
-    ? <ProductImage key={`${item.name}:${item.image}`} client={client} profileId={profileId} item={item} className="pending-thumb" autoLoad onPreview={(source) => setPreview({ source, name: item.item_name || item.name, code: item.name })} />
+    ? <ProductImage key={`${item.name}:${item.image}`} client={client} profileId={profileId} item={item} className="pending-thumb" autoLoad previewable />
     : <span className="pending-thumb pending-thumb-empty" role="img" aria-label={t('pendingPage.images.noImage')}><ImageOff aria-hidden="true" /></span>
   /** The template takes a variant's image: directly when only one has an image, otherwise picked from a menu. */
   const useVariantImageAction = (family: Family) => {
@@ -118,7 +116,6 @@ export function PendingImages({ client, profileId, view, groups, rows, expansion
           </article>
         }} />
       </div>
-      <ImagePreviewDialog preview={preview} onClose={() => setPreview(null)} />
       {dialog}
     </>
   }
@@ -173,7 +170,6 @@ export function PendingImages({ client, profileId, view, groups, rows, expansion
         </article>
       }} />
     </div>
-    <ImagePreviewDialog preview={preview} onClose={() => setPreview(null)} />
     {dialog}
   </>
 }

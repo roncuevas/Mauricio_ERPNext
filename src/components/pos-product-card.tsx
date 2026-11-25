@@ -14,7 +14,7 @@ export function PosProductCard({ item, price, priceLabel, priceHref, currency, q
   const otherUoms = !isTemplate && uomCount > 1
   const missingPrice = price === null && !priceLabel
   return <article className={`pos-product-card${isTemplate ? ' pos-product-card-template' : ''}${inCart ? ' is-in-cart' : ''}`}>
-    {showImage && <ProductImage client={client} profileId={profileId} item={item} className="pos-product-image" />}
+    {showImage && <ProductImage client={client} profileId={profileId} item={item} className="pos-product-image" previewable />}
     <button type="button" className="pos-product-card-main" onClick={isTemplate ? onOpenTemplate : onAdd} aria-label={isTemplate ? t('pos.product.chooseVariantOf', { title }) : t('pos.product.add', { title })}>
       <strong className="pos-product-title">{title}</strong>
       <span className="pos-product-meta">{item.brand || t('pos.product.noBrand')}{weight ? ` · ${weight}` : ''}</span>

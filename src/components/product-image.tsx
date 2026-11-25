@@ -4,19 +4,21 @@ import { useTranslation } from 'react-i18next'
 import type { createErpNextClient } from '../lib/erpnext'
 import { readProductImage } from '../lib/product-image-cache'
 import { loadProductImage, loadProductImageQueued } from '../lib/product-image-sync'
+import { ImagePreviewDialog } from './image-preview-dialog'
 
 type Client = ReturnType<typeof createErpNextClient>
 
 /**
- * `onPreview` makes a shown image a button that opens it larger. `autoLoad` downloads an image that is not cached
+ * `previewable` makes a shown image a button that opens it larger in the shared image viewer. `autoLoad` downloads an image that is not cached
  * once it scrolls into view; otherwise it loads only when tapped.
  */
-export function ProductImage({ client, profileId, item, className = '', onPreview, autoLoad = false }: { client: Client; profileId: string; item: { name: string; item_name?: string; image?: string }; className?: string; onPreview?: (source: string) => void; autoLoad?: boolean }) {
+export function ProductImage({ client, profileId, item, className = '', previewable = false, autoLoad = false }: { client: Client; profileId: string; item: { name: string; item_name?: string; image?: string }; className?: string; previewable?: boolean; autoLoad?: boolean }) {
   const { t } = useTranslation()
   const [source, setSource] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [cacheChecked, setCacheChecked] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const placeholderRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { if (source.startsWith('blob:')) return () => URL.revokeObjectURL(source) }, [source])
@@ -75,9 +77,13 @@ export function ProductImage({ client, profileId, item, className = '', onPrevie
   }
 
   if (source) {
-    const image = <img className={`product-image ${onPreview ? '' : className}`} src={source} alt={item.item_name || item.name} loading="lazy" referrerPolicy="no-referrer" onError={() => { setSource(''); setError(t('productImages.loadError')) }} />
-    if (!onPreview) return image
-    return <button type="button" className={`product-image-preview ${className}`} onClick={(event) => { event.stopPropagation(); onPreview(source) }} aria-label={t('productImages.viewFor', { name: item.item_name || item.name })}>{image}</button>
+    const name = item.item_name || item.name
+    const image = <img className={`product-image ${previewable ? '' : className}`} src={source} alt={name} loading="lazy" referrerPolicy="no-referrer" onError={() => { setSource(''); setError(t('productImages.loadError')) }} />
+    if (!previewable) return image
+    return <>
+      <button type="button" className={`product-image-preview ${className}`} onClick={(event) => { event.stopPropagation(); setPreviewOpen(true) }} aria-label={t('productImages.viewFor', { name })}>{image}</button>
+      <ImagePreviewDialog preview={previewOpen ? { source, name, code: item.name } : null} onClose={() => setPreviewOpen(false)} />
+    </>
   }
   return <div ref={placeholderRef} className={`product-image-placeholder ${className}`}>
     <button type="button" onClick={(event) => { event.stopPropagation(); void loadImage() }} disabled={busy} aria-label={busy ? t('productImages.loading') : t('productImages.loadFor', { name: item.name })} title={error || t('productImages.loadHint')}>
