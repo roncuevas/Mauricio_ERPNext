@@ -5,6 +5,7 @@ import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '.
 import { Field, FieldDescription, FieldLabel } from './ui/field'
 import { InputGroup, InputGroupAddon } from './ui/input-group'
 import { Kbd } from './ui/kbd'
+import { SearchClearButton } from './ui/search-input'
 import { findExactItem, searchReconciliationItems } from '../lib/stock'
 import type { VariantItem } from '../lib/types'
 
@@ -43,7 +44,7 @@ export function StockItemPicker({ id, items, disabled, hint, action, describe, o
         <InputGroup data-disabled={disabled || undefined}>
           <InputGroupAddon><ScanBarcode aria-hidden="true" /></InputGroupAddon>
           <CommandInput ref={inputRef} id={id} data-slot="input-group-control" className="mb-0 h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 shadow-none focus:shadow-none" value={search} onValueChange={(value) => { setSearch(value); setActive('') }} onKeyDown={onKeyDown} placeholder={t('stockPage.scanPlaceholder')} disabled={disabled} autoComplete="off" />
-          {search && <InputGroupAddon align="inline-end"><Kbd>Enter</Kbd></InputGroupAddon>}
+          {search && !disabled && <InputGroupAddon align="inline-end"><Kbd>Enter</Kbd><SearchClearButton onClear={() => { setSearch(''); setActive('') }} /></InputGroupAddon>}
         </InputGroup>
         {action}
       </div>

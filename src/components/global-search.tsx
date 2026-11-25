@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandSearchInput, CommandList } from './ui/command'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import { GlobalSearchContext } from './global-search-context'
 import { readItemCatalog } from '../lib/item-cache'
@@ -62,6 +62,6 @@ export function GlobalSearch({ profileId, children }: { profileId: string; child
 
   return <GlobalSearchContext.Provider value={openSearch}>
     {children}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="global-search-dialog"><DialogHeader><DialogTitle>{t('globalSearch.title')}</DialogTitle><DialogDescription>{t('globalSearch.description')}</DialogDescription></DialogHeader><Command shouldFilter={false}><CommandInput value={search} onValueChange={setSearch} placeholder={t('globalSearch.placeholder')} autoFocus /><CommandList><CommandEmpty>{results.length ? t('globalSearch.noResults') : t('globalSearch.noCache')}</CommandEmpty><CommandGroup>{filtered.map((result) => <CommandItem key={result.id} value={result.id} onSelect={() => select(result)}><span className="min-w-0"><strong className="block [overflow-wrap:anywhere]">{result.title}</strong><small className="muted block [overflow-wrap:anywhere]">{result.detail}</small></span></CommandItem>)}</CommandGroup></CommandList></Command></DialogContent></Dialog>
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="global-search-dialog"><DialogHeader><DialogTitle>{t('globalSearch.title')}</DialogTitle><DialogDescription>{t('globalSearch.description')}</DialogDescription></DialogHeader><Command shouldFilter={false}><CommandSearchInput value={search} onValueChange={setSearch} onClear={() => setSearch('')} placeholder={t('globalSearch.placeholder')} autoFocus /><CommandList><CommandEmpty>{results.length ? t('globalSearch.noResults') : t('globalSearch.noCache')}</CommandEmpty><CommandGroup>{filtered.map((result) => <CommandItem key={result.id} value={result.id} onSelect={() => select(result)}><span className="min-w-0"><strong className="block [overflow-wrap:anywhere]">{result.title}</strong><small className="muted block [overflow-wrap:anywhere]">{result.detail}</small></span></CommandItem>)}</CommandGroup></CommandList></Command></DialogContent></Dialog>
   </GlobalSearchContext.Provider>
 }

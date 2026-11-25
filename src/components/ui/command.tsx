@@ -1,9 +1,12 @@
 import { Command as CommandPrimitive } from 'cmdk'
 import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
+import { SearchClearButton } from './search-input'
 
 export const Command = ({ className, ...props }: ComponentProps<typeof CommandPrimitive>) => <CommandPrimitive data-slot="command" className={cn('flex h-full w-full flex-col overflow-hidden rounded-lg bg-[var(--color-surface)] text-[var(--color-heading)]', className)} {...props} />
 export const CommandInput = ({ className, ...props }: ComponentProps<typeof CommandPrimitive.Input>) => <CommandPrimitive.Input data-slot="command-input" className={cn('control mb-2 w-full', className)} {...props} />
+/** Command search box with the shared clear button. */
+export const CommandSearchInput = ({ className, onClear, ...props }: ComponentProps<typeof CommandPrimitive.Input> & { onClear: () => void }) => <div className={cn('search-field mb-2', props.value && 'has-clear')}><CommandInput className={cn('mb-0', className)} {...props} />{props.value && <SearchClearButton onClear={onClear} />}</div>
 export const CommandList = ({ className, ...props }: ComponentProps<typeof CommandPrimitive.List>) => <CommandPrimitive.List data-slot="command-list" className={cn('max-h-64 overflow-y-auto', className)} {...props} />
 export const CommandEmpty = ({ className, ...props }: ComponentProps<typeof CommandPrimitive.Empty>) => <CommandPrimitive.Empty data-slot="command-empty" className={cn('p-4 text-center text-sm text-[var(--color-muted)]', className)} {...props} />
 export const CommandGroup = ({ className, ...props }: ComponentProps<typeof CommandPrimitive.Group>) => <CommandPrimitive.Group data-slot="command-group" className={cn('overflow-hidden p-1', className)} {...props} />

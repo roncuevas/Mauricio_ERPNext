@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
+import { SearchInput } from './ui/search-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { buildPriceIndex, defaultUom, priceForUomFromIndex, uomOptionLabel, type PriceIndex } from '../lib/pos-catalog'
 import { buildVariantTree } from '../lib/variant-cache'
@@ -117,7 +117,7 @@ export function SalesOrderProductTree({ items, prices, priceList, search, disabl
   useEffect(() => setPage(1), [items, query])
 
   return <div className="grid gap-3">
-    <div className="relative"><span className="pointer-events-none absolute left-3 top-2.5 text-[var(--color-muted)]" aria-hidden="true">⌕</span><Input className="pl-9" value={search} disabled={disabled} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("salesOrderTree.searchPlaceholder")} aria-label={t("salesOrderTree.searchLabel")} /></div>
+    <div className="relative"><span className="pointer-events-none absolute left-3 top-2.5 text-[var(--color-muted)]" aria-hidden="true">⌕</span><SearchInput className="pl-9" value={search} disabled={disabled} onChange={(event) => onSearchChange(event.target.value)} onClear={() => onSearchChange('')} placeholder={t("salesOrderTree.searchPlaceholder")} aria-label={t("salesOrderTree.searchLabel")} /></div>
     <div className="prices-tree overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
       {visibleRoots.map((item) => <ProductNode key={item.name} item={item} depth={0} childrenByParent={tree.children} visibleNames={visibleNames} expanded={effectiveExpanded} disabled={disabled} priceIndex={priceIndex} priceList={priceList} currency={currency} onToggle={(name) => setExpanded((current) => { const next = new Set(current); if (next.has(name)) next.delete(name); else next.add(name); return next })} onAdd={onAdd} />)}
       {!roots.length && <p className="p-8 text-center text-sm text-[var(--color-muted)]">{items.length ? t("salesOrderTree.noMatches") : t("salesOrderTree.noCache")}</p>}

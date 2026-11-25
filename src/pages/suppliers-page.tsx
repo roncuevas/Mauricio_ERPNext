@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useListPage } from '../components/use-list-page'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MetadataDocEditor } from '../components/metadata-editor'
-import { Button, Input, Notice, PageHeader, RefreshButton, SearchButton, Spinner } from '../components/ui'
+import { Button, Notice, PageHeader, RefreshButton, SearchButton, SearchInput, Spinner } from '../components/ui'
 import { EmptyState, LoadingState } from '../components/ui/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { createErpNextClient } from '../lib/erpnext'
@@ -30,7 +30,7 @@ export function SuppliersPage({ client, profileId }: { client: Client; profileId
       title="Proveedores"
       description="Consulta proveedores y crea nuevos registros en ERPNext."
       action={<div className="flex flex-wrap gap-2"><Button type="button" onClick={() => setCreating((current) => !current)}>{creating ? 'Cerrar formulario' : 'Nuevo proveedor'}</Button><RefreshButton label="Refrescar proveedores" onClick={() => refresh.mutate()} loading={refresh.isPending} /></div>}
-      toolbar={<form onSubmit={(event) => { event.preventDefault(); setSearch(searchInput.trim()) }}><Input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Buscar proveedor, grupo, tipo o país..." aria-label="Buscar proveedores" /><SearchButton label="Buscar proveedores" /></form>}
+      toolbar={<form onSubmit={(event) => { event.preventDefault(); setSearch(searchInput.trim()) }}><SearchInput value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(''); setSearch('') }} clearable={Boolean(search)} placeholder="Buscar proveedor, grupo, tipo o país..." aria-label="Buscar proveedores" /><SearchButton label="Buscar proveedores" /></form>}
       status={<><span>{query.data ? `${query.data.suppliers.length} proveedores en caché` : 'Proveedores sin descargar'}</span>{syncMessage && <span className="font-medium text-blue-700">{syncMessage}</span>}</>}
     />
     {creating && <div className="mb-5">{meta.isError && <Notice>{meta.error.message}</Notice>}{meta.isPending ? <Spinner /> : <MetadataDocEditor client={client} profileId={profileId} doctype="Supplier" name={null} fields={meta.data?.fields ?? []} initialValues={{ supplier_type: 'Company' }} onClose={() => setCreating(false)} onSaved={onSaved} />}</div>}

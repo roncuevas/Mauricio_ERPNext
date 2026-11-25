@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { Check, Search } from 'lucide-react'
-import { Button, Input, Spinner } from './ui'
+import { Button, SearchInput, Spinner } from './ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
@@ -68,7 +68,7 @@ export function PosVariantSheet({ template, variants: allVariants, hideUnavailab
       {loading ? <div className="pos-sheet-loading" role="status"><Spinner /> {t('pos.variant.loading')}</div> : error ? <p className="notice notice-error" role="alert">{error}</p> : !variants.length ? <p className="muted">{t('pos.variant.empty')}</p> : <div className="pos-variant-sheet-body">
         <section className="pos-variant-picker" aria-labelledby="pos-variant-picker-title">
           <h3 id="pos-variant-picker-title" className="pos-variant-heading">{t('pos.variant.heading', { count: variants.length })}</h3>
-          {variants.length > SEARCH_THRESHOLD && <label className="pos-variant-search"><Search aria-hidden="true" /><Input type="search" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder={t('pos.variant.searchPlaceholder')} aria-label={t('pos.variant.searchLabel')} /></label>}
+          {variants.length > SEARCH_THRESHOLD && <label className="pos-variant-search"><Search aria-hidden="true" /><SearchInput type="search" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} onClear={() => setVariantSearch('')} placeholder={t('pos.variant.searchPlaceholder')} aria-label={t('pos.variant.searchLabel')} /></label>}
           {filteredVariants.length ? <RadioGroupPrimitive.Root value={selected?.name ?? ''} onValueChange={setSelectedName} aria-labelledby="pos-variant-picker-title" className="pos-variant-list">{filteredVariants.map((item) => {
             const { label, details } = variantDisplay(template, item)
             const rowUoms = itemUoms(item)

@@ -3,7 +3,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronsDownUp, ChevronsUpDown, CircleAlert, ExternalLink, ImageOff, RefreshCw } from 'lucide-react'
-import { Alert, AlertDescription, Badge, Button, ButtonLink, IconButton, Input, PageHeader, SearchButton, Spinner } from '../components/ui'
+import { Alert, AlertDescription, Badge, Button, ButtonLink, IconButton, PageHeader, SearchButton, SearchInput, Spinner } from '../components/ui'
 import { TooltipProvider, WithTooltip } from '../components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
@@ -326,7 +326,7 @@ function PendingSearchForm({ initialValue, onSearch }: { initialValue: string; o
   }
 
   return <form className="flex w-full max-w-[24rem] items-center gap-2" role="search" onSubmit={submit}>
-    <Input value={value} onChange={(event) => setValue(event.target.value)} placeholder={t('pendingPage.search')} aria-label={t('pendingPage.search')} />
+    <SearchInput value={value} onChange={(event) => setValue(event.target.value)} onClear={() => { setValue(''); onSearch('') }} clearable={Boolean(initialValue)} placeholder={t('pendingPage.search')} aria-label={t('pendingPage.search')} />
     <SearchButton label={t('common.search')} />
   </form>
 }

@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog'
-import { Button, Field, Input } from './ui'
+import { Button, Field, Input, SearchClearButton } from './ui'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
 import { Popover, PopoverAnchor, PopoverContent } from './ui/popover'
 import { cn } from '../lib/utils'
@@ -23,7 +23,7 @@ export function PosCustomerPicker({ enabled, value, customers, onSelect, onCreat
   function select(name: string) { onSelect(name); close() }
   return <Command shouldFilter={false} loop className={cn('h-auto overflow-visible rounded-none bg-transparent', className)}>
     <Popover open={enabled && editing} onOpenChange={(open) => { if (!open) close() }}>
-      <Field label={t('pos.customer.label')}><PopoverAnchor asChild><div ref={anchorRef}><CommandInput data-pos-customer-search className="mb-0" value={editing ? search : value} onValueChange={(next) => { setEditing(true); setSearch(next) }} onFocus={() => setEditing(true)} onClick={() => setEditing(true)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); close() } }} placeholder={editing && value ? value : t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} aria-invalid={prompt ? true : undefined} /></div></PopoverAnchor></Field>
+      <Field label={t('pos.customer.label')}><PopoverAnchor asChild><div ref={anchorRef} className={cn('search-field', editing && search && 'has-clear')}><CommandInput data-pos-customer-search className="mb-0" value={editing ? search : value} onValueChange={(next) => { setEditing(true); setSearch(next) }} onFocus={() => setEditing(true)} onClick={() => setEditing(true)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); close() } }} placeholder={editing && value ? value : t('pos.customer.placeholder')} disabled={!enabled} aria-label={t('pos.customer.search')} aria-invalid={prompt ? true : undefined} />{editing && search && enabled && <SearchClearButton onClear={() => setSearch('')} />}</div></PopoverAnchor></Field>
       <PopoverContent className="pos-customer-results w-[var(--radix-popover-trigger-width)]" align="start" onOpenAutoFocus={(event) => event.preventDefault()} onInteractOutside={(event) => { if (anchorRef.current?.contains(event.target as Node)) event.preventDefault() }}>
         {prompt && <p className="pos-customer-prompt" role="alert">{prompt}</p>}
         <CommandList><CommandEmpty>{t('pos.customer.empty')}</CommandEmpty><CommandGroup>{matches.map((item) => <CommandItem key={item.name} value={item.name} onSelect={() => select(item.name)} onMouseDown={(event) => event.preventDefault()}>{item.customer_name || item.name}</CommandItem>)}</CommandGroup></CommandList>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Button } from './ui/button'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandSearchInput, CommandList } from './ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { cn } from '../lib/utils'
 import { filterEntityOptions } from './entity-combobox-utils'
@@ -51,7 +51,7 @@ export function EntityCombobox({ value = '', onValueChange, options, placeholder
     </PopoverTrigger>
     <PopoverContent align="start" className="entity-combobox-content w-[var(--radix-popover-trigger-width)] min-w-56 p-1">
       <Command shouldFilter={false}>
-        <CommandInput value={search} onValueChange={setSearch} placeholder={searchPlaceholder} aria-label={`${searchPlaceholder} (${ariaLabel})`} />
+        <CommandSearchInput value={search} onValueChange={setSearch} onClear={() => setSearch('')} placeholder={searchPlaceholder} aria-label={`${searchPlaceholder} (${ariaLabel})`} />
         <CommandList>
           <CommandEmpty>{emptyMessage}</CommandEmpty>
           <CommandGroup>
