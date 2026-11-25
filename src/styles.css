@@ -275,8 +275,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .product-table-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: .55rem; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-surface-muted); padding: .75rem 1rem; }
-.product-table-toolbar > div:first-child { min-width: 0; margin-right: auto; font-size: .78rem; color: var(--color-heading); }
-.product-table-column-menu { max-height: min(30rem, calc(100vh - 5rem)); overflow-y: auto; }
+.product-table-toolbar > div:first-of-type { min-width: 0; margin-right: auto; font-size: .78rem; color: var(--color-heading); }
+.product-table-label-mobile { display: none; }
+/* Radix reports the room left on the chosen side, so the menu never runs off a short phone screen. */
+.product-table-column-menu { max-height: min(30rem, var(--radix-dropdown-menu-content-available-height, calc(100vh - 5rem))); overflow-y: auto; }
 .product-table-desktop { min-width: 0; overflow-x: auto; }
 .product-table { min-width: max-content; table-layout: fixed; }
 .product-table thead { background: var(--color-surface-muted); }
@@ -287,6 +289,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .product-table-resize-handle:hover, .product-table-resize-handle:focus-visible, .product-table-resize-handle.is-resizing { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); outline: none; }
 .product-table-row { cursor: pointer; }
 .product-table-row:hover { background: var(--color-primary-soft); }
+.product-table-row:hover .product-table-actions-cell { background: var(--color-primary-soft); }
 .product-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .product-table-product { display: grid; min-width: 0; gap: .15rem; white-space: normal; }
 .product-table-title { color: var(--color-heading); font-weight: 750; overflow-wrap: anywhere; text-decoration: none; }
@@ -294,7 +297,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .product-table-product code { color: var(--color-muted); font-size: .7rem; overflow-wrap: anywhere; }
 .product-table-product small { overflow: hidden; color: var(--color-muted); font-size: .68rem; text-overflow: ellipsis; }
 .product-table-ids { display: flex; min-width: 0; flex-wrap: wrap; gap: .1rem .5rem; }
-.product-table-ids code { min-width: 0; white-space: normal; }
+.product-table-ids code { min-width: 0; max-width: 100%; line-height: 1.35; overflow-wrap: anywhere; white-space: normal; }
 .product-table-stack { display: grid; min-width: 0; gap: .05rem; line-height: 1.25; }
 .product-table-stack small { overflow: hidden; color: var(--color-muted); font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
 .product-table-amount { color: var(--color-heading); font-weight: 650; font-variant-numeric: tabular-nums; }
@@ -310,12 +313,42 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .product-table-actions-head { background: var(--color-surface-muted); }
 .product-table-actions { display: flex; flex-wrap: wrap; gap: .35rem; white-space: normal; }
 .product-table-mobile { display: none; }
+/* Families: a template row heads its variants, which sit indented on a thin guide line. */
+.product-table-product:has(.product-table-family-slot) { display: flex; align-items: center; gap: .4rem; }
+.product-table-product:has(.product-table-family-slot) > .product-table-image { flex: 0 0 2.75rem; margin-right: .2rem; }
+.product-table-product:has(.product-table-family-slot) > .min-w-0 { flex: 1 1 auto; }
+.product-table-family-slot { display: inline-flex; width: 1.5rem; flex: 0 0 1.5rem; justify-content: center; }
+.product-table-family-toggle { display: inline-grid; width: 1.5rem; height: 1.75rem; place-items: center; border-radius: var(--radius-sm); color: var(--color-muted); }
+.product-table-family-toggle:hover { background: var(--color-primary-soft); color: var(--color-heading); }
+.product-table-family-toggle:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.product-table-family-toggle svg { width: 1rem; height: 1rem; }
+.product-table-family { flex: 0 0 auto; color: var(--color-ink); font-size: .7rem; font-weight: 650; }
+.product-table-row.is-child .product-table-product { position: relative; padding-left: 1.9rem; }
+.product-table-row.is-child .product-table-product::before { position: absolute; top: -1rem; bottom: -1rem; left: .75rem; border-left: 1px solid var(--color-border); content: ''; }
+.product-table-row.is-child, .product-table-row.is-child .product-table-actions-cell { background: var(--color-surface-muted); }
+.product-table-row.is-child:hover, .product-table-row.is-child:hover .product-table-actions-cell { background: var(--color-primary-soft); }
+.is-context .product-table-title { color: var(--color-muted); font-weight: 650; }
+.product-filter-chips { display: inline-flex; flex-wrap: wrap; gap: .35rem; }
+.product-filter-chip { display: inline-flex; min-height: 1.75rem; align-items: center; gap: .3rem; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); padding: .1rem .45rem .1rem .65rem; color: var(--color-heading); font-size: .75rem; font-weight: 600; }
+.product-filter-chip svg { width: .85rem; height: .85rem; color: var(--color-muted); }
+.product-filter-chip:hover { border-color: var(--color-primary); }
+.product-filter-chip:hover svg { color: var(--color-heading); }
+.product-filter-chip:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.product-filter-switch { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--color-border-subtle); padding-top: 1rem; }
+.product-filter-switch label { display: grid; gap: .15rem; cursor: pointer; }
+.product-filter-switch strong { color: var(--color-heading); font-size: .875rem; font-weight: 600; }
+.product-filter-switch span { color: var(--color-muted); font-size: .75rem; }
+.product-filter-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .5rem; }
 .virtualized-collection-content { position: relative; min-height: 100%; }
 .virtualized-collection-item { position: absolute; top: 0; left: 0; width: 100%; }
 
 @media (max-width: 700px) {
   .product-table-toolbar { align-items: flex-start; flex-wrap: wrap; }
-  .product-table-toolbar > div:first-child { flex: 1 1 100%; }
+  .product-table-label-desktop { display: none; }
+  .product-table-label-mobile { display: revert; }
+  /* On phones the buttons say enough; the summary line only pushed the cards down. */
+  .product-table-toolbar { flex-wrap: nowrap; justify-content: flex-end; }
+  .product-table-toolbar > div.product-table-label-mobile { display: none; }
   .product-table-desktop { display: none; }
   .product-table-mobile { display: grid; gap: .65rem; padding: .7rem; background: var(--color-surface-muted); }
   .product-table-mobile-card { display: grid; gap: .8rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface); padding: .85rem; box-shadow: var(--shadow-sm); }
@@ -328,6 +361,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .product-table-compact-value { overflow: hidden; text-overflow: ellipsis; }
   .product-table-mobile-actions .product-table-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .product-table-mobile-actions .button { width: 100%; }
+  .product-table-mobile .product-table-family-slot { display: none; }
+  .product-table-mobile-family { width: 100%; justify-content: center; gap: .4rem; }
+  .product-table-mobile-family svg { width: 1rem; height: 1rem; }
+  .product-table-mobile-card.is-child { position: relative; margin-left: 1.25rem; background: var(--color-surface-muted); }
+  .product-table-mobile-card.is-child::before { position: absolute; top: -.7rem; bottom: 50%; left: -.75rem; border-left: 1px solid var(--color-border); content: ''; }
+  .product-filter-chip { min-height: 2.5rem; padding-inline: .8rem .6rem; }
 }
 
 /* Theme bridge for legacy utility and feature-specific color classes. */
@@ -975,6 +1014,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .search-clear:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .search-clear svg { width: 1rem; height: 1rem; }
 [data-slot="input-group"] .search-clear { position: static; width: 2rem; height: 2rem; transform: none; }
+
+.mobile-actions-content .product-new-action { display: none; }
+.product-workspace-card { scroll-margin-top: 5rem; }
+.product-workspace-card:focus { outline: none; }
+.product-workspace-card:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .product-search .button:not(.button-icon) { min-width: 5.5rem; }
 .product-refresh { white-space: nowrap; }
 .product-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc; padding: .7rem 1rem; }
