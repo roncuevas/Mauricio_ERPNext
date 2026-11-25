@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { PendingImages } from './pending-images'
 import { useFamilyExpansion } from './use-family-expansion'
-import { findMissingImageGroups, missingImageRows, type MissingImageView } from '../lib/pending-items'
+import { familyTemplateNames, findMissingImageGroups, missingImageRows, type MissingImageView } from '../lib/pending-items'
 import type { VariantItem } from '../lib/types'
 
 vi.mock('react-i18next', () => ({ initReactI18next: { type: '3rdParty', init: () => {} }, useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'es' } }) }))
@@ -35,7 +35,7 @@ describe('PendingImages', () => {
       const groups = findMissingImageGroups(items)
       // The page owns the expansion and its "expand all" control; the harness stands in for it.
       function Harness() {
-        const expansion = useFamilyExpansion(groups, '')
+        const expansion = useFamilyExpansion(familyTemplateNames(groups), '')
         return createElement('div', null,
           createElement('button', { type: 'button', 'aria-label': 'toggle-all', onClick: expansion.toggleAll }),
           createElement(PendingImages, { client: client as never, profileId: 'profile', view, groups, rows: view === 'tree' ? [] : missingImageRows(groups, view), expansion, empty: null, onAssignImage: () => undefined, onImagesSaved, onMessage }))

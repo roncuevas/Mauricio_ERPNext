@@ -16,7 +16,7 @@ import { CatalogErrorNotice } from '../components/catalog-guidance'
 import { createErpNextClient } from '../lib/erpnext'
 import { catalogQueryOptions } from '../lib/catalog-query-options'
 import { queryKeys } from '../lib/query-keys'
-import { findIncompleteCatalogItems, countMissingImages, countPending, PENDING_CATEGORIES, type PendingCategory, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, filterByInheritance, IMAGE_INHERITANCES, type ImageInheritance, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
+import { findIncompleteCatalogItems, familyTemplateNames, countMissingImages, countPending, PENDING_CATEGORIES, type PendingCategory, findLowMarginPrices, findMissingImageGroups, missingImageRows, MISSING_IMAGE_VIEWS, type MissingImageView, filterByInheritance, IMAGE_INHERITANCES, type ImageInheritance, findPendingItems, findStockShortages, type IncompleteCatalogItem, type PendingItem, type PendingPriceKind } from '../lib/pending-items'
 import { PENDING_PAGE_SIZES, readPendingPreferences, writePendingPreferences, type PendingPageSize } from '../lib/pending-preferences'
 import { paginate } from '../lib/pagination'
 import { ListPagination } from '../components/list-pagination'
@@ -195,7 +195,7 @@ export function PendingPage({ client, profileId }: { client: Client; profileId: 
     writePendingPreferences(profileId, { ...readPendingPreferences(profileId), pageSize: next })
     updateParams({ page: '' })
   }
-  const imageExpansion = useFamilyExpansion(pageOf(filteredImageGroups), search)
+  const imageExpansion = useFamilyExpansion(familyTemplateNames(pageOf(filteredImageGroups)), search)
   const activeCount = activeTab === 'prices' ? filteredPrices.filter(isUrgentPrice).length : activeTab === 'data' ? filteredIncompleteItems.filter(isUrgentData).length : activeTab === 'images' ? (imageView === 'tree' ? countMissingImages(filteredImageGroups, inheritance) : filteredImageRows.length) : visible.length
   const lowPriorityCount = activeTab === 'images' ? 0 : visible.length - activeCount
 

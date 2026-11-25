@@ -117,6 +117,11 @@ export type ImageInheritance = 'toVariants' | 'toTemplate'
 export const IMAGE_INHERITANCES: ImageInheritance[] = ['toVariants', 'toTemplate']
 
 /** Keeps the families that can fill their gaps in that direction; loose products never can. */
+/** Template names of the families in a list of groups, for expanding or collapsing them. */
+export function familyTemplateNames(groups: MissingImageGroup[]) {
+  return groups.flatMap((group) => group.kind === 'family' ? [group.template.name] : [])
+}
+
 export function filterByInheritance(groups: MissingImageGroup[], inheritance: ImageInheritance): MissingImageGroup[] {
   return groups.filter((group) => group.kind === 'family' && (inheritance === 'toVariants'
     ? !group.templateMissing && group.missingVariants.length > 0
